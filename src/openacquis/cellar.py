@@ -19,7 +19,7 @@ from .countries import AUTHORITY, country_from_uri, normalize_country
 
 ENDPOINT = "https://publications.europa.eu/webapi/rdf/sparql"
 LANG_AUTHORITY = "http://publications.europa.eu/resource/authority/language/"
-USER_AGENT = "OpenAcquis/0.2 (+https://github.com/JerryWoof/OpenAcquis)"
+USER_AGENT = "OpenAcquis/0.3 (+https://github.com/JerryWoof/OpenAcquis)"
 
 CELEX_DIRECTIVE = re.compile(r"^3\d{4}L\d{4}$")
 

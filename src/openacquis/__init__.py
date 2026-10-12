@@ -3,4 +3,4 @@
 from .cellar import CellarClient, Directive, NationalMeasure
 
 __all__ = ["CellarClient", "Directive", "NationalMeasure"]
-__version__ = "0.2.0"
+__version__ = "0.3.0"

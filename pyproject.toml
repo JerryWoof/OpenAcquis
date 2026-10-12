@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "openacquis"
-version = "0.2.0"
+version = "0.3.0"
 description = "Open, AI-assisted map of how EU directives are written into national law."
 readme = "README.md"
 license = "MIT"
@@ -22,6 +22,10 @@ dependencies = []
 
 [project.optional-dependencies]
 dev = ["pytest>=8"]
+# Dense multilingual embeddings for candidate matching (openacquis.match.SentenceTransformerEmbedder)
+embeddings = ["sentence-transformers>=2.2"]
+# LLM judge (openacquis.judge.AnthropicJudge); needs ANTHROPIC_API_KEY
+llm = ["anthropic>=1.0"]
 
 [project.scripts]
 openacquis = "openacquis.cli:main"
@@ -35,4 +39,4 @@ packages = ["src/openacquis"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-markers = ["live: hits real public servers (EU Publications Office, e-Sbírka); deselect with -m 'not live'"]
+markers = ["live: hits real public servers or paid APIs (EU Publications Office, e-Sbírka, psp.cz, Anthropic); deselect with -m 'not live'"]

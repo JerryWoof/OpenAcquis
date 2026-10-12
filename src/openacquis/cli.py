@@ -3,6 +3,8 @@
 ``openacquis summary|measures <CELEX>``: which national acts implement a directive (CELLAR).
 ``openacquis text <CELEX> --lang cs``: a directive's text split into provisions (CELLAR/EUR-Lex).
 ``openacquis law cz 264/2025``: a national act split into provisions (country adapters).
+``openacquis align 32022L2555 cz``: candidate links, gap and extra-rule candidates (v0.3).
+``openacquis eval nis2-cz``: score the alignment against the official correlation table (v0.3).
 """
 
 from __future__ import annotations
@@ -10,6 +12,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import os
 import sys
 
 from . import __version__
@@ -21,6 +24,11 @@ from .provisions import Document, make_id, roman_to_int
 
 #: Countries with a national-law adapter (ISO alpha-3 -> printable code).
 LAW_ADAPTERS = {"CZE": "cz"}
+
+#: Evaluation sets: name -> (CELEX, country).
+EVALSETS = {"nis2-cz": ("32022L2555", "cz")}
+EMBEDDERS = ["lexical", "e5", "e5-sym", "bge-m3"]
+JUDGES = ["none", "rule", "anthropic"]
 
 
 def _short(text: str | None, width: int) -> str:
@@ -128,6 +136,121 @@ def cmd_law(args: argparse.Namespace, client: ESbirkaClient) -> int:
     return 0
 
 
+# --- alignment and evaluation (v0.3) -------------------------------------------
+def _log(msg: str) -> None:
+    print(msg, file=sys.stderr, flush=True)
+
+
+def _judge(name: str):
+    from .align import make_judge
+
+    if name == "anthropic" and not os.environ.get("ANTHROPIC_API_KEY"):
+        raise ValueError("--judge anthropic needs ANTHROPIC_API_KEY and pip install 'openacquis[llm]'; "
+                         "use --judge rule for the keyless heuristic baseline")
+    return make_judge(name)
+
+
+def _embedder(name: str):
+    """The embedder, checked before any text is fetched (dense models need an optional extra)."""
+    import importlib.util
+
+    from .align import make_embedder
+
+    if name != "lexical" and importlib.util.find_spec("sentence_transformers") is None:
+        raise ValueError(f"--embedder {name} needs the optional extra: pip install 'openacquis[embeddings]' "
+                         "(sentence-transformers); --embedder lexical works without it")
+    return make_embedder(name)
+
+
+def _documents(args: argparse.Namespace, clients: dict, celex: str, country: str):
+    from .align import load_documents
+
+    code = normalize_country(country)
+    if code not in LAW_ADAPTERS:
+        have = ", ".join(v.upper() for v in LAW_ADAPTERS.values())
+        raise ValueError(f"no national-law adapter for {country} yet (available: {have})")
+    version = args.version_date if args.version_date else "default"
+    return load_documents(validate_celex(celex), LAW_ADAPTERS[code], args.acts or None, version=version,
+                          eurlex=clients.get("eurlex"), national_client=clients.get("esbirka"), log=_log)
+
+
+def cmd_align(args: argparse.Namespace, clients: dict) -> int:
+    from .align import align
+
+    embedder = _embedder(args.embedder)
+    judge = _judge(args.judge)
+    eu, national = _documents(args, clients, args.celex, args.country)
+    result = align(eu, national, embedder=embedder, judge=judge, k=args.k,
+                   threshold=args.threshold, judge_k=args.judge_k, log=_log)
+    out = result.to_json(text_limit=args.text_limit)
+    if args.output and args.output != "-":
+        with open(args.output, "w", encoding="utf-8") as f:
+            f.write(out + "\n")
+    else:
+        print(out)
+    s = result.summary()
+    _log(f"{eu.act_id} x {', '.join(d.act_id for d in national)} ({result.method}, threshold {result.threshold}): "
+         f"{s['eu_units']} EU units, {s['eu_units_with_link']} with a link, {s['gap_candidates']} gap candidates, "
+         f"{s['extra_rule_candidates']} extra-rule candidates of {s['transposing_act_units']} national units"
+         + (f" -> {args.output}" if args.output and args.output != "-" else ""))
+    _log("Machine suggestions for review, not findings.")
+    return 0
+
+
+def _ks(text: str) -> list[int]:
+    try:
+        ks = sorted({int(x) for x in text.split(",") if x.strip()})
+    except ValueError:
+        raise ValueError(f"--k expects comma-separated integers, e.g. 1,5,10 (got {text!r})") from None
+    if not ks or ks[0] < 1:
+        raise ValueError("--k values must be positive")
+    return ks
+
+
+def cmd_eval(args: argparse.Namespace, clients: dict) -> int:
+    from .align import gold_path
+    from .evaluate import errors, evaluate, format_report, load_gold, public
+
+    celex, country = EVALSETS[args.dataset]
+    path = args.gold or gold_path(celex, country)
+    if path is None:
+        raise LookupError(f"evaluation set for {args.dataset} not found; pass --gold data/eval/nis2_cz.jsonl")
+    gold = load_gold(path)
+    embedder = _embedder(args.embedder)
+    judge = _judge(args.judge)
+    eu, national = _documents(args, clients, celex, country)
+    report = evaluate(eu, national, gold, embedder=embedder, judge=judge,
+                      ks=_ks(args.k), threshold=args.threshold, judge_k=args.judge_k, log=_log)
+    if args.output:
+        with open(args.output, "w", encoding="utf-8") as f:
+            json.dump(public(report), f, ensure_ascii=False, indent=1)
+            f.write("\n")
+    if args.format == "json":
+        print(json.dumps(public(report), ensure_ascii=False, indent=1))
+        return 0
+    print(format_report(report))
+    if args.errors:
+        print(f"\nGold EU provisions with no gold national provision in the top 5 (first {args.errors}):")
+        for e in errors(report, limit=args.errors):
+            short = [x.split(":", 2)[-1] for x in e["top"]]
+            gold_ids = [x.split(":", 2)[-1] for x in e["gold"]]
+            more = f" (+{len(gold_ids) - 4})" if len(gold_ids) > 4 else ""
+            print(f"  {e['eu_id'].split(':')[-1]:<18} gold {', '.join(gold_ids[:4])}{more}")
+            print(f"  {'':<18} top  {', '.join(short)}")
+    return 0
+
+
+def _add_alignment_options(a: argparse.ArgumentParser) -> None:
+    a.add_argument("-e", "--embedder", choices=EMBEDDERS, default="lexical",
+                   help="lexical (default, no dependencies) or a dense model (needs openacquis[embeddings])")
+    a.add_argument("-j", "--judge", choices=JUDGES, default="none",
+                   help="none (default), rule (keyless heuristics) or anthropic (needs ANTHROPIC_API_KEY)")
+    a.add_argument("--threshold", type=float, help="minimum score for a predicted link (default per embedder)")
+    a.add_argument("--judge-k", type=int, default=3, help="candidates per EU provision sent to the judge")
+    a.add_argument("--acts", nargs="+", metavar="REF", help="national acts to search (default: transposing act(s))")
+    a.add_argument("--version-date", help="consolidated version of the national acts (YYYY-MM-DD)")
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="openacquis",
@@ -168,11 +291,32 @@ def build_parser() -> argparse.ArgumentParser:
     )
     w.add_argument("-f", "--format", choices=["text", "json", "jsonl"], default="text")
     w.set_defaults(func=cmd_law, client="law")
+
+    a = sub.add_parser("align", help="Candidate links between a directive and national law (machine suggestions)")
+    a.add_argument("celex", help="Directive CELEX number, e.g. 32022L2555 (NIS2)")
+    a.add_argument("country", help="Country with an adapter: CZ")
+    _add_alignment_options(a)
+    a.add_argument("-k", type=int, default=5, help="candidates kept per EU provision (default 5)")
+    a.add_argument("--text-limit", type=int, default=600, help="characters of text kept per provision")
+    a.add_argument("-o", "--output", help="write JSON here (default: stdout)")
+    a.set_defaults(func=cmd_align, client="align")
+
+    e = sub.add_parser("eval", help="Score the alignment against an official correlation table")
+    e.add_argument("dataset", choices=sorted(EVALSETS), help="evaluation set")
+    _add_alignment_options(e)
+    e.add_argument("--k", default="1,5,10", help="cut-offs for recall@k (default 1,5,10)")
+    e.add_argument("--gold", help="gold links JSONL (default: data/eval/nis2_cz.jsonl)")
+    e.add_argument("--errors", type=int, default=0, metavar="N", help="also list N retrieval misses")
+    e.add_argument("-f", "--format", choices=["text", "json"], default="text")
+    e.add_argument("-o", "--output", help="also write the JSON report here")
+    e.set_defaults(func=cmd_eval, client="align")
     return p
 
 
 def _client(args: argparse.Namespace, cellar, eurlex, esbirka):
     kind = getattr(args, "client", "cellar")
+    if kind == "align":
+        return {"eurlex": eurlex, "esbirka": esbirka}
     if kind == "eurlex":
         return eurlex or EurLexClient()
     if kind == "law":
@@ -194,7 +338,7 @@ def main(
     args = build_parser().parse_args(argv)
     try:
         return args.func(args, _client(args, client, eurlex, esbirka))
-    except (ValueError, LookupError) as exc:
+    except (ValueError, LookupError, ImportError) as exc:  # ImportError: a missing optional extra
         print(f"error: {exc}", file=sys.stderr)
         return 2
     except BrokenPipeError:  # e.g. `openacquis measures ... | head`
