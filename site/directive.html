@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Directive · OpenAcquis</title>
+<meta name="description" content="National measures notified by each EU member state for a directive.">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231c5cab'/%3E%3Cg fill='%23fff'%3E%3Crect x='6' y='6' width='9' height='9' rx='2'/%3E%3Crect x='17' y='6' width='9' height='9' rx='2' opacity='.6'/%3E%3Crect x='6' y='17' width='9' height='9' rx='2' opacity='.6'/%3E%3Crect x='17' y='17' width='9' height='9' rx='2' opacity='.3'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="./" aria-label="OpenAcquis home">
+      <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#1c5cab"/><g fill="#fff"><rect x="6" y="6" width="9" height="9" rx="2"/><rect x="17" y="6" width="9" height="9" rx="2" opacity=".6"/><rect x="6" y="17" width="9" height="9" rx="2" opacity=".6"/><rect x="17" y="17" width="9" height="9" rx="2" opacity=".3"/></g></svg>
+      OpenAcquis
+    </a>
+    <nav aria-label="Main">
+      <a href="./#directives">Directives</a>
+      <a href="./#how">How it works</a>
+      <a href="https://github.com/JerryWoof/OpenAcquis">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main" class="wrap">
+  <p class="crumbs"><a href="./#directives">← All directives</a></p>
+  <h1 id="d-title">Loading…</h1>
+  <p class="muted" id="d-full"></p>
+  <dl class="meta" id="d-meta"></dl>
+  <div id="d-notes"></div>
+
+  <div id="d-body" hidden>
+  <div class="kpis" id="d-kpis"></div>
+
+  <section aria-labelledby="map-h">
+    <h2 id="map-h">Notified measures by member state</h2>
+    <p class="small muted">Number of national measures each member state notified as transposing this directive. Select a country to filter the table.
+      A higher count is not "better": some states notify one new act, others list every amended law.</p>
+    <div class="map-layout">
+      <div>
+        <div class="tilemap" id="tilemap" role="group" aria-label="Member states, coloured by number of notified measures"></div>
+        <ul class="legend" id="legend" aria-label="Legend"></ul>
+      </div>
+      <div>
+        <h3 class="small muted" style="margin-top:0">Ranking</h3>
+        <ol class="ranking" id="ranking"></ol>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="tbl-h">
+    <h2 id="tbl-h">National measures</h2>
+    <form class="filters" id="filters" role="search" onsubmit="return false">
+      <label>Country
+        <select id="f-country"><option value="">All member states</option></select>
+      </label>
+      <label>Search title, reference or journal
+        <input type="search" id="f-q" placeholder="e.g. 264/2025, Gesetz, cyber" autocomplete="off">
+      </label>
+      <button type="button" class="btn" id="f-reset">Reset</button>
+    </form>
+    <p class="count" id="count" aria-live="polite"></p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col"><button type="button" data-sort="country">Country</button></th>
+            <th scope="col"><button type="button" data-sort="journal_date">Published</button></th>
+            <th scope="col"><button type="button" data-sort="notified">Notified</button></th>
+            <th scope="col">Reference</th>
+            <th scope="col">Type</th>
+            <th scope="col">Title and official journal</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <div class="more" id="more"></div>
+    <p class="small muted">Titles are in the national language as notified. Full records, including links to the national texts, are on the
+      <a id="nim-link" href="https://eur-lex.europa.eu/">EUR-Lex national transposition page</a>.</p>
+  </section>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p><strong>Not legal advice.</strong> OpenAcquis is a research and transparency tool. Notified measures are what member states report;
+      they can be incomplete or include broadly related acts. Always check the official texts.</p>
+    <p>Data: EU Publications Office CELLAR. © European Union, <a href="https://eur-lex.europa.eu">https://eur-lex.europa.eu</a>
+      (reuse under Commission Decision 2011/833/EU). Code: MIT. <span id="footer-built"></span></p>
+  </div>
+</footer>
+<script src="assets/app.js"></script>
+<script>OpenAcquis.renderDirective();</script>
+</body>
+</html>
