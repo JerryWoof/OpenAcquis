@@ -621,6 +621,113 @@ def judge_scores(result: AlignmentResult, gold: Sequence[GoldLink]) -> dict:
     }
 
 
+def _section_of(nid: str) -> str:
+    """``cz:264/2025:par16.odst1`` -> ``cz:264/2025:par16`` (same act and same §)."""
+    parts = nid.split(":", 2)
+    return nid if len(parts) < 3 else f"{parts[0]}:{parts[1]}:{parts[2].split('.', 1)[0]}"
+
+
+def _rate(k: int, n: int) -> float | None:
+    return _r(k / n) if n else None
+
+
+def judgment_agreement(records: Sequence[dict], gold: Sequence[GoldLink], *, examples: int = 0) -> dict:
+    """Agreement of judged candidate pairs (``data/judgments/<celex>_<cc>.jsonl`` lines) with an official table.
+
+    Only pairs whose EU unit the table covers count (the unit, an ancestor or a descendant has a gold
+    link). A pair is **confirmed** (``provision`` level) when some gold link (E, G) has E on the same
+    path as the pair's EU unit and G on the same path as its national provision; at ``section`` level
+    G only needs to be in the same act and §. Reported: precision of the machine's top-1 candidates,
+    of the pairs the judge calls related (any label but ``unrelated``, any rank) and of those labelled
+    ``same`` / ``partial``; how many confirmed pairs the judge keeps and how many unconfirmed pairs it
+    rejects. The table is not perfect, so "unconfirmed" is not "wrong".
+    """
+    by_eu: dict[str, set[str]] = {}
+    for g in gold:
+        by_eu.setdefault(g.eu_id, set()).add(g.national_id)
+
+    def confirmed(e: str, n: str, level: str) -> bool:
+        for E, Gs in by_eu.items():
+            if not on_path(e, E):
+                continue
+            if level == "provision" and _any_on_path(n, Gs):
+                return True
+            if level == "section" and _section_of(n) in {_section_of(G) for G in Gs}:
+                return True
+        return False
+
+    def related(r: dict) -> bool:
+        return r.get("label") != "unrelated"
+
+    scope = [r for r in records if _any_on_path(r["eu_id"], by_eu)]
+    hit = {id(r): confirmed(r["eu_id"], r["national_id"], "provision") for r in scope}
+    hit_s = {id(r): confirmed(r["eu_id"], r["national_id"], "section") for r in scope}
+
+    def prec(sel: list[dict]) -> dict:
+        n = len(sel)
+        return {"pairs": n, "precision": _rate(sum(hit[id(r)] for r in sel), n),
+                "section_precision": _rate(sum(hit_s[id(r)] for r in sel), n)}
+
+    pos = [r for r in scope if hit[id(r)]]
+    neg = [r for r in scope if not hit[id(r)]]
+    rel = [r for r in records if related(r)]
+    labels: dict[str, int] = {}
+    for r in records:
+        labels[r.get("label", "?")] = labels.get(r.get("label", "?"), 0) + 1
+    extra = [r for r in scope if related(r) and not hit[id(r)]]
+    report = {
+        "pairs": len(records),
+        "pairs_in_scope": len(scope),
+        "eu_units_in_scope": len({r["eu_id"] for r in scope}),
+        "machine_top1": prec([r for r in scope if r.get("candidate_rank") == 1]),
+        "judge_related": prec([r for r in scope if related(r)]),
+        "judge_same_or_partial": prec([r for r in scope if r.get("label") in ("same", "partial")]),
+        "table_pairs": len(pos),
+        "table_pairs_kept": sum(related(r) for r in pos),
+        "table_pairs_kept_share": _rate(sum(related(r) for r in pos), len(pos)),
+        "other_pairs": len(neg),
+        "other_pairs_rejected": sum(not related(r) for r in neg),
+        "other_pairs_rejected_share": _rate(sum(not related(r) for r in neg), len(neg)),
+        "related_not_in_table": len(extra),
+        "labels": dict(sorted(labels.items(), key=lambda kv: (-kv[1], kv[0]))),
+        "related": len(rel),
+        "related_evidence_verified": sum(bool(r.get("evidence_verified")) for r in rel),
+    }
+    if examples:
+        report["related_not_in_table_examples"] = [
+            {k: r.get(k) for k in ("eu_id", "national_id", "candidate_rank", "label", "confidence", "rationale")}
+            for r in sorted(extra, key=lambda r: (-(r.get("confidence") or 0), r["eu_id"], r["national_id"]))[:examples]]
+    return report
+
+
+def format_judgment_agreement(rep: dict) -> str:
+    """Plain-text table of :func:`judgment_agreement`."""
+    def line(name: str, x: dict) -> str:
+        return f"  {name:<34} {x['pairs']:>5}  {_fmt(x['precision'])}  {_fmt(x['section_precision'])}"
+
+    out = [f"{rep['pairs']} judged pairs; {rep['pairs_in_scope']} in scope "
+           f"({rep['eu_units_in_scope']} EU units the table covers)",
+           "", f"  {'selection':<34} {'pairs':>5}  {'P':>5}  {'P(§)':>5}",
+           line("machine top-1 candidate", rep["machine_top1"]),
+           line("judge: related (any rank)", rep["judge_related"]),
+           line("judge: same / partial", rep["judge_same_or_partial"]),
+           "",
+           f"  table-confirmed candidates kept by the judge: {rep['table_pairs_kept']} / {rep['table_pairs']}"
+           f" ({_pct(rep['table_pairs_kept_share'])})",
+           f"  candidates not in the table rejected:          {rep['other_pairs_rejected']} / {rep['other_pairs']}"
+           f" ({_pct(rep['other_pairs_rejected_share'])})",
+           f"  related but not in the table:                  {rep['related_not_in_table']}",
+           "  labels: " + ", ".join(f"{k} {v}" for k, v in rep["labels"].items()),
+           f"  related judgments with verified evidence: {rep['related_evidence_verified']} / {rep['related']}"]
+    for x in rep.get("related_not_in_table_examples") or []:
+        out.append(f"  - {x['eu_id']} -> {x['national_id']} ({x['label']}, {x['confidence']}): {x['rationale']}")
+    return "\n".join(out)
+
+
+def _fmt(x: float | None) -> str:
+    return "  n/a" if x is None else f"{x:.3f}"
+
+
 # --- all together ----------------------------------------------------------------------
 
 
