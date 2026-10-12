@@ -1,0 +1,209 @@
+{
+ "seznam": [
+  {
+   "id": 1231916175,
+   "eli": "/eli/cz/sb/2025/408/2025-11-01/dokument",
+   "staleUrl": "/sb/2025/408/2025-11-01",
+   "kodTypuFragmentu": "Virtual_Document",
+   "hloubka": 0,
+   "uplnaCitace": "Vyhláška č. 408/2025 Sb., o regulovaných službách",
+   "jeUcinny": true
+  },
+  {
+   "id": 1234063649,
+   "eli": "/eli/cz/sb/2025/408/2025-11-01/dokument/prefix",
+   "staleUrl": "/sb/2025/408/2025-11-01",
+   "kodTypuFragmentu": "Virtual_Prefix",
+   "hloubka": 1,
+   "uplnaCitace": "Vyhláška č. 408/2025 Sb., o regulovaných službách",
+   "jeUcinny": true
+  },
+  {
+   "id": 1234063651,
+   "eli": "/eli/cz/sb/2025/408/2025-11-01/dokument/prefix/frag_1234063651",
+   "staleUrl": "/sb/2025/408/2025-11-01",
+   "kodTypuFragmentu": "Prefix_Number",
+   "hloubka": 2,
+   "xhtml": "408",
+   "uplnaCitace": "Vyhláška č. 408/2025 Sb., o regulovaných službách",
+   "jeUcinny": true
+  },
+  {
+   "id": 1234063653,
+   "eli": "/eli/cz/sb/2025/408/2025-11-01/dokument/prefix/frag_1234063653",
+   "staleUrl": "/sb/2025/408/2025-11-01",
+   "kodTypuFragmentu": "Prefix_Type",
+   "hloubka": 2,
+   "xhtml": "VYHLÁŠKA",
+   "uplnaCitace": "Vyhláška č. 408/2025 Sb., o regulovaných službách",
+   "jeUcinny": true
+  },
+  {
+   "id": 1234063655,
+   "eli": "/eli/cz/sb/2025/408/2025-11-01/dokument/prefix/frag_1234063655",
+   "staleUrl": "/sb/2025/408/2025-11-01",
+   "kodTypuFragmentu": "Prefix_Date",
+   "hloubka": 2,
+   "xhtml": "ze dne 2. října 2025",
+   "uplnaCitace": "Vyhláška č. 408/2025 Sb., o regulovaných službách",
+   "jeUcinny": true
+  },
+  {
+   "id": 1234063657,
+   "eli": "/eli/cz/sb/2025/408/2025-11-01/dokument/prefix/frag_1234063657",
+   "staleUrl": "/sb/2025/408/2025-11-01",
+   "kodTypuFragmentu": "Prefix_Title",
+   "hloubka": 2,
+   "xhtml": "o regulovaných službách",
+   "uplnaCitace": "Vyhláška č. 408/2025 Sb., o regulovaných službách",
+   "jeUcinny": true
+  },
+  {
+   "id": 1234063659,
+   "eli": "/eli/cz/sb/2025/408/2025-11-01/dokument/prefix/frag_1234063659",
+   "staleUrl": "/sb/2025/408/2025-11-01",
+   "kodTypuFragmentu": "Prefix",
+   "hloubka": 2,
+   "xhtml": "Národní úřad pro kybernetickou a informační bezpečnost stanoví podle <a data-odkaz-id=\"199456019\" href=\"#\" class=\"ext_odkaz\" data-typodk=\"provadeci\">§ 4 odst. 2</a> a <a data-odkaz-id=\"199456025\" href=\"#\" class=\"ext_odkaz\" data-typodk=\"provadeci\">§ 8 odst. 2</a> <a data-odkaz-id=\"199456031\" href=\"#\" class=\"ext_odkaz\">zákona č. 264/2025 Sb., o kybernetické bezpečnosti</a>, (dále jen „zákon“):",
+   "uplnaCitace": "Vyhláška č. 408/2025 Sb., o regulovaných službách",
+   "jeUcinny": true
+  },
+  {
+   "id": 1234063661,
+   "eli": "/eli/cz/sb/2025/408/2025-11-01/dokument/norma",
+   "staleUrl": "/sb/2025/408/2025-11-01",
+   "kodTypuFragmentu": "Virtual_Norma",
+   "hloubka": 1,
+   "uplnaCitace": "Vyhláška č. 408/2025 Sb., o regulovaných službách",
+   "jeUcinny": true
+  },
+  {
+   "id": 1234063663,
+   "eli": "/eli/cz/sb/2025/408/2025-11-01/dokument/norma/par_1",
+   "staleUrl": "/sb/2025/408/2025-11-01#par_1",
+   "kodTypuFragmentu": "Paragraf",
+   "hloubka": 2,
+   "xhtml": "<var>§ 1</var>",
+   "uplnaCitace": "§ 1 vyhlášky č. 408/2025 Sb., o regulovaných službách",
+   "jeUcinny": true
+  },
+  {
+   "id": 1234063665,
+   "eli": "/eli/cz/sb/2025/408/2025-11-01/dokument/norma/par_1/frag_1234063665",
+   "staleUrl": "/sb/2025/408/2025-11-01#par_1",
+   "kodTypuFragmentu": "Nadpis_pod",
+   "hloubka": 3,
+   "xhtml": "Předmět úpravy",
+   "uplnaCitace": "§ 1 vyhlášky č. 408/2025 Sb., o regulovaných službách",
+   "jeUcinny": true
+  },
+  {
+   "id": 1234063667,
+   "eli": "/eli/cz/sb/2025/408/2025-11-01/dokument/norma/par_1/frag_1234063667",
+   "staleUrl": "/sb/2025/408/2025-11-01#par_1",
+   "kodTypuFragmentu": "Odstavec_Dc",
+   "hloubka": 3,
+   "xhtml": "Tato vyhláška zapracovává příslušný předpis Evropské unie<a data-odkaz-id=\"199456037\" href=\"#\" class=\"int_odkaz\"><sup>1</sup>)</a>, zároveň navazuje na přímo použitelné předpisy Evropské unie<a data-odkaz-id=\"199456043\" href=\"#\" class=\"int_odkaz\"><sup>2</sup>)</a> a upravuje",
+   "uplnaCitace": "§ 1 vyhlášky č. 408/2025 Sb., o regulovaných službách",
+   "jeUcinny": true
+  },
+  {
+   "id": 1234063669,
+   "eli": "/eli/cz/sb/2025/408/2025-11-01/dokument/norma/par_1/pism_a",
+   "staleUrl": "/sb/2025/408/2025-11-01#par_1-pism_a",
+   "kodTypuFragmentu": "Pismeno_Lb",
+   "hloubka": 4,
+   "xhtml": "<var>a)</var> seznam služeb podle <a data-odkaz-id=\"199456049\" href=\"#\" class=\"ext_odkaz\">§ 4 odst. 1 písm. a)</a> <a data-odkaz-id=\"199456055\" href=\"#\" class=\"ext_odkaz\">zákona</a> a vymezení podmínek významnosti poskytovatele služby podle <a data-odkaz-id=\"199456061\" href=\"#\" class=\"ext_odkaz\">§ 4 odst. 1 písm. b)</a> <a data-odkaz-id=\"199456067\" href=\"#\" class=\"ext_odkaz\">zákona</a> a",
+   "uplnaCitace": "§ 1 písm. a) vyhlášky č. 408/2025 Sb., o regulovaných službách",
+   "jeUcinny": true
+  },
+  {
+   "id": 1234063671,
+   "eli": "/eli/cz/sb/2025/408/2025-11-01/dokument/norma/par_1/pism_b",
+   "staleUrl": "/sb/2025/408/2025-11-01#par_1-pism_b",
+   "kodTypuFragmentu": "Pismeno_Lb",
+   "hloubka": 4,
+   "xhtml": "<var>b)</var> rozdělení poskytovatelů podle poskytovaných <czechvoc-termin koncept-id=\"283743\">regulovaných služeb</czechvoc-termin> do režimů podle <a data-odkaz-id=\"199456073\" href=\"#\" class=\"ext_odkaz\">§ 8 odst. 1</a> <a data-odkaz-id=\"199456079\" href=\"#\" class=\"ext_odkaz\">zákona</a>.",
+   "uplnaCitace": "§ 1 písm. b) vyhlášky č. 408/2025 Sb., o regulovaných službách",
+   "jeUcinny": true
+  },
+  {
+   "id": 1234063699,
+   "eli": "/eli/cz/sb/2025/408/2025-11-01/dokument/prilohy",
+   "staleUrl": "/sb/2025/408/2025-11-01",
+   "kodTypuFragmentu": "Virtual_Prilohy",
+   "hloubka": 1,
+   "uplnaCitace": "Vyhláška č. 408/2025 Sb., o regulovaných službách",
+   "jeUcinny": true
+  },
+  {
+   "id": 1234063701,
+   "eli": "/eli/cz/sb/2025/408/2025-11-01/dokument/prilohy/frag_1234063701",
+   "staleUrl": "/sb/2025/408/2025-11-01",
+   "kodTypuFragmentu": "Block_Priloha",
+   "hloubka": 2,
+   "uplnaCitace": "Vyhláška č. 408/2025 Sb., o regulovaných službách",
+   "jeUcinny": true
+  },
+  {
+   "id": 1234063703,
+   "eli": "/eli/cz/sb/2025/408/2025-11-01/dokument/prilohy/priloha_0",
+   "staleUrl": "/sb/2025/408/2025-11-01#pril_0",
+   "kodTypuFragmentu": "Hlavicka_priloha",
+   "hloubka": 3,
+   "xhtml": "Příloha",
+   "uplnaCitace": "Příloha  vyhlášky č. 408/2025 Sb., o regulovaných službách",
+   "jeUcinny": true
+  },
+  {
+   "id": 1234063705,
+   "eli": "/eli/cz/sb/2025/408/2025-11-01/dokument/prilohy/priloha_0/bod_1",
+   "staleUrl": "/sb/2025/408/2025-11-01#pril_0-bod_1",
+   "kodTypuFragmentu": "Bod_Dd",
+   "hloubka": 4,
+   "xhtml": "<var>1.</var> <b>Veřejná správa</b>",
+   "uplnaCitace": "Příloha  bod 1 vyhlášky č. 408/2025 Sb., o regulovaných službách",
+   "jeUcinny": true
+  },
+  {
+   "id": 1234063707,
+   "eli": "/eli/cz/sb/2025/408/2025-11-01/dokument/prilohy/priloha_0/bod_1/frag_1234063707",
+   "staleUrl": "/sb/2025/408/2025-11-01#pril_0-bod_1",
+   "kodTypuFragmentu": "Tabulka",
+   "hloubka": 5,
+   "xhtml": "<table class=\"TABLE1\" cellspacing=\"0\" cellpadding=\"0\"><tbody><tr><th colspan=\"2\" style=\"width:800px;vertical-align:bottom;\">Regulovaná služba</th></tr><tr><th style=\"width:22%;vertical-align:top;\">Služba</th><th style=\"width:78%;vertical-align:bottom;\">Podmínky významnosti poskytovatele regulované služby a jeho režim</th></tr><tr><td rowspan=\"2\" style=\"width:22%;\"><b>1.1 Výkon svěřených pravomocí</b></td><td style=\"width:73%;vertical-align:bottom;\">I. Poskytovatelem <czechvoc-termin koncept-id=\"283743\">regulované služby</czechvoc-termin> v režimu vyšších povinností je<br/> a) ústřední orgán státní správy,<br/> b) jiný správní úřad s celostátní působností neuvedený v písmeni a),<br/> c) ústředí, generální nebo ústřední inspektorát, generální nebo ústřední ředitelství nebo obdobná součást správního úřadu, kterým jsou podřízeny součásti správního úřadu s krajskou, okresní nebo jinou územní působností,<br/> d) Kancelář prezidenta republiky,<br/> e) Kancelář Senátu,<br/> f) Kancelář Poslanecké sněmovny,<br/> g) Česká národní <czechvoc-termin koncept-id=\"255957\">banka</czechvoc-termin>,<br/> h) Policejní prezidium České republiky<a data-odkaz-id=\"199456133\" href=\"#\" class=\"int_odkaz\"><sup>4</sup>)</a>,<br/> i) krajské ředitelství Policie České republiky<a data-odkaz-id=\"199456139\" href=\"#\" class=\"int_odkaz\"><sup>5</sup>)</a>,<br/> j) útvar Policie České republiky s celostátní působností<a data-odkaz-id=\"199456145\" href=\"#\" class=\"int_odkaz\"><sup>6</sup>)</a>, který zajišťuje speciální policejní činnosti v oblasti odhalování nelegální migrace, letecké služby, pyrotechnické služby, kriminalistických expertíz, ochrany ústavních činitelů České republiky, dalších určených osob a chráněných objektů nebo boje proti organizovanému zločinu, terorismu a kybernetické kriminalitě,<br/> k) Generální inspekce bezpečnostních sborů,<br/> l) součást Hasičského záchranného sboru České republiky podle <a data-odkaz-id=\"199456151\" href=\"#\" class=\"ext_odkaz\">§ 5 písm. a) až c)</a> zákona <a data-odkaz-id=\"199456157\" href=\"#\" class=\"ext_odkaz\">o hasičském záchranném sboru</a><b><a data-odkaz-id=\"199456163\" href=\"#\" class=\"int_odkaz\"><sup>7</sup>)</a></b>,<br/> m) Kancelář veřejného ochránce práv a ochránce práv dětí,<br/> n) Nejvyšší kontrolní úřad,<br/> o) Úřad pro zastupování státu ve věcech majetkových,<br/> p) Správa úložišť radioaktivních odpadů,<br/> q) <czechvoc-termin koncept-id=\"272603\">Ústavní soud</czechvoc-termin>,<br/> r) zdravotní pojišťovna,<br/> s) kraj, nebo<br/> t) hlavní město Praha.</td></tr><tr><td style=\"width:728px;vertical-align:bottom;\">II. Poskytovatelem <czechvoc-termin koncept-id=\"283743\">regulované služby</czechvoc-termin> v režimu nižších povinností je<br/> a) správní úřad nebo jeho součást s krajskou, okresní nebo jinou územní působností,<br/> b) profesní komora<b><a data-odkaz-id=\"199456169\" href=\"#\" class=\"int_odkaz\"><sup>8</sup>)</a></b>,<br/> c) vysoká škola,<br/> d) Akademie věd České republiky,<br/> e) <czechvoc-termin koncept-id=\"263641\">obec</czechvoc-termin> s rozšířenou působností, nebo<br/> f) městská část Praha 1 až Praha 22.</td></tr></tbody></table>",
+   "uplnaCitace": "Příloha  bod 1 vyhlášky č. 408/2025 Sb., o regulovaných službách",
+   "jeUcinny": true
+  },
+  {
+   "id": 1234063709,
+   "eli": "/eli/cz/sb/2025/408/2025-11-01/dokument/prilohy/priloha_0/bod_2",
+   "staleUrl": "/sb/2025/408/2025-11-01#pril_0-bod_2",
+   "kodTypuFragmentu": "Bod_Dd",
+   "hloubka": 4,
+   "xhtml": "<var>2.</var> <b>Energetika – Elektřina</b>",
+   "uplnaCitace": "Příloha  bod 2 vyhlášky č. 408/2025 Sb., o regulovaných službách",
+   "jeUcinny": true
+  },
+  {
+   "id": 1234063903,
+   "eli": "/eli/cz/sb/2025/408/2025-11-01/dokument/poznamkypodcarou",
+   "staleUrl": "/sb/2025/408/2025-11-01",
+   "kodTypuFragmentu": "Virtual_PPC",
+   "hloubka": 1,
+   "uplnaCitace": "Vyhláška č. 408/2025 Sb., o regulovaných službách",
+   "jeUcinny": true
+  },
+  {
+   "id": 1234063793,
+   "eli": "/eli/cz/sb/2025/408/2025-11-01/dokument/poznamkypodcarou/ppc_1",
+   "staleUrl": "/sb/2025/408/2025-11-01#ppc_1",
+   "kodTypuFragmentu": "PPC",
+   "hloubka": 2,
+   "xhtml": "<var><sup>1</sup>)</var> Směrnice Evropského parlamentu a Rady (EU) <a class=\"linkeurule\" data-link=\"eurule\" data-cellarId=\"9b84d482-85bd-11ed-9887-01aa75ed71a1\" href=\"http://eur-lex.europa.eu/legal-content/CS/AUTO/?uri=cellar:9b84d482-85bd-11ed-9887-01aa75ed71a1\" data-author=\"http://publications.europa.eu/resource/authority/corporate-body/EP\" data-dts=\"3\" data-dtt=\"L\" data-datepublication=\"2022-12-14\" data-dta=\"2022\" data-dtn=\"2555\" data-id_celex=\"32022L2555\" data-typeid=\"0\" data-flag=\"1\">2022/2555</a> ze dne 14. prosince 2022 o opatřeních k zajištění vysoké společné úrovně kybernetické bezpečnosti v Unii a o změně nařízení (EU) č. <a class=\"linkeurule\" data-link=\"eurule\" data-cellarId=\"23b61856-2e82-11e4-8c3c-01aa75ed71a1\" href=\"http://eur-lex.europa.eu/legal-content/CS/AUTO/?uri=cellar:23b61856-2e82-11e4-8c3c-01aa75ed71a1\" data-dts=\"3\" data-dtt=\"R\" data-dta=\"2014\" data-dtn=\"910\" data-id_celex=\"32014R0910\" data-typeid=\"0\" data-flag=\"1\">910/2014</a> a směrnice (EU) <a class=\"linkeurule\" data-link=\"eurule\" data-cellarId=\"4bb873d0-01d2-11e9-adde-01aa75ed71a1\" href=\"http://eur-lex.europa.eu/legal-content/CS/AUTO/?uri=cellar:4bb873d0-01d2-11e9-adde-01aa75ed71a1\" data-dts=\"3\" data-dtt=\"L\" data-dta=\"2018\" data-dtn=\"1972\" data-id_celex=\"32018L1972\" data-typeid=\"0\" data-flag=\"1\">2018/1972</a> a o zrušení směrnice (EU) <a class=\"linkeurule\" data-link=\"eurule\" data-cellarId=\"d2912aca-4d75-11e6-89bd-01aa75ed71a1\" href=\"http://eur-lex.europa.eu/legal-content/CS/AUTO/?uri=cellar:d2912aca-4d75-11e6-89bd-01aa75ed71a1\" data-dts=\"3\" data-dtt=\"L\" data-dta=\"2016\" data-dtn=\"1148\" data-id_celex=\"32016L1148\" data-typeid=\"0\" data-flag=\"1\">2016/1148</a> (směrnice NIS 2).",
+   "uplnaCitace": "pozn. 1 vyhlášky č. 408/2025 Sb., o regulovaných službách",
+   "jeUcinny": true
+  }
+ ],
+ "pocetStranek": 1
+}

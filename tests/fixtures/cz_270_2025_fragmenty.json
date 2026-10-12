@@ -1,0 +1,487 @@
+{
+ "seznam": [
+  {
+   "id": 1075623015,
+   "eli": "/eli/cz/sb/2025/270/2026-07-01/dokument",
+   "staleUrl": "/sb/2025/270/2026-07-01",
+   "kodTypuFragmentu": "Virtual_Document",
+   "hloubka": 0,
+   "uplnaCitace": "Zákon č. 270/2025 Sb., kterým se mění zákon č. 40/2009 Sb., trestní zákoník, ve znění pozdějších předpisů, zákon č. 141/1961 Sb., o trestním řízení soudním (trestní řád), ve znění pozdějších předpisů, a další související zákony",
+   "jeUcinny": true
+  },
+  {
+   "id": 1230970013,
+   "eli": "/eli/cz/sb/2025/270/2026-07-01/dokument/prefix",
+   "staleUrl": "/sb/2025/270/2026-07-01",
+   "kodTypuFragmentu": "Virtual_Prefix",
+   "hloubka": 1,
+   "uplnaCitace": "Zákon č. 270/2025 Sb., kterým se mění zákon č. 40/2009 Sb., trestní zákoník, ve znění pozdějších předpisů, zákon č. 141/1961 Sb., o trestním řízení soudním (trestní řád), ve znění pozdějších předpisů, a další související zákony",
+   "jeUcinny": true
+  },
+  {
+   "id": 1230970015,
+   "eli": "/eli/cz/sb/2025/270/2026-07-01/dokument/prefix/frag_1230970015",
+   "staleUrl": "/sb/2025/270/2026-07-01",
+   "kodTypuFragmentu": "Prefix_Number",
+   "hloubka": 2,
+   "xhtml": "270",
+   "uplnaCitace": "Zákon č. 270/2025 Sb., kterým se mění zákon č. 40/2009 Sb., trestní zákoník, ve znění pozdějších předpisů, zákon č. 141/1961 Sb., o trestním řízení soudním (trestní řád), ve znění pozdějších předpisů, a další související zákony",
+   "jeUcinny": true
+  },
+  {
+   "id": 1230970017,
+   "eli": "/eli/cz/sb/2025/270/2026-07-01/dokument/prefix/frag_1230970017",
+   "staleUrl": "/sb/2025/270/2026-07-01",
+   "kodTypuFragmentu": "Prefix_Type",
+   "hloubka": 2,
+   "xhtml": "ZÁKON",
+   "uplnaCitace": "Zákon č. 270/2025 Sb., kterým se mění zákon č. 40/2009 Sb., trestní zákoník, ve znění pozdějších předpisů, zákon č. 141/1961 Sb., o trestním řízení soudním (trestní řád), ve znění pozdějších předpisů, a další související zákony",
+   "jeUcinny": true
+  },
+  {
+   "id": 1230970019,
+   "eli": "/eli/cz/sb/2025/270/2026-07-01/dokument/prefix/frag_1230970019",
+   "staleUrl": "/sb/2025/270/2026-07-01",
+   "kodTypuFragmentu": "Prefix_Date",
+   "hloubka": 2,
+   "xhtml": "ze dne 3. července 2025,",
+   "uplnaCitace": "Zákon č. 270/2025 Sb., kterým se mění zákon č. 40/2009 Sb., trestní zákoník, ve znění pozdějších předpisů, zákon č. 141/1961 Sb., o trestním řízení soudním (trestní řád), ve znění pozdějších předpisů, a další související zákony",
+   "jeUcinny": true
+  },
+  {
+   "id": 1230970021,
+   "eli": "/eli/cz/sb/2025/270/2026-07-01/dokument/prefix/frag_1230970021",
+   "staleUrl": "/sb/2025/270/2026-07-01",
+   "kodTypuFragmentu": "Prefix_Title",
+   "hloubka": 2,
+   "xhtml": "kterým se mění zákon č. 40/2009 Sb., trestní zákoník, ve znění pozdějších předpisů, zákon č. 141/1961 Sb., o trestním řízení soudním (trestní řád), ve znění pozdějších předpisů, a další související zákony",
+   "uplnaCitace": "Zákon č. 270/2025 Sb., kterým se mění zákon č. 40/2009 Sb., trestní zákoník, ve znění pozdějších předpisů, zákon č. 141/1961 Sb., o trestním řízení soudním (trestní řád), ve znění pozdějších předpisů, a další související zákony",
+   "jeUcinny": true
+  },
+  {
+   "id": 1230970023,
+   "eli": "/eli/cz/sb/2025/270/2026-07-01/dokument/prefix/frag_1230970023",
+   "staleUrl": "/sb/2025/270/2026-07-01",
+   "kodTypuFragmentu": "Prefix",
+   "hloubka": 2,
+   "xhtml": "Parlament se usnesl na tomto zákoně České republiky:",
+   "uplnaCitace": "Zákon č. 270/2025 Sb., kterým se mění zákon č. 40/2009 Sb., trestní zákoník, ve znění pozdějších předpisů, zákon č. 141/1961 Sb., o trestním řízení soudním (trestní řád), ve znění pozdějších předpisů, a další související zákony",
+   "jeUcinny": true
+  },
+  {
+   "id": 1230970025,
+   "eli": "/eli/cz/sb/2025/270/2026-07-01/dokument/novela",
+   "staleUrl": "/sb/2025/270/2026-07-01",
+   "kodTypuFragmentu": "Virtual_Novela",
+   "hloubka": 1,
+   "uplnaCitace": "Zákon č. 270/2025 Sb., kterým se mění zákon č. 40/2009 Sb., trestní zákoník, ve znění pozdějších předpisů, zákon č. 141/1961 Sb., o trestním řízení soudním (trestní řád), ve znění pozdějších předpisů, a další související zákony",
+   "jeUcinny": true
+  },
+  {
+   "id": 1230970027,
+   "eli": "/eli/cz/sb/2025/270/2026-07-01/dokument/novela/cast_1",
+   "staleUrl": "/sb/2025/270/2026-07-01#cast_1",
+   "kodTypuFragmentu": "Cast",
+   "hloubka": 2,
+   "xhtml": "<var>ČÁST PRVNÍ</var>",
+   "uplnaCitace": "Část 1 zákona č. 270/2025 Sb., kterým se mění zákon č. 40/2009 Sb., trestní zákoník, ve znění pozdějších předpisů, zákon č. 141/1961 Sb., o trestním řízení soudním (trestní řád), ve znění pozdějších předpisů, a další související zákony",
+   "jeUcinny": true
+  },
+  {
+   "id": 1230970029,
+   "eli": "/eli/cz/sb/2025/270/2026-07-01/dokument/novela/cast_1/frag_1230970029",
+   "staleUrl": "/sb/2025/270/2026-07-01#cast_1",
+   "kodTypuFragmentu": "Nadpis_pod",
+   "hloubka": 3,
+   "xhtml": "Změna trestního zákoníku",
+   "uplnaCitace": "Část 1 zákona č. 270/2025 Sb., kterým se mění zákon č. 40/2009 Sb., trestní zákoník, ve znění pozdějších předpisů, zákon č. 141/1961 Sb., o trestním řízení soudním (trestní řád), ve znění pozdějších předpisů, a další související zákony",
+   "jeUcinny": true
+  },
+  {
+   "id": 1230970031,
+   "eli": "/eli/cz/sb/2025/270/2026-07-01/dokument/novela/cast_1/cl_1",
+   "staleUrl": "/sb/2025/270/2026-07-01#cl_1",
+   "kodTypuFragmentu": "Clanek",
+   "hloubka": 3,
+   "xhtml": "<var>Čl. I</var>",
+   "uplnaCitace": "Čl. 1 zákona č. 270/2025 Sb., kterým se mění zákon č. 40/2009 Sb., trestní zákoník, ve znění pozdějších předpisů, zákon č. 141/1961 Sb., o trestním řízení soudním (trestní řád), ve znění pozdějších předpisů, a další související zákony",
+   "jeUcinny": true
+  },
+  {
+   "id": 1230970033,
+   "eli": "/eli/cz/sb/2025/270/2026-07-01/dokument/novela/cast_1/cl_1/frag_1230970033",
+   "staleUrl": "/sb/2025/270/2026-07-01#cl_1",
+   "kodTypuFragmentu": "Odstavec_Dc",
+   "hloubka": 4,
+   "xhtml": "<a data-odkaz-id=\"195784341\" href=\"#\" class=\"ext_odkaz\" data-version=\"20260101\">Zákon č. 40/2009 Sb., trestní zákoník</a>, ve znění <a data-odkaz-id=\"195784361\" href=\"#\" class=\"ext_odkaz\">zákona č. 306/2009 Sb.</a>, <a data-odkaz-id=\"195784371\" href=\"#\" class=\"ext_odkaz\">zákona č. 181/2011 Sb.</a>, <a data-odkaz-id=\"195784381\" href=\"#\" class=\"ext_odkaz\">zákona č. 330/2011 Sb.</a>, <a data-odkaz-id=\"195784391\" href=\"#\" class=\"ext_odkaz\">zákona č. 357/2011 Sb.</a>, <a data-odkaz-id=\"195784401\" href=\"#\" class=\"ext_odkaz\">zákona č. 375/2011 Sb.</a>, <a data-odkaz-id=\"195784411\" href=\"#\" class=\"ext_odkaz\">zákona č. 420/2011 Sb.</a>, <a data-odkaz-id=\"195784421\" href=\"#\" class=\"ext_odkaz\">zákona č. 193/2012 Sb.</a>, <a data-odkaz-id=\"195784431\" href=\"#\" class=\"ext_odkaz\">zákona č. 360/2012 Sb.</a>, <a data-odkaz-id=\"195784441\" href=\"#\" class=\"ext_odkaz\">zákona č. 390/2012 Sb.</a>, <a data-odkaz-id=\"195784451\" href=\"#\" class=\"ext_odkaz\">zákona č. 399/2012 Sb.</a>, <a data-odkaz-id=\"195784461\" href=\"#\" class=\"ext_odkaz\">zákona č. 494/2012 Sb.</a>, <a data-odkaz-id=\"195784471\" href=\"#\" class=\"ext_odkaz\">zákona č. 105/2013 Sb.</a>, <a data-odkaz-id=\"195784481\" href=\"#\" class=\"ext_odkaz\">zákona č. 241/2013 Sb.</a>, nálezu Ústavního soudu, vyhlášeného pod č. <a data-odkaz-id=\"195784491\" href=\"#\" class=\"ext_odkaz\">259/2013 Sb.</a>, <a data-odkaz-id=\"195784501\" href=\"#\" class=\"ext_odkaz\">zákona č. 141/2014 Sb.</a>, <a data-odkaz-id=\"195784511\" href=\"#\" class=\"ext_odkaz\">zákona č. 86/2015 Sb.</a>, <a data-odkaz-id=\"195784521\" href=\"#\" class=\"ext_odkaz\">zákona č. 165/2015 Sb.</a>, <a data-odkaz-id=\"195784531\" href=\"#\" class=\"ext_odkaz\">zákona č. 377/2015 Sb.</a>, <a data-odkaz-id=\"195784541\" href=\"#\" class=\"ext_odkaz\">zákona č. 47/2016 Sb.</a>, <a data-odkaz-id=\"195784551\" href=\"#\" class=\"ext_odkaz\">zákona č. 150/2016 Sb.</a>, <a data-odkaz-id=\"195784561\" href=\"#\" class=\"ext_odkaz\">zákona č. 163/2016 Sb.</a>, <a data-odkaz-id=\"195784571\" href=\"#\" class=\"ext_odkaz\">zákona č. 188/2016 Sb.</a>, <a data-odkaz-id=\"195784581\" href=\"#\" class=\"ext_odkaz\">zákona č. 321/2016 Sb.</a>, <a data-odkaz-id=\"195784591\" href=\"#\" class=\"ext_odkaz\">zákona č. 323/2016 Sb.</a>, <a data-odkaz-id=\"195784601\" href=\"#\" class=\"ext_odkaz\">zákona č. 455/2016 Sb.</a>, <a data-odkaz-id=\"195784611\" href=\"#\" class=\"ext_odkaz\">zákona č. 55/2017 Sb.</a>, <a data-odkaz-id=\"195784621\" href=\"#\" class=\"ext_odkaz\">zákona č. 58/2017 Sb.</a>, <a data-odkaz-id=\"195784631\" href=\"#\" class=\"ext_odkaz\">zákona č. 204/2017 Sb.</a>, <a data-odkaz-id=\"195784641\" href=\"#\" class=\"ext_odkaz\">zákona č. 287/2018 Sb.</a>, <a data-odkaz-id=\"195784651\" href=\"#\" class=\"ext_odkaz\">zákona č. 315/2019 Sb.</a>, <a data-odkaz-id=\"195784661\" href=\"#\" class=\"ext_odkaz\">zákona č. 114/2020 Sb.</a>, <a data-odkaz-id=\"195784671\" href=\"#\" class=\"ext_odkaz\">zákona č. 165/2020 Sb.</a>, <a data-odkaz-id=\"195784681\" href=\"#\" class=\"ext_odkaz\">zákona č. 333/2020 Sb.</a>, <a data-odkaz-id=\"195784691\" href=\"#\" class=\"ext_odkaz\">zákona č. 336/2020 Sb.</a>, nálezu Ústavního soudu, vyhlášeného pod č. <a data-odkaz-id=\"195784701\" href=\"#\" class=\"ext_odkaz\">206/2021 Sb.</a>, <a data-odkaz-id=\"195784711\" href=\"#\" class=\"ext_odkaz\">zákona č. 220/2021 Sb.</a>, <a data-odkaz-id=\"195784721\" href=\"#\" class=\"ext_odkaz\">zákona č. 417/2021 Sb.</a>, <a data-odkaz-id=\"195784731\" href=\"#\" class=\"ext_odkaz\">zákona č. 130/2022 Sb.</a>, <a data-odkaz-id=\"195784741\" href=\"#\" class=\"ext_odkaz\">zákona č. 240/2022 Sb.</a>, <a data-odkaz-id=\"195784751\" href=\"#\" class=\"ext_odkaz\">zákona č. 422/2022 Sb.</a>, <a data-odkaz-id=\"195784761\" href=\"#\" class=\"ext_odkaz\">zákona č. 429/2022 Sb.</a>, <a data-odkaz-id=\"195784771\" href=\"#\" class=\"ext_odkaz\">zákona č. 173/2023 Sb.</a>, <a data-odkaz-id=\"195784781\" href=\"#\" class=\"ext_odkaz\">zákona č. 123/2024 Sb.</a>, <a data-odkaz-id=\"195784791\" href=\"#\" class=\"ext_odkaz\">zákona č. 166/2024 Sb.</a>, <a data-odkaz-id=\"195784801\" href=\"#\" class=\"ext_odkaz\">zákona č. 268/2024 Sb.</a>, <a data-odkaz-id=\"195784811\" href=\"#\" class=\"ext_odkaz\">zákona č. 321/2024 Sb.</a>, <a data-odkaz-id=\"195784821\" href=\"#\" class=\"ext_odkaz\">zákona č. 24/2025 Sb.</a> a <a data-odkaz-id=\"195784831\" href=\"#\" class=\"ext_odkaz\">zákona č. 220/2025 Sb.</a>, se mění takto:",
+   "uplnaCitace": "Čl. 1 zákona č. 270/2025 Sb., kterým se mění zákon č. 40/2009 Sb., trestní zákoník, ve znění pozdějších předpisů, zákon č. 141/1961 Sb., o trestním řízení soudním (trestní řád), ve znění pozdějších předpisů, a další související zákony",
+   "jeUcinny": true
+  },
+  {
+   "id": 1230970035,
+   "eli": "/eli/cz/sb/2025/270/2026-07-01/dokument/novela/cast_1/cl_1/bod_1",
+   "staleUrl": "/sb/2025/270/2026-07-01#cl_1-bod_1",
+   "kodTypuFragmentu": "Bod_Dd",
+   "hloubka": 5,
+   "xhtml": "<var>1.</var> V § 34 odst. 1 písm. a) se za slovo „trestu,“ vkládají slova „trestný čin vraždy (§ 140)“.",
+   "uplnaCitace": "Čl. 1 bod 1 zákona č. 270/2025 Sb., kterým se mění zákon č. 40/2009 Sb., trestní zákoník, ve znění pozdějších předpisů, zákon č. 141/1961 Sb., o trestním řízení soudním (trestní řád), ve znění pozdějších předpisů, a další související zákony",
+   "jeUcinny": true
+  },
+  {
+   "id": 1230970037,
+   "eli": "/eli/cz/sb/2025/270/2026-07-01/dokument/novela/cast_1/cl_1/bod_2",
+   "staleUrl": "/sb/2025/270/2026-07-01#cl_1-bod_2",
+   "kodTypuFragmentu": "Bod_Dd",
+   "hloubka": 5,
+   "xhtml": "<var>2.</var> V § 39 odst. 4 se slova „trestů, které byly pachateli uloženy“ nahrazují slovy „trestu, který byl pachateli uložen“, slova „nebyly vykonány“ se nahrazují slovy „nebyl vykonán“ a slova „nevykonanými tresty“ se nahrazují slovy „nevykonaným trestem“.",
+   "uplnaCitace": "Čl. 1 bod 2 zákona č. 270/2025 Sb., kterým se mění zákon č. 40/2009 Sb., trestní zákoník, ve znění pozdějších předpisů, zákon č. 141/1961 Sb., o trestním řízení soudním (trestní řád), ve znění pozdějších předpisů, a další související zákony",
+   "jeUcinny": true
+  },
+  {
+   "id": 1230970039,
+   "eli": "/eli/cz/sb/2025/270/2026-07-01/dokument/novela/cast_1/cl_1/bod_3",
+   "staleUrl": "/sb/2025/270/2026-07-01#cl_1-bod_3",
+   "kodTypuFragmentu": "Bod_Dd",
+   "hloubka": 5,
+   "xhtml": "<var>3.</var> V § 39 se na konci odstavce 4 doplňuje věta „V případě, kdy soud neukládá souhrnný trest nebo společný trest za pokračování v trestném činu, protože dřívější odsuzující rozsudek, na který se hledí jako na odsouzení soudem České republiky, byl vydán soudem cizího státu, soud přihlédne též k druhu a výměře trestu uloženého tímto rozsudkem, bez ohledu na to, zda byl vykonán, tak, aby vzhledem k povaze a závažnosti trestného činu a osobě pachatele nebyl uložen takový trest, který by spolu s trestem uloženým tímto rozsudkem cizího státu vedl k nepřiměřenému postihu pachatele.“.",
+   "uplnaCitace": "Čl. 1 bod 3 zákona č. 270/2025 Sb., kterým se mění zákon č. 40/2009 Sb., trestní zákoník, ve znění pozdějších předpisů, zákon č. 141/1961 Sb., o trestním řízení soudním (trestní řád), ve znění pozdějších předpisů, a další související zákony",
+   "jeUcinny": true
+  },
+  {
+   "id": 1230970041,
+   "eli": "/eli/cz/sb/2025/270/2026-07-01/dokument/novela/cast_1/cl_1/bod_4",
+   "staleUrl": "/sb/2025/270/2026-07-01#cl_1-bod_4",
+   "kodTypuFragmentu": "Bod_Dd",
+   "hloubka": 5,
+   "xhtml": "<var>4.</var> V § 39 odst. 8 se věta druhá zrušuje.",
+   "uplnaCitace": "Čl. 1 bod 4 zákona č. 270/2025 Sb., kterým se mění zákon č. 40/2009 Sb., trestní zákoník, ve znění pozdějších předpisů, zákon č. 141/1961 Sb., o trestním řízení soudním (trestní řád), ve znění pozdějších předpisů, a další související zákony",
+   "jeUcinny": true
+  },
+  {
+   "id": 1230970043,
+   "eli": "/eli/cz/sb/2025/270/2026-07-01/dokument/novela/cast_1/cl_1/bod_5",
+   "staleUrl": "/sb/2025/270/2026-07-01#cl_1-bod_5",
+   "kodTypuFragmentu": "Bod_Dd",
+   "hloubka": 5,
+   "xhtml": "<var>5.</var> V § 40 odst. 2, § 83 odst. 1 písm. d) a v § 86 odst. 1 písm. d) se číslo „4“ nahrazuje číslem „5“.",
+   "uplnaCitace": "Čl. 1 bod 5 zákona č. 270/2025 Sb., kterým se mění zákon č. 40/2009 Sb., trestní zákoník, ve znění pozdějších předpisů, zákon č. 141/1961 Sb., o trestním řízení soudním (trestní řád), ve znění pozdějších předpisů, a další související zákony",
+   "jeUcinny": true
+  },
+  {
+   "id": 1230970045,
+   "eli": "/eli/cz/sb/2025/270/2026-07-01/dokument/novela/cast_1/cl_1/bod_6",
+   "staleUrl": "/sb/2025/270/2026-07-01#cl_1-bod_6",
+   "kodTypuFragmentu": "Bod_Dd",
+   "hloubka": 5,
+   "xhtml": "<var>6.</var> V § 42 písm. b) se slova „z národnostní, rasové, etnické, náboženské, třídní či jiné podobné nenávisti nebo z jiné zvlášť“ nahrazují slovy „pro něčí skutečnou nebo domnělou rasu, příslušnost k etnické nebo sociální skupině, národnost, věk, pohlaví, sexuální orientaci, zdravotní postižení, politické přesvědčení, vyznání nebo proto, že je někdo skutečně nebo domněle bez vyznání, pro něčí skutečnou nebo domnělou příslušnost k jiné skupině osob anebo z jiné“.",
+   "uplnaCitace": "Čl. 1 bod 6 zákona č. 270/2025 Sb., kterým se mění zákon č. 40/2009 Sb., trestní zákoník, ve znění pozdějších předpisů, zákon č. 141/1961 Sb., o trestním řízení soudním (trestní řád), ve znění pozdějších předpisů, a další související zákony",
+   "jeUcinny": true
+  },
+  {
+   "id": 1230970047,
+   "eli": "/eli/cz/sb/2025/270/2026-07-01/dokument/novela/cast_1/cl_1/bod_7",
+   "staleUrl": "/sb/2025/270/2026-07-01#cl_1-bod_7",
+   "kodTypuFragmentu": "Bod_Dd",
+   "hloubka": 5,
+   "xhtml": "<var>7.</var> V § 43 odst. 4 a v § 45 odst. 4 se slova „jiného členského státu Evropské unie“ nahrazují slovy „cizího státu a hledí se na něj jako na odsouzení soudem České republiky; § 39 odst. 4 tím není dotčen“.",
+   "uplnaCitace": "Čl. 1 bod 7 zákona č. 270/2025 Sb., kterým se mění zákon č. 40/2009 Sb., trestní zákoník, ve znění pozdějších předpisů, zákon č. 141/1961 Sb., o trestním řízení soudním (trestní řád), ve znění pozdějších předpisů, a další související zákony",
+   "jeUcinny": true
+  },
+  {
+   "id": 1230970049,
+   "eli": "/eli/cz/sb/2025/270/2026-07-01/dokument/novela/cast_1/cl_1/bod_8",
+   "staleUrl": "/sb/2025/270/2026-07-01#cl_1-bod_8",
+   "kodTypuFragmentu": "Bod_Dd",
+   "hloubka": 5,
+   "xhtml": "<var>8.</var> V § 52 odst. 1 se za písmeno h) vkládají nová písmena i) a j), která znějí:",
+   "uplnaCitace": "Čl. 1 bod 8 zákona č. 270/2025 Sb., kterým se mění zákon č. 40/2009 Sb., trestní zákoník, ve znění pozdějších předpisů, zákon č. 141/1961 Sb., o trestním řízení soudním (trestní řád), ve znění pozdějších předpisů, a další související zákony",
+   "jeUcinny": true
+  },
+  {
+   "id": 1230970051,
+   "eli": "/eli/cz/sb/2025/270/2026-07-01/dokument/novela/cast_1/cl_1/bod_8/frag_1230970051",
+   "staleUrl": "/sb/2025/270/2026-07-01#cl_1-bod_8",
+   "kodTypuFragmentu": "Block_Citace",
+   "hloubka": 6,
+   "uplnaCitace": "Čl. 1 bod 8 zákona č. 270/2025 Sb., kterým se mění zákon č. 40/2009 Sb., trestní zákoník, ve znění pozdějších předpisů, zákon č. 141/1961 Sb., o trestním řízení soudním (trestní řád), ve znění pozdějších předpisů, a další související zákony",
+   "jeUcinny": true
+  },
+  {
+   "id": 1230970053,
+   "eli": "/eli/cz/sb/2025/270/2026-07-01/dokument/novela/cast_1/cl_1/bod_8/frag_1230970053",
+   "staleUrl": "/sb/2025/270/2026-07-01#cl_1-bod_8",
+   "kodTypuFragmentu": "Pismeno_Lb",
+   "hloubka": 7,
+   "xhtml": "„<var>i)</var> zákaz plnění veřejných zakázek nebo účasti ve veřejné soutěži,",
+   "uplnaCitace": "Čl. 1 bod 8 zákona č. 270/2025 Sb., kterým se mění zákon č. 40/2009 Sb., trestní zákoník, ve znění pozdějších předpisů, zákon č. 141/1961 Sb., o trestním řízení soudním (trestní řád), ve znění pozdějších předpisů, a další související zákony",
+   "jeUcinny": true
+  },
+  {
+   "id": 1230970055,
+   "eli": "/eli/cz/sb/2025/270/2026-07-01/dokument/novela/cast_1/cl_1/bod_8/frag_1230970055",
+   "staleUrl": "/sb/2025/270/2026-07-01#cl_1-bod_8",
+   "kodTypuFragmentu": "Pismeno_Lb",
+   "hloubka": 7,
+   "xhtml": "<var>j)</var> zákaz přijímání dotací a subvencí,“.",
+   "uplnaCitace": "Čl. 1 bod 8 zákona č. 270/2025 Sb., kterým se mění zákon č. 40/2009 Sb., trestní zákoník, ve znění pozdějších předpisů, zákon č. 141/1961 Sb., o trestním řízení soudním (trestní řád), ve znění pozdějších předpisů, a další související zákony",
+   "jeUcinny": true
+  },
+  {
+   "id": 1230970057,
+   "eli": "/eli/cz/sb/2025/270/2026-07-01/dokument/novela/cast_1/cl_1/bod_8/frag_1230970057",
+   "staleUrl": "/sb/2025/270/2026-07-01#cl_1-bod_8",
+   "kodTypuFragmentu": "Odstavec_Dc",
+   "hloubka": 6,
+   "xhtml": "Dosavadní písmena i) až m) se označují jako písmena k) až o).",
+   "uplnaCitace": "Čl. 1 bod 8 zákona č. 270/2025 Sb., kterým se mění zákon č. 40/2009 Sb., trestní zákoník, ve znění pozdějších předpisů, zákon č. 141/1961 Sb., o trestním řízení soudním (trestní řád), ve znění pozdějších předpisů, a další související zákony",
+   "jeUcinny": true
+  },
+  {
+   "id": 1230970059,
+   "eli": "/eli/cz/sb/2025/270/2026-07-01/dokument/novela/cast_1/cl_1/bod_9",
+   "staleUrl": "/sb/2025/270/2026-07-01#cl_1-bod_9",
+   "kodTypuFragmentu": "Bod_Dd",
+   "hloubka": 5,
+   "xhtml": "<var>9.</var> V § 53 odst. 1 větě poslední se za slovo „propadnutí“ vkládá slovo „celého“.",
+   "uplnaCitace": "Čl. 1 bod 9 zákona č. 270/2025 Sb., kterým se mění zákon č. 40/2009 Sb., trestní zákoník, ve znění pozdějších předpisů, zákon č. 141/1961 Sb., o trestním řízení soudním (trestní řád), ve znění pozdějších předpisů, a další související zákony",
+   "jeUcinny": true
+  },
+  {
+   "id": 1230970061,
+   "eli": "/eli/cz/sb/2025/270/2026-07-01/dokument/novela/cast_1/cl_1/bod_10",
+   "staleUrl": "/sb/2025/270/2026-07-01#cl_1-bod_10",
+   "kodTypuFragmentu": "Bod_Dd",
+   "hloubka": 5,
+   "xhtml": "<var>10.</var> V § 53 odst. 2 se za slovo „zvířat,“ vkládají slova „zákaz plnění veřejných zakázek nebo účasti ve veřejné soutěži, zákaz přijímání dotací a subvencí,“.",
+   "uplnaCitace": "Čl. 1 bod 10 zákona č. 270/2025 Sb., kterým se mění zákon č. 40/2009 Sb., trestní zákoník, ve znění pozdějších předpisů, zákon č. 141/1961 Sb., o trestním řízení soudním (trestní řád), ve znění pozdějších předpisů, a další související zákony",
+   "jeUcinny": true
+  },
+  {
+   "id": 1230970063,
+   "eli": "/eli/cz/sb/2025/270/2026-07-01/dokument/novela/cast_1/cl_1/bod_11",
+   "staleUrl": "/sb/2025/270/2026-07-01#cl_1-bod_11",
+   "kodTypuFragmentu": "Bod_Dd",
+   "hloubka": 5,
+   "xhtml": "<var>11.</var> V § 55 odst. 2 se věta druhá zrušuje.",
+   "uplnaCitace": "Čl. 1 bod 11 zákona č. 270/2025 Sb., kterým se mění zákon č. 40/2009 Sb., trestní zákoník, ve znění pozdějších předpisů, zákon č. 141/1961 Sb., o trestním řízení soudním (trestní řád), ve znění pozdějších předpisů, a další související zákony",
+   "jeUcinny": true
+  },
+  {
+   "id": 1230970065,
+   "eli": "/eli/cz/sb/2025/270/2026-07-01/dokument/novela/cast_1/cl_1/bod_12",
+   "staleUrl": "/sb/2025/270/2026-07-01#cl_1-bod_12",
+   "kodTypuFragmentu": "Bod_Dd",
+   "hloubka": 5,
+   "xhtml": "<var>12.</var> V § 56 odst. 2 písm. b) se za text „(§ 14 odst. 3)“ vkládají slova „uvedený v hlavě první, hlavě druhé dílu prvním, hlavě třetí, čtvrté, sedmé, deváté, dvanácté nebo třinácté zvláštní části tohoto zákona“.",
+   "uplnaCitace": "Čl. 1 bod 12 zákona č. 270/2025 Sb., kterým se mění zákon č. 40/2009 Sb., trestní zákoník, ve znění pozdějších předpisů, zákon č. 141/1961 Sb., o trestním řízení soudním (trestní řád), ve znění pozdějších předpisů, a další související zákony",
+   "jeUcinny": true
+  },
+  {
+   "id": 1230970067,
+   "eli": "/eli/cz/sb/2025/270/2026-07-01/dokument/novela/cast_1/cl_1/bod_13",
+   "staleUrl": "/sb/2025/270/2026-07-01#cl_1-bod_13",
+   "kodTypuFragmentu": "Bod_Dd",
+   "hloubka": 5,
+   "xhtml": "<var>13.</var> V § 58 odstavec 3 zní:",
+   "uplnaCitace": "Čl. 1 bod 13 zákona č. 270/2025 Sb., kterým se mění zákon č. 40/2009 Sb., trestní zákoník, ve znění pozdějších předpisů, zákon č. 141/1961 Sb., o trestním řízení soudním (trestní řád), ve znění pozdějších předpisů, a další související zákony",
+   "jeUcinny": true
+  },
+  {
+   "id": 1230970069,
+   "eli": "/eli/cz/sb/2025/270/2026-07-01/dokument/novela/cast_1/cl_1/bod_13/frag_1230970069",
+   "staleUrl": "/sb/2025/270/2026-07-01#cl_1-bod_13",
+   "kodTypuFragmentu": "Block_Citace",
+   "hloubka": 6,
+   "uplnaCitace": "Čl. 1 bod 13 zákona č. 270/2025 Sb., kterým se mění zákon č. 40/2009 Sb., trestní zákoník, ve znění pozdějších předpisů, zákon č. 141/1961 Sb., o trestním řízení soudním (trestní řád), ve znění pozdějších předpisů, a další související zákony",
+   "jeUcinny": true
+  },
+  {
+   "id": 1230970071,
+   "eli": "/eli/cz/sb/2025/270/2026-07-01/dokument/novela/cast_1/cl_1/bod_13/frag_1230970071",
+   "staleUrl": "/sb/2025/270/2026-07-01#cl_1-bod_13",
+   "kodTypuFragmentu": "Odstavec_Dc",
+   "hloubka": 7,
+   "xhtml": "„<var>(3)</var> Lze-li mít za to, že vzhledem k poměrům pachatele a povaze jím spáchané trestné činnosti lze dosáhnout jeho nápravy i trestem kratšího trvání, může být trest odnětí svobody uložen pod dolní hranicí trestní sazby též tehdy, pokud",
+   "uplnaCitace": "Čl. 1 bod 13 zákona č. 270/2025 Sb., kterým se mění zákon č. 40/2009 Sb., trestní zákoník, ve znění pozdějších předpisů, zákon č. 141/1961 Sb., o trestním řízení soudním (trestní řád), ve znění pozdějších předpisů, a další související zákony",
+   "jeUcinny": true
+  },
+  {
+   "id": 1230970073,
+   "eli": "/eli/cz/sb/2025/270/2026-07-01/dokument/novela/cast_1/cl_1/bod_13/frag_1230970073",
+   "staleUrl": "/sb/2025/270/2026-07-01#cl_1-bod_13",
+   "kodTypuFragmentu": "Pismeno_Lb",
+   "hloubka": 8,
+   "xhtml": "<var>a)</var> je ukládán rozsudkem, kterým se schvaluje dohoda o vině a trestu, nebo",
+   "uplnaCitace": "Čl. 1 bod 13 zákona č. 270/2025 Sb., kterým se mění zákon č. 40/2009 Sb., trestní zákoník, ve znění pozdějších předpisů, zákon č. 141/1961 Sb., o trestním řízení soudním (trestní řád), ve znění pozdějších předpisů, a další související zákony",
+   "jeUcinny": true
+  },
+  {
+   "id": 1230970075,
+   "eli": "/eli/cz/sb/2025/270/2026-07-01/dokument/novela/cast_1/cl_1/bod_13/frag_1230970075",
+   "staleUrl": "/sb/2025/270/2026-07-01#cl_1-bod_13",
+   "kodTypuFragmentu": "Pismeno_Lb",
+   "hloubka": 8,
+   "xhtml": "<var>b)</var> je vedle něj ukládán také peněžitý trest v takovém počtu denních sazeb, které spolu s ním dosáhnou alespoň dolní hranice trestní sazby odnětí svobody stanovené za pachatelem spáchaný trestný čin; tento postup soud zváží zejména tehdy, pokud pachatel spáchal jiný trestný čin než zločin, u kterého je dána některá z okolností uvedených v § 88 odst. 2 písm. b) bodech 1 až 6, trestný čin spáchal poprvé, před jeho spácháním vedl řádný život a nahradil škodu, pokud byla činem způsobena, s poškozeným o její náhradě uzavřel dohodu nebo učinil jiná potřebná opatření k její náhradě anebo vydal bezdůvodné obohacení činem získané, s poškozeným o jeho vydání uzavřel dohodu anebo učinil jiná vhodná opatření k jeho vydání.“.",
+   "uplnaCitace": "Čl. 1 bod 13 zákona č. 270/2025 Sb., kterým se mění zákon č. 40/2009 Sb., trestní zákoník, ve znění pozdějších předpisů, zákon č. 141/1961 Sb., o trestním řízení soudním (trestní řád), ve znění pozdějších předpisů, a další související zákony",
+   "jeUcinny": true
+  },
+  {
+   "id": 1230970077,
+   "eli": "/eli/cz/sb/2025/270/2026-07-01/dokument/novela/cast_1/cl_1/bod_14",
+   "staleUrl": "/sb/2025/270/2026-07-01#cl_1-bod_14",
+   "kodTypuFragmentu": "Bod_Dd",
+   "hloubka": 5,
+   "xhtml": "<var>14.</var> V § 58 se za odstavec 3 vkládá nový odstavec 4, který zní:",
+   "uplnaCitace": "Čl. 1 bod 14 zákona č. 270/2025 Sb., kterým se mění zákon č. 40/2009 Sb., trestní zákoník, ve znění pozdějších předpisů, zákon č. 141/1961 Sb., o trestním řízení soudním (trestní řád), ve znění pozdějších předpisů, a další související zákony",
+   "jeUcinny": true
+  },
+  {
+   "id": 1230970079,
+   "eli": "/eli/cz/sb/2025/270/2026-07-01/dokument/novela/cast_1/cl_1/bod_14/frag_1230970079",
+   "staleUrl": "/sb/2025/270/2026-07-01#cl_1-bod_14",
+   "kodTypuFragmentu": "Block_Citace",
+   "hloubka": 6,
+   "uplnaCitace": "Čl. 1 bod 14 zákona č. 270/2025 Sb., kterým se mění zákon č. 40/2009 Sb., trestní zákoník, ve znění pozdějších předpisů, zákon č. 141/1961 Sb., o trestním řízení soudním (trestní řád), ve znění pozdějších předpisů, a další související zákony",
+   "jeUcinny": true
+  },
+  {
+   "id": 1230970081,
+   "eli": "/eli/cz/sb/2025/270/2026-07-01/dokument/novela/cast_1/cl_1/bod_14/frag_1230970081",
+   "staleUrl": "/sb/2025/270/2026-07-01#cl_1-bod_14",
+   "kodTypuFragmentu": "Odstavec_Dc",
+   "hloubka": 7,
+   "xhtml": "„<var>(4)</var> Má-li soud za to, že by použití trestní sazby odnětí svobody stanovené trestním zákonem s přihlédnutím k druhu a výměře trestu, který byl pachateli uložen za jinou jeho trestnou činnost a dosud nebyl vykonán, vedlo vzhledem k povaze a závažnosti trestného činu a osobě pachatele spolu s dosud nevykonaným trestem k nepřiměřenému postihu pachatele, může snížit trest odnětí svobody pod dolní hranici trestní sazby tímto zákonem stanovené.“.",
+   "uplnaCitace": "Čl. 1 bod 14 zákona č. 270/2025 Sb., kterým se mění zákon č. 40/2009 Sb., trestní zákoník, ve znění pozdějších předpisů, zákon č. 141/1961 Sb., o trestním řízení soudním (trestní řád), ve znění pozdějších předpisů, a další související zákony",
+   "jeUcinny": true
+  },
+  {
+   "id": 1230970083,
+   "eli": "/eli/cz/sb/2025/270/2026-07-01/dokument/novela/cast_1/cl_1/bod_14/frag_1230970083",
+   "staleUrl": "/sb/2025/270/2026-07-01#cl_1-bod_14",
+   "kodTypuFragmentu": "Odstavec_Dc",
+   "hloubka": 6,
+   "xhtml": "Dosavadní odstavce 4 až 7 se označují jako odstavce 5 až 8.",
+   "uplnaCitace": "Čl. 1 bod 14 zákona č. 270/2025 Sb., kterým se mění zákon č. 40/2009 Sb., trestní zákoník, ve znění pozdějších předpisů, zákon č. 141/1961 Sb., o trestním řízení soudním (trestní řád), ve znění pozdějších předpisů, a další související zákony",
+   "jeUcinny": true
+  },
+  {
+   "id": 1230970085,
+   "eli": "/eli/cz/sb/2025/270/2026-07-01/dokument/novela/cast_1/cl_1/bod_15",
+   "staleUrl": "/sb/2025/270/2026-07-01#cl_1-bod_15",
+   "kodTypuFragmentu": "Bod_Dd",
+   "hloubka": 5,
+   "xhtml": "<var>15.</var> V § 58 odst. 5 úvodní části ustanovení se číslo „3“ nahrazuje číslem „4“.",
+   "uplnaCitace": "Čl. 1 bod 15 zákona č. 270/2025 Sb., kterým se mění zákon č. 40/2009 Sb., trestní zákoník, ve znění pozdějších předpisů, zákon č. 141/1961 Sb., o trestním řízení soudním (trestní řád), ve znění pozdějších předpisů, a další související zákony",
+   "jeUcinny": true
+  },
+  {
+   "id": 1230970087,
+   "eli": "/eli/cz/sb/2025/270/2026-07-01/dokument/novela/cast_1/cl_1/bod_16",
+   "staleUrl": "/sb/2025/270/2026-07-01#cl_1-bod_16",
+   "kodTypuFragmentu": "Bod_Dd",
+   "hloubka": 5,
+   "xhtml": "<var>16.</var> V § 58 se za odstavec 5 vkládá nový odstavec 6, který zní:",
+   "uplnaCitace": "Čl. 1 bod 16 zákona č. 270/2025 Sb., kterým se mění zákon č. 40/2009 Sb., trestní zákoník, ve znění pozdějších předpisů, zákon č. 141/1961 Sb., o trestním řízení soudním (trestní řád), ve znění pozdějších předpisů, a další související zákony",
+   "jeUcinny": true
+  },
+  {
+   "id": 1230970089,
+   "eli": "/eli/cz/sb/2025/270/2026-07-01/dokument/novela/cast_1/cl_1/bod_16/frag_1230970089",
+   "staleUrl": "/sb/2025/270/2026-07-01#cl_1-bod_16",
+   "kodTypuFragmentu": "Block_Citace",
+   "hloubka": 6,
+   "uplnaCitace": "Čl. 1 bod 16 zákona č. 270/2025 Sb., kterým se mění zákon č. 40/2009 Sb., trestní zákoník, ve znění pozdějších předpisů, zákon č. 141/1961 Sb., o trestním řízení soudním (trestní řád), ve znění pozdějších předpisů, a další související zákony",
+   "jeUcinny": true
+  },
+  {
+   "id": 1230970091,
+   "eli": "/eli/cz/sb/2025/270/2026-07-01/dokument/novela/cast_1/cl_1/bod_16/frag_1230970091",
+   "staleUrl": "/sb/2025/270/2026-07-01#cl_1-bod_16",
+   "kodTypuFragmentu": "Odstavec_Dc",
+   "hloubka": 7,
+   "xhtml": "„<var>(6)</var> Má-li soud za to, že s přihlédnutím k druhu a výměře trestu uloženého pachateli rozhodnutím cizího státu, na které se hledí jako na odsouzení soudem České republiky, by v případě uvedeném v § 39 odst. 4 větě druhé vzhledem k povaze a závažnosti trestného činu a osobě pachatele vedlo použití trestní sazby odnětí svobody stanovené trestním zákonem k nepřiměřenému postihu pachatele, může snížit trest odnětí svobody pod dolní hranici trestní sazby stanovené tímto zákonem. Omezením stanoveným v odstavci 5 přitom není vázán, uložený trest však nesmí být v souhrnu s trestem uloženým rozhodnutím cizího státu, na které se hledí jako na odsouzení soudem České republiky, mírnější než ten, který by byl pachateli uložen, pokud by byl ukládán souhrnný trest nebo společný trest za pokračování v trestném činu.“.",
+   "uplnaCitace": "Čl. 1 bod 16 zákona č. 270/2025 Sb., kterým se mění zákon č. 40/2009 Sb., trestní zákoník, ve znění pozdějších předpisů, zákon č. 141/1961 Sb., o trestním řízení soudním (trestní řád), ve znění pozdějších předpisů, a další související zákony",
+   "jeUcinny": true
+  },
+  {
+   "id": 1230970093,
+   "eli": "/eli/cz/sb/2025/270/2026-07-01/dokument/novela/cast_1/cl_1/bod_16/frag_1230970093",
+   "staleUrl": "/sb/2025/270/2026-07-01#cl_1-bod_16",
+   "kodTypuFragmentu": "Odstavec_Dc",
+   "hloubka": 6,
+   "xhtml": "Dosavadní odstavce 6 až 8 se označují jako odstavce 7 až 9.",
+   "uplnaCitace": "Čl. 1 bod 16 zákona č. 270/2025 Sb., kterým se mění zákon č. 40/2009 Sb., trestní zákoník, ve znění pozdějších předpisů, zákon č. 141/1961 Sb., o trestním řízení soudním (trestní řád), ve znění pozdějších předpisů, a další související zákony",
+   "jeUcinny": true
+  },
+  {
+   "id": 1230970095,
+   "eli": "/eli/cz/sb/2025/270/2026-07-01/dokument/novela/cast_1/cl_1/bod_17",
+   "staleUrl": "/sb/2025/270/2026-07-01#cl_1-bod_17",
+   "kodTypuFragmentu": "Bod_Dd",
+   "hloubka": 5,
+   "xhtml": "<var>17.</var> V § 58 odst. 7 až 9 se číslo „4“ nahrazuje číslem „5“.",
+   "uplnaCitace": "Čl. 1 bod 17 zákona č. 270/2025 Sb., kterým se mění zákon č. 40/2009 Sb., trestní zákoník, ve znění pozdějších předpisů, zákon č. 141/1961 Sb., o trestním řízení soudním (trestní řád), ve znění pozdějších předpisů, a další související zákony",
+   "jeUcinny": true
+  },
+  {
+   "id": 1230970097,
+   "eli": "/eli/cz/sb/2025/270/2026-07-01/dokument/novela/cast_1/cl_1/bod_18",
+   "staleUrl": "/sb/2025/270/2026-07-01#cl_1-bod_18",
+   "kodTypuFragmentu": "Bod_Dd",
+   "hloubka": 5,
+   "xhtml": "<var>18.</var> § 67 včetně nadpisu zní:",
+   "uplnaCitace": "Čl. 1 bod 18 zákona č. 270/2025 Sb., kterým se mění zákon č. 40/2009 Sb., trestní zákoník, ve znění pozdějších předpisů, zákon č. 141/1961 Sb., o trestním řízení soudním (trestní řád), ve znění pozdějších předpisů, a další související zákony",
+   "jeUcinny": true
+  },
+  {
+   "id": 1230970099,
+   "eli": "/eli/cz/sb/2025/270/2026-07-01/dokument/novela/cast_1/cl_1/bod_18/frag_1230970099",
+   "staleUrl": "/sb/2025/270/2026-07-01#cl_1-bod_18",
+   "kodTypuFragmentu": "Block_Citace",
+   "hloubka": 6,
+   "uplnaCitace": "Čl. 1 bod 18 zákona č. 270/2025 Sb., kterým se mění zákon č. 40/2009 Sb., trestní zákoník, ve znění pozdějších předpisů, zákon č. 141/1961 Sb., o trestním řízení soudním (trestní řád), ve znění pozdějších předpisů, a další související zákony",
+   "jeUcinny": true
+  },
+  {
+   "id": 1230970101,
+   "eli": "/eli/cz/sb/2025/270/2026-07-01/dokument/novela/cast_1/cl_1/bod_18/frag_1230970101",
+   "staleUrl": "/sb/2025/270/2026-07-01#cl_1-bod_18",
+   "kodTypuFragmentu": "Paragraf",
+   "hloubka": 7,
+   "xhtml": "<var>„§ 67</var>",
+   "uplnaCitace": "Čl. 1 bod 18 zákona č. 270/2025 Sb., kterým se mění zákon č. 40/2009 Sb., trestní zákoník, ve znění pozdějších předpisů, zákon č. 141/1961 Sb., o trestním řízení soudním (trestní řád), ve znění pozdějších předpisů, a další související zákony",
+   "jeUcinny": true
+  },
+  {
+   "id": 1230970103,
+   "eli": "/eli/cz/sb/2025/270/2026-07-01/dokument/novela/cast_1/cl_1/bod_18/frag_1230970103",
+   "staleUrl": "/sb/2025/270/2026-07-01#cl_1-bod_18",
+   "kodTypuFragmentu": "Nadpis_pod",
+   "hloubka": 8,
+   "xhtml": "Peněžitý trest",
+   "uplnaCitace": "Čl. 1 bod 18 zákona č. 270/2025 Sb., kterým se mění zákon č. 40/2009 Sb., trestní zákoník, ve znění pozdějších předpisů, zákon č. 141/1961 Sb., o trestním řízení soudním (trestní řád), ve znění pozdějších předpisů, a další související zákony",
+   "jeUcinny": true
+  },
+  {
+   "id": 1230970105,
+   "eli": "/eli/cz/sb/2025/270/2026-07-01/dokument/novela/cast_1/cl_1/bod_18/frag_1230970105",
+   "staleUrl": "/sb/2025/270/2026-07-01#cl_1-bod_18",
+   "kodTypuFragmentu": "Odstavec_Dc",
+   "hloubka": 8,
+   "xhtml": "<var>(1)</var> Peněžitý trest může soud uložit pachateli za jakýkoli trestný čin; zejména zváží jeho uložení, jestliže pachatel pro sebe nebo pro jiného úmyslným trestným činem získal nebo se snažil získat majetkový prospěch. Peněžitý trest soud neuloží, je-li zřejmé, že by byl nedobytný.",
+   "uplnaCitace": "Čl. 1 bod 18 zákona č. 270/2025 Sb., kterým se mění zákon č. 40/2009 Sb., trestní zákoník, ve znění pozdějších předpisů, zákon č. 141/1961 Sb., o trestním řízení soudním (trestní řád), ve znění pozdějších předpisů, a další související zákony",
+   "jeUcinny": true
+  },
+  {
+   "id": 1230970107,
+   "eli": "/eli/cz/sb/2025/270/2026-07-01/dokument/novela/cast_1/cl_1/bod_18/frag_1230970107",
+   "staleUrl": "/sb/2025/270/2026-07-01#cl_1-bod_18",
+   "kodTypuFragmentu": "Odstavec_Dc",
+   "hloubka": 8,
+   "xhtml": "<var>(2)</var> Peněžitý trest může být uložen jako trest samostatný, jestliže vzhledem k povaze a závažnosti spáchaného trestného činu a osobě a poměrům pachatele uložení jiného trestu není třeba; jako trest samostatný však nemůže být uložen za trestné činy týrání svěřené osoby (§ 198) a týrání osoby žijící ve společném obydlí (§ 199), zločiny uvedené v hlavě první a třetí zvláštní části tohoto zákona a za zvlášť závažné zločiny.“.",
+   "uplnaCitace": "Čl. 1 bod 18 zákona č. 270/2025 Sb., kterým se mění zákon č. 40/2009 Sb., trestní zákoník, ve znění pozdějších předpisů, zákon č. 141/1961 Sb., o trestním řízení soudním (trestní řád), ve znění pozdějších předpisů, a další související zákony",
+   "jeUcinny": true
+  }
+ ],
+ "pocetStranek": 1
+}

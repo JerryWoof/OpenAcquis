@@ -1,0 +1,552 @@
+{
+ "seznam": [
+  {
+   "id": 1075619345,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument",
+   "staleUrl": "/sb/2025/264/2025-11-01",
+   "kodTypuFragmentu": "Virtual_Document",
+   "hloubka": 0,
+   "uplnaCitace": "Zákon č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  },
+  {
+   "id": 1075636267,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument/prefix",
+   "staleUrl": "/sb/2025/264/2025-11-01",
+   "kodTypuFragmentu": "Virtual_Prefix",
+   "hloubka": 1,
+   "uplnaCitace": "Zákon č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  },
+  {
+   "id": 1075636269,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument/prefix/frag_1075636269",
+   "staleUrl": "/sb/2025/264/2025-11-01",
+   "kodTypuFragmentu": "Prefix_Number",
+   "hloubka": 2,
+   "xhtml": "264",
+   "uplnaCitace": "Zákon č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  },
+  {
+   "id": 1075636271,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument/prefix/frag_1075636271",
+   "staleUrl": "/sb/2025/264/2025-11-01",
+   "kodTypuFragmentu": "Prefix_Type",
+   "hloubka": 2,
+   "xhtml": "ZÁKON",
+   "uplnaCitace": "Zákon č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  },
+  {
+   "id": 1075636273,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument/prefix/frag_1075636273",
+   "staleUrl": "/sb/2025/264/2025-11-01",
+   "kodTypuFragmentu": "Prefix_Date",
+   "hloubka": 2,
+   "xhtml": "ze dne 11. června 2025",
+   "uplnaCitace": "Zákon č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  },
+  {
+   "id": 1075636275,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument/prefix/frag_1075636275",
+   "staleUrl": "/sb/2025/264/2025-11-01",
+   "kodTypuFragmentu": "Prefix_Title",
+   "hloubka": 2,
+   "xhtml": "o kybernetické bezpečnosti",
+   "uplnaCitace": "Zákon č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  },
+  {
+   "id": 1075636277,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument/prefix/frag_1075636277",
+   "staleUrl": "/sb/2025/264/2025-11-01",
+   "kodTypuFragmentu": "Prefix",
+   "hloubka": 2,
+   "xhtml": "Parlament se usnesl na tomto zákoně České republiky:",
+   "uplnaCitace": "Zákon č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  },
+  {
+   "id": 1075636279,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument/norma",
+   "staleUrl": "/sb/2025/264/2025-11-01",
+   "kodTypuFragmentu": "Virtual_Norma",
+   "hloubka": 1,
+   "uplnaCitace": "Zákon č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  },
+  {
+   "id": 1075636281,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument/norma/cast_1",
+   "staleUrl": "/sb/2025/264/2025-11-01#cast_1",
+   "kodTypuFragmentu": "Cast",
+   "hloubka": 2,
+   "xhtml": "<var>ČÁST PRVNÍ</var>",
+   "uplnaCitace": "Část 1 zákona č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  },
+  {
+   "id": 1075636283,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument/norma/cast_1/frag_1075636283",
+   "staleUrl": "/sb/2025/264/2025-11-01#cast_1",
+   "kodTypuFragmentu": "Nadpis_pod",
+   "hloubka": 3,
+   "xhtml": "KYBERNETICKÁ BEZPEČNOST",
+   "uplnaCitace": "Část 1 zákona č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  },
+  {
+   "id": 1075636285,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument/norma/cast_1/hlava_1",
+   "staleUrl": "/sb/2025/264/2025-11-01#cast_1-hlava_1",
+   "kodTypuFragmentu": "Hlava",
+   "hloubka": 3,
+   "xhtml": "<var>HLAVA I</var>",
+   "uplnaCitace": "Část 1 Hlava 1 zákona č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  },
+  {
+   "id": 1075636287,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument/norma/cast_1/hlava_1/frag_1075636287",
+   "staleUrl": "/sb/2025/264/2025-11-01#cast_1-hlava_1",
+   "kodTypuFragmentu": "Nadpis_pod",
+   "hloubka": 4,
+   "xhtml": "Základní ustanovení",
+   "uplnaCitace": "Část 1 Hlava 1 zákona č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  },
+  {
+   "id": 1075636289,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument/norma/cast_1/hlava_1/par_1",
+   "staleUrl": "/sb/2025/264/2025-11-01#par_1",
+   "kodTypuFragmentu": "Paragraf",
+   "hloubka": 4,
+   "xhtml": "<var>§ 1</var>",
+   "uplnaCitace": "§ 1 zákona č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  },
+  {
+   "id": 1075636291,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument/norma/cast_1/hlava_1/par_1/frag_1075636291",
+   "staleUrl": "/sb/2025/264/2025-11-01#par_1",
+   "kodTypuFragmentu": "Nadpis_pod",
+   "hloubka": 5,
+   "xhtml": "Předmět úpravy",
+   "uplnaCitace": "§ 1 zákona č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  },
+  {
+   "id": 1075636293,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument/norma/cast_1/hlava_1/par_1/odst_1",
+   "staleUrl": "/sb/2025/264/2025-11-01#par_1-odst_1",
+   "kodTypuFragmentu": "Odstavec_Dc",
+   "hloubka": 5,
+   "xhtml": "<var>(1)</var> Tento zákon upravuje práva a povinnosti osob, organizačních složek státu a dalších orgánů veřejné moci v oblasti zajišťování kybernetické bezpečnosti a působnost a pravomoci Národního úřadu pro kybernetickou a informační bezpečnost (dále jen „Úřad“) a dalších orgánů veřejné moci.",
+   "uplnaCitace": "§ 1 odst. 1 zákona č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  },
+  {
+   "id": 1075636295,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument/norma/cast_1/hlava_1/par_1/odst_2",
+   "staleUrl": "/sb/2025/264/2025-11-01#par_1-odst_2",
+   "kodTypuFragmentu": "Odstavec_Dc",
+   "hloubka": 5,
+   "xhtml": "<var>(2)</var> Tento zákon se vztahuje na osoby, které jsou usazeny na území České republiky. Tento zákon se dále vztahuje na osoby, které na území České republiky zajišťují sítě nebo poskytují služby elektronických komunikací podle jiného právního předpisu<a data-odkaz-id=\"178739437\" href=\"#\" class=\"int_odkaz\"><sup>1</sup>)</a>, bez ohledu na místo jejich usazení.",
+   "uplnaCitace": "§ 1 odst. 2 zákona č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  },
+  {
+   "id": 1075636297,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument/norma/cast_1/hlava_1/par_1/odst_3",
+   "staleUrl": "/sb/2025/264/2025-11-01#par_1-odst_3",
+   "kodTypuFragmentu": "Odstavec_Dc",
+   "hloubka": 5,
+   "xhtml": "<var>(3)</var> Tento zákon zapracovává příslušný předpis Evropské unie<a data-odkaz-id=\"178739443\" href=\"#\" class=\"int_odkaz\"><sup>2</sup>)</a> a zároveň navazuje na přímo použitelné předpisy Evropské unie<a data-odkaz-id=\"178739449\" href=\"#\" class=\"int_odkaz\"><sup>3</sup>)</a>.",
+   "uplnaCitace": "§ 1 odst. 3 zákona č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  },
+  {
+   "id": 1075636299,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument/norma/cast_1/hlava_1/par_1/odst_4",
+   "staleUrl": "/sb/2025/264/2025-11-01#par_1-odst_4",
+   "kodTypuFragmentu": "Odstavec_Dc",
+   "hloubka": 5,
+   "xhtml": "<var>(4)</var> Tento zákon se nevztahuje na informační nebo komunikační systémy, které nakládají s <czechvoc-termin koncept-id=\"272639\">utajovanými informacemi</czechvoc-termin>.",
+   "uplnaCitace": "§ 1 odst. 4 zákona č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  },
+  {
+   "id": 1075636301,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument/norma/cast_1/hlava_1/par_2",
+   "staleUrl": "/sb/2025/264/2025-11-01#par_2",
+   "kodTypuFragmentu": "Paragraf",
+   "hloubka": 4,
+   "xhtml": "<var>§ 2</var>",
+   "uplnaCitace": "§ 2 zákona č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  },
+  {
+   "id": 1075636303,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument/norma/cast_1/hlava_1/par_2/frag_1075636303",
+   "staleUrl": "/sb/2025/264/2025-11-01#par_2",
+   "kodTypuFragmentu": "Nadpis_pod",
+   "hloubka": 5,
+   "xhtml": "Vymezení pojmů",
+   "uplnaCitace": "§ 2 zákona č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  },
+  {
+   "id": 1075636305,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument/norma/cast_1/hlava_1/par_2/odst_1",
+   "staleUrl": "/sb/2025/264/2025-11-01#par_2-odst_1",
+   "kodTypuFragmentu": "Odstavec_Dc",
+   "hloubka": 5,
+   "xhtml": "<var>(1)</var> Pro účely tohoto zákona se rozumí",
+   "uplnaCitace": "§ 2 odst. 1 zákona č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  },
+  {
+   "id": 1075636307,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument/norma/cast_1/hlava_1/par_2/odst_1/pism_a",
+   "staleUrl": "/sb/2025/264/2025-11-01#par_2-odst_1-pism_a",
+   "kodTypuFragmentu": "Pismeno_Lb",
+   "hloubka": 6,
+   "xhtml": "<var>a)</var> <czechvoc-termin koncept-id=\"257241\">daty</czechvoc-termin> záznamy jednání, skutečností nebo <czechvoc-termin koncept-id=\"259873\">informací</czechvoc-termin> a soubory takových jednání, skutečností nebo <czechvoc-termin koncept-id=\"259873\">informací</czechvoc-termin>, včetně provozních údajů<a data-odkaz-id=\"178739455\" href=\"#\" class=\"int_odkaz\"><sup>4</sup>)</a> a metadat<a data-odkaz-id=\"178739461\" href=\"#\" class=\"int_odkaz\"><sup>5</sup>)</a>, zejména v podobě textu, čísel, grafů, obrazů, zvuku a videa,",
+   "uplnaCitace": "§ 2 odst. 1 písm. a) zákona č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  },
+  {
+   "id": 1075636309,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument/norma/cast_1/hlava_1/par_2/odst_1/pism_b",
+   "staleUrl": "/sb/2025/264/2025-11-01#par_2-odst_1-pism_b",
+   "kodTypuFragmentu": "Pismeno_Lb",
+   "hloubka": 6,
+   "xhtml": "<var>b)</var> <czechvoc-termin koncept-id=\"259873\">informací</czechvoc-termin> zpracovaná, interpretovaná nebo uspořádaná <czechvoc-termin koncept-id=\"257241\">data</czechvoc-termin>, která mají význam a kontext,",
+   "uplnaCitace": "§ 2 odst. 1 písm. b) zákona č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  },
+  {
+   "id": 1075636311,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument/norma/cast_1/hlava_1/par_2/odst_1/pism_c",
+   "staleUrl": "/sb/2025/264/2025-11-01#par_2-odst_1-pism_c",
+   "kodTypuFragmentu": "Pismeno_Lb",
+   "hloubka": 6,
+   "xhtml": "<var>c)</var> <czechvoc-termin koncept-id=\"255699\">aktivem</czechvoc-termin> fyzický nebo digitální prostředek, osoba nebo činnost související se zpracováváním <czechvoc-termin koncept-id=\"259873\">informací</czechvoc-termin> a <czechvoc-termin koncept-id=\"257241\">dat</czechvoc-termin> v elektronické podobě,",
+   "uplnaCitace": "§ 2 odst. 1 písm. c) zákona č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  },
+  {
+   "id": 1075636313,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument/norma/cast_1/hlava_1/par_2/odst_1/pism_d",
+   "staleUrl": "/sb/2025/264/2025-11-01#par_2-odst_1-pism_d",
+   "kodTypuFragmentu": "Pismeno_Lb",
+   "hloubka": 6,
+   "xhtml": "<var>d)</var> <czechvoc-termin koncept-id=\"266891\">primárním aktivem</czechvoc-termin> <czechvoc-termin koncept-id=\"255699\">aktivum</czechvoc-termin> v podobě zpracovávané <czechvoc-termin koncept-id=\"259873\">informace</czechvoc-termin> nebo poskytované služby,",
+   "uplnaCitace": "§ 2 odst. 1 písm. d) zákona č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  },
+  {
+   "id": 1075636315,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument/norma/cast_1/hlava_1/par_2/odst_1/pism_e",
+   "staleUrl": "/sb/2025/264/2025-11-01#par_2-odst_1-pism_e",
+   "kodTypuFragmentu": "Pismeno_Lb",
+   "hloubka": 6,
+   "xhtml": "<var>e)</var> <czechvoc-termin koncept-id=\"265841\">podpůrným aktivem</czechvoc-termin> <czechvoc-termin koncept-id=\"255699\">aktivum</czechvoc-termin> zajišťující fungování <czechvoc-termin koncept-id=\"266891\">primárních aktiv</czechvoc-termin>, zejména zaměstnanec, dodavatel, <czechvoc-termin koncept-id=\"271557\">technické aktivum</czechvoc-termin>, budova a jiný ohraničený prostor, ve kterém se nachází <czechvoc-termin koncept-id=\"255699\">aktivum</czechvoc-termin> <czechvoc-termin koncept-id=\"283743\">regulované služby</czechvoc-termin>, a",
+   "uplnaCitace": "§ 2 odst. 1 písm. e) zákona č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  },
+  {
+   "id": 1075636317,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument/norma/cast_1/hlava_1/par_2/odst_1/pism_f",
+   "staleUrl": "/sb/2025/264/2025-11-01#par_2-odst_1-pism_f",
+   "kodTypuFragmentu": "Pismeno_Lb",
+   "hloubka": 6,
+   "xhtml": "<var>f)</var> technickým aktivem technický nebo programový prostředek anebo vybavení.",
+   "uplnaCitace": "§ 2 odst. 1 písm. f) zákona č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  },
+  {
+   "id": 1075636357,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument/norma/cast_1/hlava_2",
+   "staleUrl": "/sb/2025/264/2025-11-01#cast_1-hlava_2",
+   "kodTypuFragmentu": "Hlava",
+   "hloubka": 3,
+   "xhtml": "<var>HLAVA II</var>",
+   "uplnaCitace": "Část 1 Hlava 2 zákona č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  },
+  {
+   "id": 1075636359,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument/norma/cast_1/hlava_2/frag_1075636359",
+   "staleUrl": "/sb/2025/264/2025-11-01#cast_1-hlava_2",
+   "kodTypuFragmentu": "Nadpis_pod",
+   "hloubka": 4,
+   "xhtml": "Poskytovatel regulované služby",
+   "uplnaCitace": "Část 1 Hlava 2 zákona č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  },
+  {
+   "id": 1075636361,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument/norma/cast_1/hlava_2/dil_1",
+   "staleUrl": "/sb/2025/264/2025-11-01#cast_1-hlava_2-dil_1",
+   "kodTypuFragmentu": "Dil",
+   "hloubka": 4,
+   "xhtml": "<var>Díl 1</var>",
+   "uplnaCitace": "Část 1 Hlava 2 Díl 1 zákona č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  },
+  {
+   "id": 1075636363,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument/norma/cast_1/hlava_2/dil_1/frag_1075636363",
+   "staleUrl": "/sb/2025/264/2025-11-01#cast_1-hlava_2-dil_1",
+   "kodTypuFragmentu": "Nadpis_pod",
+   "hloubka": 5,
+   "xhtml": "Regulovaná služba a režim jejího poskytovatele",
+   "uplnaCitace": "Část 1 Hlava 2 Díl 1 zákona č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  },
+  {
+   "id": 1075636371,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument/norma/cast_1/hlava_2/dil_1/frag_1075636371",
+   "staleUrl": "/sb/2025/264/2025-11-01#cast_1-hlava_2-dil_1",
+   "kodTypuFragmentu": "Nadpis_nad",
+   "hloubka": 5,
+   "xhtml": "Podmínky pro registraci regulované služby",
+   "uplnaCitace": "Část 1 Hlava 2 Díl 1 zákona č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  },
+  {
+   "id": 1075636373,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument/norma/cast_1/hlava_2/dil_1/par_4",
+   "staleUrl": "/sb/2025/264/2025-11-01#par_4",
+   "kodTypuFragmentu": "Paragraf",
+   "hloubka": 5,
+   "xhtml": "<var>§ 4</var>",
+   "uplnaCitace": "§ 4 zákona č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  },
+  {
+   "id": 1075636375,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument/norma/cast_1/hlava_2/dil_1/par_4/odst_1",
+   "staleUrl": "/sb/2025/264/2025-11-01#par_4-odst_1",
+   "kodTypuFragmentu": "Odstavec_Dc",
+   "hloubka": 6,
+   "xhtml": "<var>(1)</var> Podmínky pro registraci <czechvoc-termin koncept-id=\"283743\">regulované služby</czechvoc-termin> jsou splněny v případě, že",
+   "uplnaCitace": "§ 4 odst. 1 zákona č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  },
+  {
+   "id": 1075636377,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument/norma/cast_1/hlava_2/dil_1/par_4/odst_1/pism_a",
+   "staleUrl": "/sb/2025/264/2025-11-01#par_4-odst_1-pism_a",
+   "kodTypuFragmentu": "Pismeno_Lb",
+   "hloubka": 7,
+   "xhtml": "<var>a)</var> jde o službu, která je významná pro zabezpečení důležitých společenských nebo ekonomických činností nebo pro bezpečnost v České republice, v některém z těchto odvětví:",
+   "uplnaCitace": "§ 4 odst. 1 písm. a) zákona č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  },
+  {
+   "id": 1075636379,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument/norma/cast_1/hlava_2/dil_1/par_4/odst_1/pism_a/bod_1",
+   "staleUrl": "/sb/2025/264/2025-11-01#par_4-odst_1-pism_a-bod_1",
+   "kodTypuFragmentu": "Bod_Dd",
+   "hloubka": 8,
+   "xhtml": "<var>1.</var> veřejná správa,",
+   "uplnaCitace": "§ 4 odst. 1 písm. a) bod 1 zákona č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  },
+  {
+   "id": 1075636381,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument/norma/cast_1/hlava_2/dil_1/par_4/odst_1/pism_a/bod_2",
+   "staleUrl": "/sb/2025/264/2025-11-01#par_4-odst_1-pism_a-bod_2",
+   "kodTypuFragmentu": "Bod_Dd",
+   "hloubka": 8,
+   "xhtml": "<var>2.</var> energetika,",
+   "uplnaCitace": "§ 4 odst. 1 písm. a) bod 2 zákona č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  },
+  {
+   "id": 1075636383,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument/norma/cast_1/hlava_2/dil_1/par_4/odst_1/pism_a/bod_3",
+   "staleUrl": "/sb/2025/264/2025-11-01#par_4-odst_1-pism_a-bod_3",
+   "kodTypuFragmentu": "Bod_Dd",
+   "hloubka": 8,
+   "xhtml": "<var>3.</var> výrobní průmysl,",
+   "uplnaCitace": "§ 4 odst. 1 písm. a) bod 3 zákona č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  },
+  {
+   "id": 1075636385,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument/norma/cast_1/hlava_2/dil_1/par_4/odst_1/pism_a/bod_4",
+   "staleUrl": "/sb/2025/264/2025-11-01#par_4-odst_1-pism_a-bod_4",
+   "kodTypuFragmentu": "Bod_Dd",
+   "hloubka": 8,
+   "xhtml": "<var>4.</var> potravinářský průmysl,",
+   "uplnaCitace": "§ 4 odst. 1 písm. a) bod 4 zákona č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  },
+  {
+   "id": 1075636387,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument/norma/cast_1/hlava_2/dil_1/par_4/odst_1/pism_a/bod_5",
+   "staleUrl": "/sb/2025/264/2025-11-01#par_4-odst_1-pism_a-bod_5",
+   "kodTypuFragmentu": "Bod_Dd",
+   "hloubka": 8,
+   "xhtml": "<var>5.</var> chemický průmysl,",
+   "uplnaCitace": "§ 4 odst. 1 písm. a) bod 5 zákona č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  },
+  {
+   "id": 1075636389,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument/norma/cast_1/hlava_2/dil_1/par_4/odst_1/pism_a/bod_6",
+   "staleUrl": "/sb/2025/264/2025-11-01#par_4-odst_1-pism_a-bod_6",
+   "kodTypuFragmentu": "Bod_Dd",
+   "hloubka": 8,
+   "xhtml": "<var>6.</var> vodní hospodářství,",
+   "uplnaCitace": "§ 4 odst. 1 písm. a) bod 6 zákona č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  },
+  {
+   "id": 1075636391,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument/norma/cast_1/hlava_2/dil_1/par_4/odst_1/pism_a/bod_7",
+   "staleUrl": "/sb/2025/264/2025-11-01#par_4-odst_1-pism_a-bod_7",
+   "kodTypuFragmentu": "Bod_Dd",
+   "hloubka": 8,
+   "xhtml": "<var>7.</var> odpadové hospodářství,",
+   "uplnaCitace": "§ 4 odst. 1 písm. a) bod 7 zákona č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  },
+  {
+   "id": 1075636393,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument/norma/cast_1/hlava_2/dil_1/par_4/odst_1/pism_a/bod_8",
+   "staleUrl": "/sb/2025/264/2025-11-01#par_4-odst_1-pism_a-bod_8",
+   "kodTypuFragmentu": "Bod_Dd",
+   "hloubka": 8,
+   "xhtml": "<var>8.</var> doprava,",
+   "uplnaCitace": "§ 4 odst. 1 písm. a) bod 8 zákona č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  },
+  {
+   "id": 1075636395,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument/norma/cast_1/hlava_2/dil_1/par_4/odst_1/pism_a/bod_9",
+   "staleUrl": "/sb/2025/264/2025-11-01#par_4-odst_1-pism_a-bod_9",
+   "kodTypuFragmentu": "Bod_Dd",
+   "hloubka": 8,
+   "xhtml": "<var>9.</var> digitální infrastruktura a služby,",
+   "uplnaCitace": "§ 4 odst. 1 písm. a) bod 9 zákona č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  },
+  {
+   "id": 1075636397,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument/norma/cast_1/hlava_2/dil_1/par_4/odst_1/pism_a/bod_10",
+   "staleUrl": "/sb/2025/264/2025-11-01#par_4-odst_1-pism_a-bod_10",
+   "kodTypuFragmentu": "Bod_Dd",
+   "hloubka": 8,
+   "xhtml": "<var>10.</var> finanční trh,",
+   "uplnaCitace": "§ 4 odst. 1 písm. a) bod 10 zákona č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  },
+  {
+   "id": 1075636399,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument/norma/cast_1/hlava_2/dil_1/par_4/odst_1/pism_a/bod_11",
+   "staleUrl": "/sb/2025/264/2025-11-01#par_4-odst_1-pism_a-bod_11",
+   "kodTypuFragmentu": "Bod_Dd",
+   "hloubka": 8,
+   "xhtml": "<var>11.</var> zdravotnictví,",
+   "uplnaCitace": "§ 4 odst. 1 písm. a) bod 11 zákona č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  },
+  {
+   "id": 1075636401,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument/norma/cast_1/hlava_2/dil_1/par_4/odst_1/pism_a/bod_12",
+   "staleUrl": "/sb/2025/264/2025-11-01#par_4-odst_1-pism_a-bod_12",
+   "kodTypuFragmentu": "Bod_Dd",
+   "hloubka": 8,
+   "xhtml": "<var>12.</var> věda, výzkum a vzdělávání,",
+   "uplnaCitace": "§ 4 odst. 1 písm. a) bod 12 zákona č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  },
+  {
+   "id": 1075636403,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument/norma/cast_1/hlava_2/dil_1/par_4/odst_1/pism_a/bod_13",
+   "staleUrl": "/sb/2025/264/2025-11-01#par_4-odst_1-pism_a-bod_13",
+   "kodTypuFragmentu": "Bod_Dd",
+   "hloubka": 8,
+   "xhtml": "<var>13.</var> poštovní a kurýrní služby,",
+   "uplnaCitace": "§ 4 odst. 1 písm. a) bod 13 zákona č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  },
+  {
+   "id": 1075636405,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument/norma/cast_1/hlava_2/dil_1/par_4/odst_1/pism_a/bod_14",
+   "staleUrl": "/sb/2025/264/2025-11-01#par_4-odst_1-pism_a-bod_14",
+   "kodTypuFragmentu": "Bod_Dd",
+   "hloubka": 8,
+   "xhtml": "<var>14.</var> obranný průmysl,",
+   "uplnaCitace": "§ 4 odst. 1 písm. a) bod 14 zákona č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  },
+  {
+   "id": 1075636407,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument/norma/cast_1/hlava_2/dil_1/par_4/odst_1/pism_a/bod_15",
+   "staleUrl": "/sb/2025/264/2025-11-01#par_4-odst_1-pism_a-bod_15",
+   "kodTypuFragmentu": "Bod_Dd",
+   "hloubka": 8,
+   "xhtml": "<var>15.</var> vesmírný průmysl a",
+   "uplnaCitace": "§ 4 odst. 1 písm. a) bod 15 zákona č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  },
+  {
+   "id": 1075636409,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument/norma/cast_1/hlava_2/dil_1/par_4/odst_1/pism_b",
+   "staleUrl": "/sb/2025/264/2025-11-01#par_4-odst_1-pism_b",
+   "kodTypuFragmentu": "Pismeno_Lb",
+   "hloubka": 7,
+   "xhtml": "<var>b)</var> poskytovatel služby je středním nebo velkým podnikem ve smyslu doporučení Komise <a class=\"linkeurule\" data-link=\"eurule\" data-cellarid=\"6ca8d655-126b-4a42-ada4-e9058fa45155\" href=\"http://eur-lex.europa.eu/legal-content/CS/AUTO/?uri=cellar:6ca8d655-126b-4a42-ada4-e9058fa45155\">2003/361/ES</a> ze dne 6. května 2003 o definici mikropodniků a malých a středních podniků (dále jen „doporučení Komise 2003/361/ES“)<a data-odkaz-id=\"178739473\" href=\"#\" class=\"int_odkaz\"><sup>6</sup>)</a>, nebo je významný pro zabezpečení důležitých společenských nebo ekonomických činností nebo pro bezpečnost v České republice.",
+   "uplnaCitace": "§ 4 odst. 1 písm. b) zákona č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  },
+  {
+   "id": 1075636411,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument/norma/cast_1/hlava_2/dil_1/par_4/odst_2",
+   "staleUrl": "/sb/2025/264/2025-11-01#par_4-odst_2",
+   "kodTypuFragmentu": "Odstavec_Dc",
+   "hloubka": 6,
+   "xhtml": "<var>(2)</var> Seznam služeb podle <a data-odkaz-id=\"178739479\" href=\"#\" class=\"int_odkaz\">odstavce 1 písm. a)</a> a vymezení podmínek významnosti poskytovatele podle <a data-odkaz-id=\"178739485\" href=\"#\" class=\"int_odkaz\">odstavce 1 písm. b)</a> stanoví Úřad vyhláškou.",
+   "uplnaCitace": "§ 4 odst. 2 zákona č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  },
+  {
+   "id": 1075636459,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument/norma/cast_1/hlava_2/dil_1/frag_1075636459",
+   "staleUrl": "/sb/2025/264/2025-11-01#cast_1-hlava_2-dil_1",
+   "kodTypuFragmentu": "Nadpis_nad",
+   "hloubka": 5,
+   "xhtml": "Režim poskytovatele regulované služby",
+   "uplnaCitace": "Část 1 Hlava 2 Díl 1 zákona č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  },
+  {
+   "id": 1075637713,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument/norma/cast_2",
+   "staleUrl": "/sb/2025/264/2025-11-01#cast_2",
+   "kodTypuFragmentu": "Cast",
+   "hloubka": 2,
+   "xhtml": "<var>ČÁST DRUHÁ</var>",
+   "uplnaCitace": "Část 2 zákona č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  },
+  {
+   "id": 1075637715,
+   "eli": "/eli/cz/sb/2025/264/2025-11-01/dokument/norma/cast_2/frag_1075637715",
+   "staleUrl": "/sb/2025/264/2025-11-01#cast_2",
+   "kodTypuFragmentu": "Nadpis_pod",
+   "hloubka": 3,
+   "xhtml": "USTANOVENÍ SPOLEČNÁ, PŘECHODNÁ A ZÁVĚREČNÁ",
+   "uplnaCitace": "Část 2 zákona č. 264/2025 Sb., o kybernetické bezpečnosti",
+   "jeUcinny": true
+  }
+ ],
+ "pocetStranek": 2
+}
