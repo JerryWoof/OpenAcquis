@@ -1,0 +1,197 @@
+name: LLM judge (batch)
+
+# Judges every candidate pair of one directive x country with Claude through the Message Batches API
+# (python -m openacquis.judge_batch, see docs/judge.md) and opens a pull request with
+# data/judgments/<celex>_<cc>.jsonl. Every line is a machine suggestion for review, not a legal finding.
+#
+# Safety, by design:
+# - Manual only (workflow_dispatch): it never runs on push, pull_request or pull_request_target, so code
+#   from a fork can never reach the key. Only people with write access can start it.
+# - The key (secret ANTHROPIC_API_KEY, ideally in the "llm" environment with required reviewers) is passed
+#   to the one step that calls the API, not to the job; it is not passed at all for a dry run.
+# - --max-cost refuses to submit when the projected worst case (money already spent on this directive x
+#   country + running batches + new requests with no prompt-cache hits and every answer at max_tokens)
+#   exceeds the input, so the bill stays under it. The typical cost is a fraction of that (see the report).
+# - Two jobs, least privilege: `judge` holds the key and a read-only token; `pr` holds contents/pull-requests
+#   write, never sees the key, and only commits the JSONL produced by `judge`.
+# - Resumable: the run state and the judge cache are kept with actions/cache. If the batch is still running
+#   when this run stops polling, start the workflow again with the same inputs; it collects instead of
+#   submitting again. If a submission was interrupted before its batch ID was saved, check the Console
+#   (Message Batches) and run again with `force` ticked.
+
+on:
+  workflow_dispatch:
+    inputs:
+      celex:
+        description: "CELEX number of the directive (site/static-data/<celex>_<country>.json must exist)"
+        required: true
+        default: "32022L2555"
+        type: string
+      country:
+        description: "Country"
+        required: true
+        default: cz
+        type: choice
+        options: [cz, sk, at, de]
+      max_cost:
+        description: "Maximum USD for this directive x country (worst case, all runs together)"
+        required: true
+        default: "15"
+        type: string
+      model:
+        description: "Model"
+        required: false
+        default: claude-sonnet-5-5
+        type: choice
+        options: [claude-sonnet-5-5, claude-haiku-5-5, claude-opus-5-5]
+      dry_run:
+        description: "Only print pair counts and the cost estimate (no key used, no API calls)"
+        required: false
+        default: false
+        type: boolean
+      force:
+        description: "Submit even after an interrupted submission (check the Console for a running batch first)"
+        required: false
+        default: false
+        type: boolean
+
+permissions: {}
+
+concurrency:
+  group: judge-${{ inputs.celex }}-${{ inputs.country }}
+  cancel-in-progress: false
+
+jobs:
+  judge:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    environment: llm
+    timeout-minutes: 350
+    permissions:
+      contents: read
+    outputs:
+      complete: ${{ steps.judge.outputs.complete }}
+    env:
+      OPENACQUIS_CACHE: ${{ github.workspace }}/.openacquis-cache
+      CELEX: ${{ inputs.celex }}
+      COUNTRY: ${{ inputs.country }}
+      MAX_COST: ${{ inputs.max_cost }}
+      MODEL: ${{ inputs.model }}
+      DRY_RUN: ${{ inputs.dry_run }}
+      FORCE: ${{ inputs.force }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Check inputs
+        run: |
+          [[ "$CELEX" =~ ^[0-9]{5}[A-Z]{1,2}[0-9]{4}$ ]] || { echo "::error::not a CELEX number"; exit 1; }
+          [[ "$COUNTRY" =~ ^(cz|sk|at|de)$ ]] || { echo "::error::unknown country"; exit 1; }
+          [[ "$MAX_COST" =~ ^[0-9]+(\.[0-9]+)?$ ]] || { echo "::error::max_cost must be a number of USD"; exit 1; }
+          test -f "site/static-data/${CELEX}_${COUNTRY}.json" || {
+            echo "::error::site/static-data/${CELEX}_${COUNTRY}.json not found; build and commit the alignment first"
+            exit 1; }
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e '.[llm]'
+      - name: Restore run state and judge cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .openacquis-cache
+          key: judge-${{ inputs.celex }}-${{ inputs.country }}-${{ inputs.model }}-${{ github.run_id }}
+          restore-keys: judge-${{ inputs.celex }}-${{ inputs.country }}-${{ inputs.model }}-
+      - name: Judge
+        id: judge
+        env:
+          ANTHROPIC_API_KEY: ${{ !inputs.dry_run && secrets.ANTHROPIC_API_KEY || '' }}
+        run: |
+          mkdir -p out/data/judgments
+          args=(run "site/static-data/${CELEX}_${COUNTRY}.json" --model "$MODEL" --max-cost "$MAX_COST"
+                --wait 19800 --poll 120 --report out/report.json --out "out/data/judgments/${CELEX}_${COUNTRY}.jsonl")
+          if [ "$DRY_RUN" = "true" ]; then args+=(--dry-run); fi
+          if [ "$FORCE" = "true" ]; then args+=(--force); fi
+          set +e
+          python -m openacquis.judge_batch "${args[@]}" | tee out/report.txt
+          code=${PIPESTATUS[0]}
+          set -e
+          { echo "### ${CELEX} x ${COUNTRY^^}"; echo '```'; cat out/report.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          complete=false
+          case "$code" in
+            0) [ "$DRY_RUN" = "true" ] || complete=true ;;
+            4) echo "::notice::Batches still running or pairs left. Run this workflow again with the same inputs to collect." ;;
+            3) echo "::error::Refused by max_cost (see the report)"; exit 3 ;;
+            *) exit "$code" ;;
+          esac
+          echo "complete=$complete" >> "$GITHUB_OUTPUT"
+      - name: Save run state and judge cache
+        if: always() && inputs.dry_run == false
+        uses: actions/cache/save@v4
+        with:
+          path: .openacquis-cache
+          key: judge-${{ inputs.celex }}-${{ inputs.country }}-${{ inputs.model }}-${{ github.run_id }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: judgments-${{ inputs.celex }}_${{ inputs.country }}
+          path: out/
+          if-no-files-found: ignore
+          retention-days: 30
+
+  pr:
+    needs: judge
+    if: needs.judge.outputs.complete == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      CELEX: ${{ inputs.celex }}
+      COUNTRY: ${{ inputs.country }}
+      MODEL: ${{ inputs.model }}
+      BRANCH: judgments/${{ inputs.celex }}_${{ inputs.country }}-${{ github.run_id }}
+      GH_TOKEN: ${{ github.token }}
+      BASE: ${{ github.event.repository.default_branch }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: judgments-${{ inputs.celex }}_${{ inputs.country }}
+          path: ${{ runner.temp }}/art
+      - name: Commit and open a pull request
+        run: |
+          file="data/judgments/${CELEX}_${COUNTRY}.jsonl"
+          src="$RUNNER_TEMP/art/$file"
+          test -s "$src" || { echo "::warning::no judgments were written"; exit 0; }
+          # Every line must be a JSON object for this directive x country (defence in depth).
+          python3 - "$src" "$CELEX" "$COUNTRY" <<'PY'
+          import json, sys
+          path, celex, cc = sys.argv[1:]
+          for n, line in enumerate(open(path, encoding="utf-8"), 1):
+              d = json.loads(line)
+              assert isinstance(d, dict) and d.get("celex") == celex and d.get("country") == cc, f"line {n}"
+              assert d.get("status") == "unreviewed", f"line {n}"
+          PY
+          mkdir -p data/judgments
+          cp "$src" "$file"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$BRANCH"
+          git add "$file"
+          if git diff --cached --quiet; then echo "No changes to $file"; exit 0; fi
+          git commit -m "Judgments for ${CELEX} x ${COUNTRY^^} (${MODEL}, batch)"
+          git push origin "$BRANCH"
+          {
+            echo "Machine judgments for **${CELEX} x ${COUNTRY^^}** from the \`LLM judge (batch)\` workflow"
+            echo "(run ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})."
+            echo
+            echo "Every line is a suggestion for human review (\`status: unreviewed\`) with verbatim evidence"
+            echo "quotes, not a legal finding; see docs/judge.md."
+            echo
+            echo '```'
+            cat "$RUNNER_TEMP/art/report.txt" 2>/dev/null || true
+            echo '```'
+          } > "$RUNNER_TEMP/body.md"
+          gh pr create --base "$BASE" --head "$BRANCH" \
+            --title "Judgments: ${CELEX} x ${COUNTRY^^}" --body-file "$RUNNER_TEMP/body.md"

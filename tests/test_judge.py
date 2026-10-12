@@ -294,7 +294,7 @@ def test_anthropic_request_shape(tmp_path):
     assert j.model == DEFAULT_MODEL and j.prompt_version == PROMPT_VERSION and j.method == "llm"
     assert EU.text[slice(*j.evidence_eu_span)] == GOOD["evidence_eu"]
     assert judge.usage["cache_read_input_tokens"] == 1000 and judge.requests == 1
-    assert judge.cost() == pytest.approx((500 * 2 + 300 * 10 + 1000 * 0.2) / 1e6)
+    assert judge.cost() == pytest.approx((500 * 2 + 300 * 10 + 1000 * 0.1) / 1e6)
 
 
 def test_anthropic_no_fallbacks_uses_plain_endpoint_and_temperature_opt_in(tmp_path):
@@ -400,6 +400,48 @@ def test_anthropic_batch(tmp_path):
     assert out[1].label == Label.STRICTER and out[3].label == Label.STRICTER
     assert not out[1].evidence_verified  # "12 hodin" is not in NAT_LONGER
     assert out[2] is None
+    assert sent[0]["params"]["system"][0]["cache_control"] == {"type": "ephemeral", "ttl": "1h"}
+    assert judge.batch_outcomes == {"succeeded": 1, "errored:unknown": 1}
+    assert judge.usage_batch["output_tokens"] == 300 and judge.usage["output_tokens"] == 300
+    # interactive request at full price, batch result at half price
+    one = (500 * 2 + 300 * 10 + 1000 * 0.1) / 1e6
+    assert judge.cost() == pytest.approx(one * 1.5)
+
+
+def test_prompts_per_country():
+    from openacquis.judge import PROMPT_VERSIONS, prompt_version_for, system_prompt_for
+
+    assert system_prompt_for("cz") == SYSTEM_PROMPT and "Both texts are in Czech" in SYSTEM_PROMPT
+    assert "Czechia made" in SYSTEM_PROMPT and "Sbírka zákonů" in SYSTEM_PROMPT
+    sk, at, de = (system_prompt_for(c) for c in ("sk", "at", "de"))
+    assert "Both texts are in Slovak" in sk and "členské štáty môžu" in sk and "Czech" not in sk
+    assert "Austrian federal law" in at and "die Mitgliedstaaten können" in at and "Austria made" in at
+    assert "German federal law" in de and "Germany made" in de and "Czech" not in de
+    assert len(set(PROMPT_VERSIONS.values())) == 4 and prompt_version_for("SK") == PROMPT_VERSIONS["sk"]
+    with pytest.raises(ValueError):
+        system_prompt_for("fr")
+    judge = AnthropicJudge(FakeClient(), cache_dir=False, country="sk")
+    assert judge.system_prompt == sk and judge.prompt_version == PROMPT_VERSIONS["sk"]
+    cz = AnthropicJudge(FakeClient(), cache_dir=False)
+    assert judge.cache_key(EU, NAT_SAME) != cz.cache_key(EU, NAT_SAME)
+
+
+def test_usage_and_prices_with_one_hour_cache_writes():
+    from openacquis.judge import batch_error_type, price_usage, usage_dict
+
+    u = usage_dict(SimpleNamespace(input_tokens=10, output_tokens=0, cache_read_input_tokens=0,
+                                   cache_creation_input_tokens=1000,
+                                   cache_creation=SimpleNamespace(ephemeral_5m_input_tokens=0,
+                                                                  ephemeral_1h_input_tokens=1000)))
+    assert u["cache_creation_1h_input_tokens"] == 1000
+    assert price_usage(u, "claude-sonnet-5-5") == pytest.approx((10 * 2 + 1000 * 4) / 1e6)
+    assert price_usage(u, "claude-sonnet-5-5", batch=True) == pytest.approx((10 * 2 + 1000 * 4) / 2e6)
+    assert price_usage(u, "no-such-model") != price_usage(u, "no-such-model")  # NaN
+    nested = SimpleNamespace(type="errored", error=SimpleNamespace(type="error",
+                                                                  error=SimpleNamespace(type="invalid_request")))
+    assert batch_error_type(nested) == "invalid_request"
+    assert batch_error_type({"error": {"type": "overloaded_error"}}) == "overloaded_error"
+    assert batch_error_type(SimpleNamespace(type="errored")) == "unknown"
 
 
 def test_user_message_escapes_and_keeps_context_separate():
@@ -410,7 +452,9 @@ def test_user_message_escapes_and_keeps_context_separate():
 def test_cost_estimate():
     assert estimate_cost(0) == 0
     one = estimate_cost(2500)
-    assert estimate_cost(2500, batch=True) == pytest.approx(one / 2)
+    # batches: half price, but the system prompt is written with the 1-hour TTL (one write here)
+    assert estimate_cost(2500, batch=True) == pytest.approx((one - 1000 * 2.5 / 1e6 + 1000 * 4 / 1e6) / 2)
+    assert estimate_cost(2500, batch=True, cache_hit=0) > estimate_cost(2500, batch=True)
     assert estimate_cost(2500, "claude-haiku-5-5") < one < estimate_cost(2500, "claude-opus-5-5")
     assert 5 < one < 30
 
