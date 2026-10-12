@@ -1,0 +1,461 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jerrywoof.github.io/OpenAcquis/api/v1/schemas/alignment.schema.json",
+  "title": "Directive x country alignment",
+  "description": "Machine candidate links per EU paragraph (top national provisions with scores), the official correlation table where one exists, gap and extra-rule candidates. Texts are in the provision files. Candidates, not findings.",
+  "allOf": [
+    {
+      "$ref": "envelope.schema.json"
+    }
+  ],
+  "properties": {
+    "data": {
+      "type": "object",
+      "required": [
+        "directive",
+        "country_code",
+        "method",
+        "threshold",
+        "has_official",
+        "eu",
+        "national",
+        "articles",
+        "summary",
+        "notice"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "directive": {
+          "$ref": "common.schema.json#/$defs/celex"
+        },
+        "celex": {
+          "$ref": "common.schema.json#/$defs/celex"
+        },
+        "short": {
+          "type": "string"
+        },
+        "country": {
+          "$ref": "common.schema.json#/$defs/cc3"
+        },
+        "country_code": {
+          "$ref": "common.schema.json#/$defs/cc"
+        },
+        "country_name": {
+          "type": "string"
+        },
+        "national_language": {
+          "$ref": "common.schema.json#/$defs/lang"
+        },
+        "portal": {
+          "type": "string"
+        },
+        "method": {
+          "type": "string"
+        },
+        "threshold": {
+          "type": "number"
+        },
+        "gap_threshold": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "gap_note": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "extra_note": {
+          "description": "Why no extra-rule list is reported (general code, broad act, or an act not notified for the directive); null when it is",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "has_official": {
+          "type": "boolean"
+        },
+        "computed_at": {
+          "$ref": "common.schema.json#/$defs/datetime"
+        },
+        "generator": {
+          "type": "string"
+        },
+        "official_source": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "label": {
+              "type": "string"
+            },
+            "url": {
+              "type": "string"
+            },
+            "history_url": {
+              "type": "string"
+            },
+            "links": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "summary": {
+          "type": "object",
+          "required": [
+            "rows",
+            "eu_units",
+            "gap_candidates",
+            "extra_rule_candidates"
+          ],
+          "properties": {
+            "rows": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "eu_units": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "gap_candidates": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "extra_rule_candidates": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "eu": {
+          "type": "object",
+          "required": [
+            "language",
+            "provisions"
+          ],
+          "properties": {
+            "title": {
+              "type": "string"
+            },
+            "url": {
+              "type": "string"
+            },
+            "language": {
+              "$ref": "common.schema.json#/$defs/lang"
+            },
+            "language_name": {
+              "type": "string"
+            },
+            "provisions": {
+              "$ref": "common.schema.json#/$defs/path"
+            }
+          }
+        },
+        "national": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "act_id",
+              "act_slug",
+              "act",
+              "provisions"
+            ],
+            "properties": {
+              "act_id": {
+                "type": "string"
+              },
+              "title": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "url": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "date": {
+                "$ref": "common.schema.json#/$defs/date_or_null"
+              },
+              "label": {
+                "type": "string"
+              },
+              "act_slug": {
+                "$ref": "common.schema.json#/$defs/act_slug"
+              },
+              "act": {
+                "$ref": "common.schema.json#/$defs/path"
+              },
+              "provisions": {
+                "$ref": "common.schema.json#/$defs/path"
+              }
+            }
+          }
+        },
+        "articles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "key",
+              "label",
+              "rows"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "common.schema.json#/$defs/eu_id"
+              },
+              "key": {
+                "$ref": "common.schema.json#/$defs/eu_provision"
+              },
+              "label": {
+                "type": "string"
+              },
+              "heading": {
+                "type": "string"
+              },
+              "url": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "official": {
+                "type": "array",
+                "items": {
+                  "$ref": "common.schema.json#/$defs/national_id"
+                }
+              },
+              "rows": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "label",
+                    "official",
+                    "machine",
+                    "units",
+                    "linked_units",
+                    "gaps"
+                  ],
+                  "properties": {
+                    "id": {
+                      "$ref": "common.schema.json#/$defs/eu_id"
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "url": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "official": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "common.schema.json#/$defs/national_id"
+                      }
+                    },
+                    "official_eu": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "machine": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "score",
+                          "above_threshold"
+                        ],
+                        "properties": {
+                          "id": {
+                            "$ref": "common.schema.json#/$defs/national_id"
+                          },
+                          "score": {
+                            "type": "number"
+                          },
+                          "above_threshold": {
+                            "type": "boolean"
+                          }
+                        },
+                        "additionalProperties": false
+                      }
+                    },
+                    "agreement": {
+                      "enum": [
+                        "match",
+                        "same_section",
+                        "differs",
+                        "other_act",
+                        "article_level",
+                        "no_table_entry",
+                        null
+                      ]
+                    },
+                    "units": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "linked_units": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "gaps": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "out_of_scope": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "description": "One EU paragraph (or article/annex without paragraphs). No texts: see eu.provisions."
+                }
+              }
+            }
+          }
+        },
+        "gap_articles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "units"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "common.schema.json#/$defs/eu_id"
+              },
+              "key": {
+                "$ref": "common.schema.json#/$defs/eu_provision"
+              },
+              "label": {
+                "type": "string"
+              },
+              "units": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "id"
+                  ],
+                  "properties": {
+                    "id": {
+                      "$ref": "common.schema.json#/$defs/eu_id"
+                    },
+                    "label": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "whole_article": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "extra_rule_sections": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "units"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "common.schema.json#/$defs/national_id"
+              },
+              "label": {
+                "type": "string"
+              },
+              "heading": {
+                "type": "string"
+              },
+              "units": {
+                "type": "array",
+                "items": {
+                  "$ref": "common.schema.json#/$defs/national_id"
+                }
+              },
+              "whole_section": {
+                "type": "boolean"
+              },
+              "closest": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "object",
+                  "required": [],
+                  "properties": {
+                    "closest_eu": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "closest_score": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "links": {
+          "type": "object",
+          "required": [
+            "links",
+            "candidates",
+            "reviews"
+          ],
+          "properties": {
+            "alignment": {
+              "$ref": "common.schema.json#/$defs/path"
+            },
+            "links": {
+              "$ref": "common.schema.json#/$defs/path"
+            },
+            "candidates": {
+              "$ref": "common.schema.json#/$defs/path"
+            },
+            "reviews": {
+              "$ref": "common.schema.json#/$defs/path"
+            },
+            "eu_provisions": {
+              "$ref": "common.schema.json#/$defs/path"
+            }
+          }
+        },
+        "notice": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

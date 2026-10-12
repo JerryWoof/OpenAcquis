@@ -1,0 +1,124 @@
+name: Release
+
+# On a version tag (v0.5.0, ...): run the offline tests, build the website data, the open dataset and the
+# static API exactly as the Pages workflow does, validate every API file against its JSON Schema, and attach
+# the dataset and API to a GitHub Release. Publishing the release also fires the Zenodo GitHub integration
+# (once it has been switched on by hand, see docs/api.md), which archives the tagged source with a DOI using
+# .zenodo.json.
+#
+# Run it by hand (workflow_dispatch) for a dry run: everything except the release, with the files uploaded
+# as a workflow artifact.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      require_live:
+        description: "Fail if an alignment computed live (the seed directive) fell back to the committed static copy"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: write   # create the release and upload its assets
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e '.[dev]'
+
+      - name: Tag must match the package version
+        if: github.event_name == 'push'
+        run: |
+          PKG="$(python -c 'import openacquis; print(openacquis.__version__)')"
+          if [ "${GITHUB_REF_NAME#v}" != "$PKG" ]; then
+            echo "::error::tag $GITHUB_REF_NAME does not match openacquis.__version__ $PKG"
+            exit 1
+          fi
+          if ! grep -qx "version: ${GITHUB_REF_NAME#v}" CITATION.cff; then
+            echo "::error::CITATION.cff version does not match tag $GITHUB_REF_NAME (update version and date-released)"
+            exit 1
+          fi
+
+      - name: Offline tests
+        run: pytest -m "not live" -q
+
+      - name: Build site data (CELLAR measures, alignments with static fallback, dataset)
+        run: python scripts/build_site.py
+
+      - name: Build and validate the API (site/api/v1)
+        env:
+          REQUIRE_LIVE: ${{ inputs.require_live && '--require-live' || '' }}
+        run: python scripts/build_api.py --check $REQUIRE_LIVE
+
+      - name: Package release assets
+        id: pkg
+        run: |
+          V="${GITHUB_REF_NAME}"
+          case "$V" in v*) ;; *) V="dev-${GITHUB_SHA::7}" ;; esac
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          mkdir -p dist
+          (cd site/api/v1/dataset && zip -qr "../../../../dist/openacquis-dataset-$V.zip" .)
+          (cd site/api && zip -qr "../../dist/openacquis-api-$V.zip" v1)
+          cp site/api/v1/dataset/links.csv site/api/v1/dataset/links.jsonl \
+             site/api/v1/dataset/reviews.jsonl site/api/v1/dataset/datapackage.json dist/
+          (cd dist && sha256sum -- * > SHA256SUMS)
+          ls -l dist
+
+      - name: Release notes
+        run: |
+          python - "${GITHUB_REF_NAME#v}" > release-notes.md <<'PY'
+          import json, re, sys
+          version = sys.argv[1]
+          idx = json.load(open("site/api/v1/index.json", encoding="utf-8"))
+          d = idx["data"]
+          c = d["counts"]
+          pairs = ", ".join(f"{p['directive']} x {p['country'].upper()} ({p['mode']})" for p in d["pairs"]) or "none"
+          log = open("CHANGELOG.md", encoding="utf-8").read()
+          m = re.search(rf"^## {re.escape(version)}\b.*?$(.*?)(?=^## |\Z)", log, re.M | re.S)
+          print(f"OpenAcquis {version}.\n")
+          print(f"- Dataset: {c['links']} links, {c['reviews']} review records (CC-BY-4.0): "
+                "`openacquis-dataset-*.zip`, `links.csv`, `links.jsonl`, `reviews.jsonl`, `datapackage.json`.")
+          print(f"- Static API snapshot (`openacquis-api-*.zip`, the same files as {d['base_url']}): "
+                f"{c['directives']} directives, pairs: {pairs}.")
+          print("- Machine suggestions in the API are candidates for review, not findings about transposition.")
+          print("- Checksums: `SHA256SUMS`. Code: MIT. Data: CC-BY-4.0.\n")
+          if m:
+              print("## Changes\n" + m.group(1).strip())
+          PY
+          cat release-notes.md
+
+      - name: Upload as a workflow artifact (dry run and record)
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ steps.pkg.outputs.version }}
+          path: |
+            dist/
+            release-notes.md
+          retention-days: 14
+
+      - name: Create the GitHub release (fires the Zenodo webhook when enabled)
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" dist/* --clobber --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" --verify-tag \
+              --title "OpenAcquis $GITHUB_REF_NAME" --notes-file release-notes.md
+          fi

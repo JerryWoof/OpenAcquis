@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jerrywoof.github.io/OpenAcquis/api/v1/schemas/measures.schema.json",
+  "title": "National measures",
+  "description": "National measures member states notified for a directive (CELLAR).",
+  "allOf": [
+    {
+      "$ref": "envelope.schema.json"
+    }
+  ],
+  "properties": {
+    "data": {
+      "type": "object",
+      "required": [
+        "directive",
+        "count",
+        "measures"
+      ],
+      "properties": {
+        "directive": {
+          "$ref": "common.schema.json#/$defs/celex"
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "measures": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "country",
+              "title",
+              "uri"
+            ],
+            "properties": {
+              "country": {
+                "type": "string",
+                "pattern": "^[A-Z]{3}$"
+              },
+              "reference": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "title": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "act_type": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "journal": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "journal_date": {
+                "$ref": "common.schema.json#/$defs/date_or_null"
+              },
+              "notified": {
+                "$ref": "common.schema.json#/$defs/date_or_null"
+              },
+              "uri": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      }
+    }
+  }
+}

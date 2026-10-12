@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jerrywoof.github.io/OpenAcquis/api/v1/schemas/link.schema.json",
+  "title": "Link",
+  "description": "One dataset row: a source (official correlation table or human review) paired an EU provision with a national provision. Not a statement that the transposition is correct. Same fields as links.csv (openacquis.dataset.FIELDS).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "link_id",
+    "directive",
+    "country",
+    "eu_provision",
+    "eu_id",
+    "national_act",
+    "national_id",
+    "source",
+    "relation",
+    "status",
+    "source_title",
+    "source_url",
+    "reviewers",
+    "review_date",
+    "machine_score",
+    "machine_method",
+    "raw_eu_ref",
+    "raw_national_ref",
+    "note"
+  ],
+  "properties": {
+    "link_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{16}$"
+    },
+    "directive": {
+      "$ref": "common.schema.json#/$defs/celex"
+    },
+    "country": {
+      "$ref": "common.schema.json#/$defs/cc"
+    },
+    "eu_provision": {
+      "$ref": "common.schema.json#/$defs/eu_provision"
+    },
+    "eu_id": {
+      "$ref": "common.schema.json#/$defs/eu_id"
+    },
+    "national_act": {
+      "type": "string",
+      "minLength": 1
+    },
+    "national_id": {
+      "$ref": "common.schema.json#/$defs/national_id"
+    },
+    "source": {
+      "enum": [
+        "official_correlation_table",
+        "human_review"
+      ]
+    },
+    "relation": {
+      "description": "transposition, or existing_law: a human review of an act not notified for the directive (registry status baseline)",
+      "enum": [
+        "transposition",
+        "existing_law"
+      ]
+    },
+    "status": {
+      "enum": [
+        "listed",
+        "fully_compatible",
+        "partially_compatible",
+        "incompatible",
+        "confirmed",
+        "corrected"
+      ]
+    },
+    "source_title": {
+      "type": "string"
+    },
+    "source_url": {
+      "type": "string"
+    },
+    "reviewers": {
+      "type": "string"
+    },
+    "review_date": {
+      "type": "string",
+      "pattern": "^([0-9]{4}-[0-9]{2}-[0-9]{2})?$"
+    },
+    "machine_score": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "machine_method": {
+      "type": "string"
+    },
+    "raw_eu_ref": {
+      "type": "string"
+    },
+    "raw_national_ref": {
+      "type": "string"
+    },
+    "note": {
+      "type": "string"
+    }
+  }
+}

@@ -1,0 +1,24 @@
+cff-version: 1.2.0
+message: "If you use OpenAcquis or its dataset, please cite it as below. The dataset is CC-BY-4.0; the code is MIT."
+type: software
+title: "OpenAcquis: open map of how EU directives are transposed into national law"
+abstract: >-
+  Provision-level map of how EU directives are written into national law: notified national measures,
+  directive and national texts split into provisions with stable IDs, machine-suggested links with gap and
+  extra-rule candidates for human review, and an open dataset of links from official correlation tables and
+  human review. Machine suggestions are candidates, not findings about transposition.
+authors:
+  - family-names: Kraus
+    given-names: Vojtech
+version: 0.5.0
+date-released: "2026-10-12"
+license: MIT
+repository-code: "https://github.com/JerryWoof/OpenAcquis"
+url: "https://jerrywoof.github.io/OpenAcquis/"
+keywords:
+  - EU law
+  - transposition
+  - EUR-Lex
+  - legal informatics
+  - open data
+  - NIS2

@@ -1,0 +1,194 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jerrywoof.github.io/OpenAcquis/api/v1/schemas/directive.schema.json",
+  "title": "Directive",
+  "description": "One directive: CELLAR metadata, measures per member state, available directive x country pairs.",
+  "allOf": [
+    {
+      "$ref": "envelope.schema.json"
+    }
+  ],
+  "properties": {
+    "data": {
+      "type": "object",
+      "required": [
+        "celex",
+        "counts",
+        "pairs",
+        "links"
+      ],
+      "properties": {
+        "celex": {
+          "$ref": "common.schema.json#/$defs/celex"
+        },
+        "short": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "topic": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "title": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "date": {
+          "$ref": "common.schema.json#/$defs/date_or_null"
+        },
+        "transposition_deadlines": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "eurlex_url": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "eurlex_nim_url": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "total_measures": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "countries_with_measures": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "error": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Why CELLAR data is missing for this directive, if it is"
+        },
+        "countries": {
+          "type": "array",
+          "items": {
+            "$ref": "common.schema.json#/$defs/cc"
+          },
+          "uniqueItems": true
+        },
+        "href": {
+          "$ref": "common.schema.json#/$defs/path"
+        },
+        "counts": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "patternProperties": {
+            "^[A-Z]{3}$": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false,
+          "description": "Notified national measures per member state (ISO alpha-3), zeros included"
+        },
+        "eu_languages": {
+          "type": "object",
+          "patternProperties": {
+            "^[a-z]{2}$": {
+              "$ref": "common.schema.json#/$defs/path"
+            }
+          },
+          "additionalProperties": false
+        },
+        "pairs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "directive",
+              "country",
+              "mode",
+              "links",
+              "candidates",
+              "reviews"
+            ],
+            "properties": {
+              "directive": {
+                "$ref": "common.schema.json#/$defs/celex"
+              },
+              "country": {
+                "$ref": "common.schema.json#/$defs/cc"
+              },
+              "mode": {
+                "$ref": "common.schema.json#/$defs/mode"
+              },
+              "has_official": {
+                "type": "boolean"
+              },
+              "links_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "candidates_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "reviews_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "alignment": {
+                "$ref": "common.schema.json#/$defs/path"
+              },
+              "links": {
+                "$ref": "common.schema.json#/$defs/path"
+              },
+              "candidates": {
+                "$ref": "common.schema.json#/$defs/path"
+              },
+              "reviews": {
+                "$ref": "common.schema.json#/$defs/path"
+              },
+              "eu_provisions": {
+                "$ref": "common.schema.json#/$defs/path"
+              }
+            }
+          }
+        },
+        "links": {
+          "type": "object",
+          "required": [
+            "directive",
+            "measures",
+            "matrix"
+          ],
+          "properties": {
+            "directive": {
+              "$ref": "common.schema.json#/$defs/path"
+            },
+            "measures": {
+              "$ref": "common.schema.json#/$defs/path_or_null"
+            },
+            "matrix": {
+              "$ref": "common.schema.json#/$defs/path_or_null"
+            }
+          }
+        }
+      }
+    }
+  }
+}

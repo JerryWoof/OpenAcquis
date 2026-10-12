@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jerrywoof.github.io/OpenAcquis/api/v1/schemas/common.schema.json",
+  "title": "Shared definitions",
+  "description": "Identifiers and small records used by several OpenAcquis API schemas.",
+  "$defs": {
+    "celex": {
+      "type": "string",
+      "pattern": "^3[0-9]{4}L[0-9]{4}$",
+      "description": "CELEX number of a directive"
+    },
+    "cc": {
+      "type": "string",
+      "pattern": "^[a-z]{2}$",
+      "description": "ISO 3166-1 alpha-2, lower case"
+    },
+    "cc3": {
+      "type": "string",
+      "pattern": "^[A-Z]{3}$",
+      "description": "ISO 3166-1 alpha-3 as CELLAR uses it"
+    },
+    "lang": {
+      "type": "string",
+      "pattern": "^[a-z]{2}$"
+    },
+    "eu_id": {
+      "type": "string",
+      "pattern": "^eu:3[0-9]{4}L[0-9]{4}:[a-z]{2}:[a-z0-9_]+(\\.[a-z0-9_]+)*$"
+    },
+    "eu_provision": {
+      "type": "string",
+      "pattern": "^[a-z0-9_]+(\\.[a-z0-9_]+)*$"
+    },
+    "national_id": {
+      "type": "string",
+      "pattern": "^[a-z]{2}:[A-Za-z0-9_./-]{1,40}:[a-z0-9_]+(\\.[a-z0-9_]+)*$"
+    },
+    "act_slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$"
+    },
+    "path": {
+      "type": "string",
+      "pattern": "^[a-z0-9][A-Za-z0-9_./-]*\\.json$",
+      "description": "Path of another API file, relative to the API base URL"
+    },
+    "path_or_null": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-z0-9][A-Za-z0-9_./-]*\\.json$"
+    },
+    "datetime": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
+    },
+    "date_or_null": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+    },
+    "mode": {
+      "enum": [
+        "live",
+        "static",
+        "offline-sample"
+      ]
+    },
+    "suggestion_id": {
+      "type": "string",
+      "pattern": "^(link|gap|extra_rule):[^>]+>[^>]+$"
+    },
+    "review_status": {
+      "enum": [
+        null,
+        "confirmed",
+        "rejected",
+        "corrected",
+        "disputed"
+      ]
+    }
+  }
+}

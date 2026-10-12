@@ -1,0 +1,36 @@
+{
+  "title": "OpenAcquis: open map of how EU directives are transposed into national law",
+  "upload_type": "software",
+  "description": "<p>OpenAcquis maps how EU directives are written into national law, provision by provision and country by country: notified national measures (CELLAR), directive and national texts split into provisions with stable IDs, machine-suggested provision links with gap and extra-rule candidates, human review, and an open dataset of links from official correlation tables and human review.</p><p>This record archives the source code of a tagged release (MIT). The dataset inputs (official correlation tables in <code>data/eval/</code>, review records in <code>data/reviews/</code>) are included and the dataset is rebuilt with <code>openacquis dataset build</code>; the built dataset and a snapshot of the static API are attached to the GitHub release (CC-BY-4.0). Machine suggestions are candidates for review, not findings about whether a directive was transposed correctly.</p>",
+  "creators": [
+    {
+      "name": "Kraus, Vojtech"
+    }
+  ],
+  "license": "mit",
+  "access_right": "open",
+  "keywords": [
+    "EU law",
+    "transposition",
+    "EUR-Lex",
+    "legal informatics",
+    "open data",
+    "NIS2",
+    "correlation tables"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://jerrywoof.github.io/OpenAcquis/api/v1/index.json",
+      "relation": "isSupplementedBy",
+      "resource_type": "dataset",
+      "scheme": "url"
+    },
+    {
+      "identifier": "https://github.com/JerryWoof/OpenAcquis/blob/main/docs/api.md",
+      "relation": "isDocumentedBy",
+      "resource_type": "publication-softwaredocumentation",
+      "scheme": "url"
+    }
+  ],
+  "notes": "Code: MIT. Dataset and API data: CC-BY-4.0. EU texts © European Union (Commission Decision 2011/833/EU); national texts from e-Sbírka, Slov-Lex, RIS and gesetze-im-internet.de."
+}

@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jerrywoof.github.io/OpenAcquis/api/v1/schemas/act-provisions.schema.json",
+  "title": "National provisions of one act",
+  "description": "Provisions of one national act version with text (clipped where text_truncated), stored once per act.",
+  "allOf": [
+    {
+      "$ref": "envelope.schema.json"
+    }
+  ],
+  "properties": {
+    "data": {
+      "type": "object",
+      "required": [
+        "country",
+        "act_id",
+        "act_slug",
+        "count",
+        "provisions"
+      ],
+      "properties": {
+        "country": {
+          "$ref": "common.schema.json#/$defs/cc"
+        },
+        "act_id": {
+          "type": "string"
+        },
+        "act_slug": {
+          "$ref": "common.schema.json#/$defs/act_slug"
+        },
+        "version_date": {
+          "$ref": "common.schema.json#/$defs/date_or_null"
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "provisions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "act_id",
+              "provision",
+              "label",
+              "url",
+              "text",
+              "text_truncated"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "common.schema.json#/$defs/national_id"
+              },
+              "act_id": {
+                "type": "string"
+              },
+              "provision": {
+                "$ref": "common.schema.json#/$defs/eu_provision"
+              },
+              "label": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "section": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "url": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "text": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "text_truncated": {
+                "type": "boolean"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      }
+    }
+  }
+}

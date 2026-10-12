@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jerrywoof.github.io/OpenAcquis/api/v1/schemas/act.schema.json",
+  "title": "National act",
+  "description": "Metadata of one national act and the directives it is aligned with.",
+  "allOf": [
+    {
+      "$ref": "envelope.schema.json"
+    }
+  ],
+  "properties": {
+    "data": {
+      "type": "object",
+      "required": [
+        "country",
+        "act_id",
+        "act_slug",
+        "provisions"
+      ],
+      "properties": {
+        "country": {
+          "$ref": "common.schema.json#/$defs/cc"
+        },
+        "act_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "act_slug": {
+          "$ref": "common.schema.json#/$defs/act_slug"
+        },
+        "label": {
+          "type": "string"
+        },
+        "title": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "url": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "version_date": {
+          "$ref": "common.schema.json#/$defs/date_or_null"
+        },
+        "used_by": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "directive",
+              "role"
+            ],
+            "properties": {
+              "directive": {
+                "$ref": "common.schema.json#/$defs/celex"
+              },
+              "role": {
+                "enum": [
+                  "main",
+                  "measure"
+                ]
+              }
+            }
+          }
+        },
+        "provisions_published": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "provisions": {
+          "$ref": "common.schema.json#/$defs/path"
+        },
+        "note": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

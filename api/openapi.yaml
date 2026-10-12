@@ -1,0 +1,293 @@
+openapi: 3.1.0
+jsonSchemaDialect: https://json-schema.org/draft/2020-12/schema
+info:
+  title: OpenAcquis static API
+  version: "1"
+  summary: How EU directives are transposed into national law, provision by provision (read-only static JSON).
+  license:
+    name: CC-BY-4.0
+    identifier: CC-BY-4.0
+  contact:
+    url: https://github.com/JerryWoof/OpenAcquis/issues
+  description: |
+    Read-only static JSON files on GitHub Pages, rebuilt with the website (weekly and on every push to main).
+    Documentation: https://github.com/JerryWoof/OpenAcquis/blob/main/docs/api.md
+
+    - **GET only**, no authentication, **no query parameters** (a static host ignores them). Data is split
+      into files instead: one file per directive, per directive x country, per national act.
+    - **CORS**: `Access-Control-Allow-Origin: *` on every response. Preflight (`OPTIONS`) is **not**
+      supported (GitHub Pages answers 405), so send simple GETs without custom headers.
+    - **Caching**: `Cache-Control: max-age=600`, `ETag` / `If-None-Match` (304), gzip, `Range`.
+    - **Errors**: a missing file is a 404 with an **HTML** body. Check the status before parsing.
+    - **Envelope**: every JSON file (except the bulk files under `dataset/`) is
+      `{"$schema", "api_version", "dataset_version", "built_at", "generator", "mode", "license", "data"}`.
+      `mode` is `live` (computed in this build), `static` (the committed fallback copy, see `computed_at`)
+      or `offline-sample`.
+    - **Versioning**: the `v1` path changes only on a breaking change (field removed or renamed, type or ID
+      scheme changed). New fields can appear within v1. `dataset_version` follows the package version;
+      immutable snapshots are GitHub Release assets and Zenodo records.
+
+    Machine suggestions (`alignment`, `candidates`, `matrix`) are **candidates for human review, not
+    findings**: they say nothing about whether a member state transposed a directive correctly. Dataset
+    links (`links`) come from official correlation tables or human review.
+servers:
+  - url: https://jerrywoof.github.io/OpenAcquis/api/v1
+tags:
+  - name: directives
+  - name: alignment
+    description: Machine candidates (not findings)
+  - name: dataset
+  - name: texts
+paths:
+  /index.json:
+    get:
+      operationId: getIndex
+      summary: Entry point with versions, counts and every published path
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "schemas/index.schema.json" }
+  /directives.json:
+    get:
+      operationId: listDirectives
+      tags: [directives]
+      summary: The curated directives
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "schemas/directives.schema.json" }
+  /directives/{celex}.json:
+    get:
+      operationId: getDirective
+      tags: [directives]
+      summary: One directive with measures per member state and the available directive x country pairs
+      parameters: [{ $ref: "#/components/parameters/celex" }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "schemas/directive.schema.json" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /directives/{celex}/measures.json:
+    get:
+      operationId: getMeasures
+      tags: [directives]
+      summary: National measures notified for the directive (CELLAR), all member states
+      parameters: [{ $ref: "#/components/parameters/celex" }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "schemas/measures.schema.json" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /directives/{celex}/matrix.json:
+    get:
+      operationId: getMatrix
+      tags: [alignment]
+      summary: Article x country matrix (machine candidates and official tables)
+      parameters: [{ $ref: "#/components/parameters/celex" }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "schemas/matrix.schema.json" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /directives/{celex}/eu/{lang}/provisions.json:
+    get:
+      operationId: getEuProvisions
+      tags: [texts]
+      summary: Provisions of the directive in one language (texts may be clipped, see text_truncated)
+      parameters:
+        - { $ref: "#/components/parameters/celex" }
+        - { $ref: "#/components/parameters/lang" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "schemas/provisions.schema.json" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /directives/{celex}/{cc}/alignment.json:
+    get:
+      operationId: getAlignment
+      tags: [alignment]
+      summary: Provision-level machine candidates for one country, next to the official correlation table where one exists
+      parameters:
+        - { $ref: "#/components/parameters/celex" }
+        - { $ref: "#/components/parameters/cc" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "schemas/alignment.schema.json" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /directives/{celex}/{cc}/links.json:
+    get:
+      operationId: getLinks
+      tags: [dataset]
+      summary: Dataset links (official correlation table and human review) for one country
+      parameters:
+        - { $ref: "#/components/parameters/celex" }
+        - { $ref: "#/components/parameters/cc" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "schemas/links.schema.json" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /directives/{celex}/{cc}/candidates.json:
+    get:
+      operationId: getCandidates
+      tags: [alignment]
+      summary: Every machine suggestion (link, gap, extra-rule candidates) with its review status
+      parameters:
+        - { $ref: "#/components/parameters/celex" }
+        - { $ref: "#/components/parameters/cc" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "schemas/candidates.schema.json" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /directives/{celex}/{cc}/reviews.json:
+    get:
+      operationId: getReviews
+      tags: [dataset]
+      summary: Human review records for one country, including rejections
+      parameters:
+        - { $ref: "#/components/parameters/celex" }
+        - { $ref: "#/components/parameters/cc" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "schemas/reviews.schema.json" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /acts/{cc}/{act_slug}.json:
+    get:
+      operationId: getAct
+      tags: [texts]
+      summary: National act metadata
+      parameters:
+        - { $ref: "#/components/parameters/cc" }
+        - { $ref: "#/components/parameters/act_slug" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "schemas/act.schema.json" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /acts/{cc}/{act_slug}/provisions.json:
+    get:
+      operationId: getActProvisions
+      tags: [texts]
+      summary: National provisions of one act with text, stored once per act
+      parameters:
+        - { $ref: "#/components/parameters/cc" }
+        - { $ref: "#/components/parameters/act_slug" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "schemas/act-provisions.schema.json" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /dataset/links.jsonl:
+    get:
+      operationId: getLinksBulk
+      tags: [dataset]
+      summary: All dataset links, one JSON object per line (schemas/link.schema.json)
+      description: Do not rely on the Content-Type; GitHub Pages may serve .jsonl as application/octet-stream.
+      responses:
+        "200":
+          description: JSON Lines, one Link per line
+          content:
+            application/octet-stream:
+              schema: { type: string }
+  /dataset/links.csv:
+    get:
+      operationId: getLinksCsv
+      tags: [dataset]
+      summary: All dataset links as CSV (fields in dataset/datapackage.json)
+      responses:
+        "200":
+          description: CSV with a header row
+          content:
+            text/csv:
+              schema: { type: string }
+  /dataset/reviews.jsonl:
+    get:
+      operationId: getReviewsBulk
+      tags: [dataset]
+      summary: Every human review record, one JSON object per line (schemas/review.schema.json)
+      responses:
+        "200":
+          description: JSON Lines, one review record per line
+          content:
+            application/octet-stream:
+              schema: { type: string }
+  /dataset/datapackage.json:
+    get:
+      operationId: getDatapackage
+      tags: [dataset]
+      summary: Frictionless Data Package describing the bulk files
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { type: object }
+components:
+  parameters:
+    celex:
+      name: celex
+      in: path
+      required: true
+      description: CELEX number of the directive
+      schema: { type: string, pattern: "^3[0-9]{4}L[0-9]{4}$" }
+      example: 32022L2555
+    cc:
+      name: cc
+      in: path
+      required: true
+      description: ISO 3166-1 alpha-2 country code, lower case (index.json lists the published pairs)
+      schema: { type: string, pattern: "^[a-z]{2}$" }
+      example: cz
+    lang:
+      name: lang
+      in: path
+      required: true
+      description: Two-letter EU language code
+      schema: { type: string, pattern: "^[a-z]{2}$" }
+      example: cs
+    act_slug:
+      name: act_slug
+      in: path
+      required: true
+      description: Act ID made URL-safe ("/" becomes "-"); every record also carries the raw act_id
+      schema: { type: string, pattern: "^[a-z0-9_-]+$" }
+      example: 264-2025
+  responses:
+    NotFound:
+      description: Not published (HTML body)
+      content:
+        text/html:
+          schema: { type: string }
+  schemas:
+    Envelope: { $ref: "schemas/envelope.schema.json" }
+    Link: { $ref: "schemas/link.schema.json" }
+    Review: { $ref: "schemas/review.schema.json" }
+    Alignment: { $ref: "schemas/alignment.schema.json" }
+    Candidates: { $ref: "schemas/candidates.schema.json" }

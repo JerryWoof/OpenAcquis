@@ -1,0 +1,160 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jerrywoof.github.io/OpenAcquis/api/v1/schemas/matrix.schema.json",
+  "title": "Article x country matrix",
+  "description": "Per directive article and country: the most frequent top machine candidate section, the sections an official table lists, units with a candidate link and gap candidates.",
+  "allOf": [
+    {
+      "$ref": "envelope.schema.json"
+    }
+  ],
+  "properties": {
+    "data": {
+      "type": "object",
+      "required": [
+        "directive",
+        "countries",
+        "articles",
+        "notice"
+      ],
+      "properties": {
+        "directive": {
+          "$ref": "common.schema.json#/$defs/celex"
+        },
+        "short": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "computed_at": {
+          "$ref": "common.schema.json#/$defs/datetime"
+        },
+        "countries": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "code",
+              "name",
+              "mode"
+            ],
+            "properties": {
+              "code": {
+                "$ref": "common.schema.json#/$defs/cc"
+              },
+              "name": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              },
+              "method": {
+                "type": "string"
+              },
+              "built_at": {
+                "$ref": "common.schema.json#/$defs/datetime"
+              },
+              "mode": {
+                "$ref": "common.schema.json#/$defs/mode"
+              },
+              "has_official": {
+                "type": "boolean"
+              },
+              "act": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "articles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "key",
+              "label",
+              "cells"
+            ],
+            "properties": {
+              "key": {
+                "$ref": "common.schema.json#/$defs/eu_provision"
+              },
+              "label": {
+                "type": "string"
+              },
+              "heading": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "cells": {
+                "type": "object",
+                "patternProperties": {
+                  "^[a-z]{2}$": {
+                    "type": "object",
+                    "required": [
+                      "top",
+                      "units",
+                      "linked_units",
+                      "gaps"
+                    ],
+                    "properties": {
+                      "top": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "top_score": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "others": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "official": {
+                        "type": [
+                          "array",
+                          "null"
+                        ],
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "units": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "linked_units": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "gaps": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "href": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "notice": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

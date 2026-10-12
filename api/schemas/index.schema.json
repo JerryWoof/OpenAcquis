@@ -1,0 +1,237 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jerrywoof.github.io/OpenAcquis/api/v1/schemas/index.schema.json",
+  "title": "API index",
+  "description": "Entry point: versions, counts and the path of every file.",
+  "allOf": [
+    {
+      "$ref": "envelope.schema.json"
+    }
+  ],
+  "properties": {
+    "data": {
+      "type": "object",
+      "required": [
+        "api_version",
+        "dataset_version",
+        "base_url",
+        "counts",
+        "links",
+        "pairs",
+        "acts"
+      ],
+      "properties": {
+        "api_version": {
+          "const": "1"
+        },
+        "dataset_version": {
+          "type": "string"
+        },
+        "base_url": {
+          "type": "string",
+          "pattern": "^https://"
+        },
+        "deprecated": {
+          "type": "boolean"
+        },
+        "notice": {
+          "type": "string"
+        },
+        "sources_mode": {
+          "type": "object",
+          "required": [],
+          "properties": {
+            "directives": {
+              "$ref": "common.schema.json#/$defs/mode"
+            },
+            "alignments": {
+              "enum": [
+                "live",
+                "static",
+                "offline-sample",
+                "mixed",
+                null
+              ]
+            }
+          }
+        },
+        "counts": {
+          "type": "object",
+          "required": [
+            "directives",
+            "alignment_pairs",
+            "links",
+            "reviews"
+          ],
+          "properties": {
+            "directives": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "alignment_pairs": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "pairs": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "links": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "reviews": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "candidates": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "acts": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "eu_provisions": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "national_provisions": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "links": {
+          "type": "object",
+          "required": [
+            "directives",
+            "openapi",
+            "datapackage"
+          ],
+          "properties": {
+            "directives": {
+              "$ref": "common.schema.json#/$defs/path"
+            },
+            "openapi": {
+              "type": "string"
+            },
+            "schemas": {
+              "type": "string"
+            },
+            "datapackage": {
+              "$ref": "common.schema.json#/$defs/path"
+            },
+            "links_csv": {
+              "type": "string"
+            },
+            "links_jsonl": {
+              "type": "string"
+            },
+            "reviews_jsonl": {
+              "type": "string"
+            },
+            "releases": {
+              "type": "string"
+            },
+            "doi": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        },
+        "pairs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "directive",
+              "country",
+              "mode",
+              "links",
+              "candidates",
+              "reviews"
+            ],
+            "properties": {
+              "directive": {
+                "$ref": "common.schema.json#/$defs/celex"
+              },
+              "country": {
+                "$ref": "common.schema.json#/$defs/cc"
+              },
+              "mode": {
+                "$ref": "common.schema.json#/$defs/mode"
+              },
+              "has_official": {
+                "type": "boolean"
+              },
+              "links_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "candidates_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "reviews_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "alignment": {
+                "$ref": "common.schema.json#/$defs/path"
+              },
+              "links": {
+                "$ref": "common.schema.json#/$defs/path"
+              },
+              "candidates": {
+                "$ref": "common.schema.json#/$defs/path"
+              },
+              "reviews": {
+                "$ref": "common.schema.json#/$defs/path"
+              },
+              "eu_provisions": {
+                "$ref": "common.schema.json#/$defs/path"
+              }
+            }
+          }
+        },
+        "acts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "country",
+              "act_id",
+              "act_slug",
+              "href",
+              "provisions"
+            ],
+            "properties": {
+              "country": {
+                "$ref": "common.schema.json#/$defs/cc"
+              },
+              "act_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "act_slug": {
+                "$ref": "common.schema.json#/$defs/act_slug"
+              },
+              "label": {
+                "type": "string"
+              },
+              "href": {
+                "$ref": "common.schema.json#/$defs/path"
+              },
+              "provisions": {
+                "$ref": "common.schema.json#/$defs/path"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

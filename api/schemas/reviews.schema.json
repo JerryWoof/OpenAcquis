@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jerrywoof.github.io/OpenAcquis/api/v1/schemas/reviews.schema.json",
+  "title": "Review records for one pair",
+  "description": "Every human review record for one directive x country, including rejections.",
+  "allOf": [
+    {
+      "$ref": "envelope.schema.json"
+    }
+  ],
+  "properties": {
+    "data": {
+      "type": "object",
+      "required": [
+        "directive",
+        "country",
+        "count",
+        "reviews"
+      ],
+      "properties": {
+        "directive": {
+          "$ref": "common.schema.json#/$defs/celex"
+        },
+        "country": {
+          "$ref": "common.schema.json#/$defs/cc"
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "reviews": {
+          "type": "array",
+          "items": {
+            "$ref": "review.schema.json"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jerrywoof.github.io/OpenAcquis/api/v1/schemas/links.schema.json",
+  "title": "Links for one pair",
+  "description": "Dataset links (official correlation table and human review) for one directive x country.",
+  "allOf": [
+    {
+      "$ref": "envelope.schema.json"
+    }
+  ],
+  "properties": {
+    "data": {
+      "type": "object",
+      "required": [
+        "directive",
+        "country",
+        "count",
+        "links"
+      ],
+      "properties": {
+        "directive": {
+          "$ref": "common.schema.json#/$defs/celex"
+        },
+        "country": {
+          "$ref": "common.schema.json#/$defs/cc"
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "links": {
+          "type": "array",
+          "items": {
+            "$ref": "link.schema.json"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jerrywoof.github.io/OpenAcquis/api/v1/schemas/envelope.schema.json",
+  "title": "Envelope",
+  "description": "Every API JSON file (not the bulk dataset files) has this envelope. New fields may be added within v1.",
+  "type": "object",
+  "required": [
+    "$schema",
+    "api_version",
+    "dataset_version",
+    "built_at",
+    "generator",
+    "mode",
+    "license",
+    "data"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "pattern": "^https://jerrywoof\\.github\\.io/OpenAcquis/api/v1/schemas/[a-z-]+\\.schema\\.json$"
+    },
+    "api_version": {
+      "const": "1"
+    },
+    "dataset_version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+([-+][0-9A-Za-z.-]+)?$"
+    },
+    "built_at": {
+      "$ref": "common.schema.json#/$defs/datetime"
+    },
+    "generator": {
+      "type": "string",
+      "pattern": "^openacquis "
+    },
+    "mode": {
+      "$ref": "common.schema.json#/$defs/mode",
+      "description": "live: computed in this build; static: the committed fallback copy; offline-sample: bundled samples"
+    },
+    "license": {
+      "const": "CC-BY-4.0"
+    },
+    "data": {}
+  }
+}

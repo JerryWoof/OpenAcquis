@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jerrywoof.github.io/OpenAcquis/api/v1/schemas/directives.schema.json",
+  "title": "Directives",
+  "description": "The curated directives with their notified-measure totals.",
+  "allOf": [
+    {
+      "$ref": "envelope.schema.json"
+    }
+  ],
+  "properties": {
+    "data": {
+      "type": "object",
+      "required": [
+        "count",
+        "directives"
+      ],
+      "properties": {
+        "count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "directives": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "celex",
+              "short",
+              "countries",
+              "href"
+            ],
+            "properties": {
+              "celex": {
+                "$ref": "common.schema.json#/$defs/celex"
+              },
+              "short": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "topic": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "title": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "date": {
+                "$ref": "common.schema.json#/$defs/date_or_null"
+              },
+              "transposition_deadlines": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "eurlex_url": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "eurlex_nim_url": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "total_measures": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "countries_with_measures": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "error": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Why CELLAR data is missing for this directive, if it is"
+              },
+              "countries": {
+                "type": "array",
+                "items": {
+                  "$ref": "common.schema.json#/$defs/cc"
+                },
+                "uniqueItems": true
+              },
+              "href": {
+                "$ref": "common.schema.json#/$defs/path"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

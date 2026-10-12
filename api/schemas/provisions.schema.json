@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jerrywoof.github.io/OpenAcquis/api/v1/schemas/provisions.schema.json",
+  "title": "EU provisions",
+  "description": "Provisions of a directive in one language: label, heading, EUR-Lex URL and text (clipped where text_truncated).",
+  "allOf": [
+    {
+      "$ref": "envelope.schema.json"
+    }
+  ],
+  "properties": {
+    "data": {
+      "type": "object",
+      "required": [
+        "directive",
+        "language",
+        "count",
+        "provisions"
+      ],
+      "properties": {
+        "directive": {
+          "$ref": "common.schema.json#/$defs/celex"
+        },
+        "language": {
+          "$ref": "common.schema.json#/$defs/lang"
+        },
+        "source": {
+          "type": "string"
+        },
+        "title": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "provisions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "provision",
+              "label",
+              "url",
+              "text",
+              "text_truncated"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "common.schema.json#/$defs/eu_id"
+              },
+              "provision": {
+                "$ref": "common.schema.json#/$defs/eu_provision"
+              },
+              "label": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "heading": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "url": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "text": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "text_truncated": {
+                "type": "boolean"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      }
+    }
+  }
+}

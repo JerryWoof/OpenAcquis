@@ -1,0 +1,136 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jerrywoof.github.io/OpenAcquis/api/v1/schemas/candidates.schema.json",
+  "title": "Machine candidates for one pair",
+  "description": "Every machine suggestion of the alignment (link, gap and extra-rule candidates) with its review status. Candidates, not findings.",
+  "allOf": [
+    {
+      "$ref": "envelope.schema.json"
+    }
+  ],
+  "properties": {
+    "data": {
+      "type": "object",
+      "required": [
+        "directive",
+        "country",
+        "count",
+        "notice",
+        "candidates"
+      ],
+      "properties": {
+        "directive": {
+          "$ref": "common.schema.json#/$defs/celex"
+        },
+        "country": {
+          "$ref": "common.schema.json#/$defs/cc"
+        },
+        "method": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "threshold": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "notice": {
+          "type": "string"
+        },
+        "candidates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "kind",
+              "eu_id",
+              "national_id",
+              "score",
+              "status",
+              "review_status"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "common.schema.json#/$defs/suggestion_id"
+              },
+              "kind": {
+                "enum": [
+                  "link",
+                  "gap",
+                  "extra_rule"
+                ]
+              },
+              "eu_id": {
+                "anyOf": [
+                  {
+                    "$ref": "common.schema.json#/$defs/eu_id"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "national_id": {
+                "anyOf": [
+                  {
+                    "$ref": "common.schema.json#/$defs/national_id"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "score": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "rank": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1
+              },
+              "alternatives": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "status": {
+                "const": "candidate"
+              },
+              "method": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "review_status": {
+                "$ref": "common.schema.json#/$defs/review_status"
+              },
+              "reviewers": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "additionalProperties": false,
+            "description": "A machine suggestion awaiting review. kind=link: the national provision may implement the EU provision; gap: nothing similar found; extra_rule: the national provision matches nothing in the directive."
+          }
+        }
+      }
+    }
+  }
+}
