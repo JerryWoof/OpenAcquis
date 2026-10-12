@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "openacquis"
-version = "0.1.0"
+version = "0.2.0"
 description = "Open, AI-assisted map of how EU directives are written into national law."
 readme = "README.md"
 license = "MIT"
@@ -35,4 +35,4 @@ packages = ["src/openacquis"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-markers = ["live: hits the real EU Publications Office endpoint (deselect with -m 'not live')"]
+markers = ["live: hits real public servers (EU Publications Office, e-Sbírka); deselect with -m 'not live'"]
