@@ -7,7 +7,9 @@
 | EU act pages | EUR-Lex, e.g. `https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32022L2555` | Public, but scripted requests get an AWS WAF challenge (`202`, `x-amzn-waf-action: challenge`, empty body) | Fallback only (detected and reported, never parsed); linked from every provision |
 | Czechia: laws | e-Sbírka (official Collection of Laws), `https://e-sbirka.gov.cz` (formerly www.e-sbirka.cz): the JSON API behind the web app, `GET /sbr-cache/dokumenty-sbirky/{staleUrl}` (metadata) and `.../{staleUrl}/fragmenty?cisloStranky=N` (text, 1000 fragments per page) | Public, no key or registration; **undocumented**, may change | **Used** (v0.2): `law cz`, `openacquis.adapters.cz` |
 | Czechia: bulk | e-Sbírka open data, `https://opendata.eselpoint.gov.cz/datove-sady-esbirka/` (nightly JSON dumps; fragments ~1.2 GB gzip) and SPARQL | Public | Documented; not used yet (fallback if the API changes) |
-| Czechia: correlation tables | Government bills on psp.cz (*rozdílové tabulky*); ISAP | Public documents | Planned (v0.3, evaluation) |
+| Czechia: correlation tables | Government bills on psp.cz (*rozdílové tabulky*), e.g. `https://www.psp.cz/sqw/text/orig2.sqw?idd=244067` (tisk 759/0, Word `.doc`); ISAP | Public documents (official works) | **Used** (v0.3): evaluation set `data/eval/nis2_cz.jsonl`, `openacquis.evalset`, cached under `~/.cache/openacquis/psp/` |
+| Embedding models (optional) | Hugging Face Hub via sentence-transformers, e.g. `intfloat/multilingual-e5-base` (~1.1 GB, downloaded once into `~/.cache/huggingface`) | Public | **Used** (v0.3) with `openacquis[embeddings]`; vectors cached in `~/.cache/openacquis/embeddings/` |
+| LLM judge (optional) | Anthropic Messages API | API key (`ANTHROPIC_API_KEY`), paid | Implemented (v0.3), not yet run; results cached in `~/.cache/openacquis/judge/` |
 | Slovakia | Slov-Lex | Public | Planned (v0.4) |
 | Austria | RIS (Rechtsinformationssystem des Bundes), Open Government Data API | Public API | Planned (v0.4) |
 | Germany | gesetze-im-internet.de (XML); NeuRIS / rechtsinformationen.bund.de (in testing, due 2028) | Public | Planned (v0.4) |
@@ -16,7 +18,7 @@
 
 ## Politeness
 
-Every request sends the User-Agent `OpenAcquis/0.2 (+https://github.com/JerryWoof/OpenAcquis)` and has a timeout.
+Every request sends the User-Agent `OpenAcquis/0.3 (+https://github.com/JerryWoof/OpenAcquis)` and has a timeout.
 Downloads are cached on disk under `~/.cache/openacquis/`: `eurlex/` holds EU texts with no expiry (a published
 OJ text does not change; `openacquis text --refresh` downloads it again), `esbirka/` holds e-Sbírka JSON for 24 h.
 Set `OPENACQUIS_CACHE` to move it. The e-Sbírka client waits at least 1 s between requests. The website build

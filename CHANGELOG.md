@@ -3,6 +3,51 @@
 All notable changes to OpenAcquis. Versions follow [Semantic Versioning](https://semver.org/); while the
 version is 0.x, the command-line options and data formats can still change.
 
+## 0.3.0 (2026-10-12)
+
+First alignment: NIS2 × Czechia, provision by provision, scored against the official correlation table.
+
+### Added
+- `openacquis align <CELEX> <country>` (`openacquis.align`): directive text in the country's language plus the
+  transposing act(s) (default for NIS2 × CZ: 264/2025 Sb. plus any act the evaluation set cites) -> candidates ->
+  optional judgments -> predicted links, **gap candidates** (EU provisions with no link) and **extra-rule
+  candidates** (provisions of the transposing act that match nothing). JSON export keeps IDs, scores, texts and
+  URLs; everything is `status: "candidate"`. Options: `--embedder lexical|e5|e5-sym|bge-m3`,
+  `--judge none|rule|anthropic`, `--threshold`, `-k`, `--judge-k`, `--acts`, `--version-date`, `-o`.
+- `openacquis eval nis2-cz` (`openacquis.evaluate`): recall@k and MRR of candidate retrieval at four levels
+  (provision, odstavec, §, article -> §), precision / recall / F1 of predicted links at a threshold (all and
+  "in scope"), a threshold sweep with 2-fold cross-validation, coverage of gap and extra-rule candidates, and
+  judge agreement. Options: `--embedder`, `--k 1,5,10`, `--judge`, `--errors N`, `-f json`, `-o`.
+  Results: [docs/evaluation.md](docs/evaluation.md).
+- Evaluation set `data/eval/nis2_cz.jsonl` (`openacquis.evalset`, `scripts/build_evalset.py`): 569 links from the
+  rozdílová tabulka of the Cybersecurity Act bill (tisk 759/0), read from Word `.doc` with the stdlib.
+- Candidate matching (`openacquis.match`): stdlib lexical embedder (character n-grams, light Czech stemmer) and
+  optional `SentenceTransformerEmbedder` (multilingual-e5-base, bge-m3) with an SQLite vector cache; roll-up from
+  points to paragraphs and articles; JSONL export with evidence.
+- Judge (`openacquis.judge`, [docs/judge.md](docs/judge.md)): `AnthropicJudge` (structured output, verified
+  verbatim evidence quotes, prompt caching, disk cache, Message Batches), keyless `RuleJudge`, `FakeJudge`.
+- Website: `alignment.html?id=32022L2555_cz`, every NIS2 paragraph with the official correlation table and the top
+  machine suggestion, texts side by side with links to EUR-Lex and e-Sbírka; linked from the home page and the NIS2
+  page. Built with the lexical embedder; falls back to the committed `site/static-data/32022L2555_cz.json` when
+  texts cannot be fetched (`build_site.py --write-static` refreshes it).
+- Optional extras in `pyproject.toml`: `embeddings` (sentence-transformers) and `llm` (anthropic).
+- Docs: `docs/evaluation.md`, `docs/judge.md`, `docs/README.md` (index).
+
+### Results (NIS2 × 264/2025 Sb., lexical)
+- A provision listed in the table is among the top 5 candidates for 56.3 % of the 197 gold NIS2 provisions (top 1:
+  35.0 %); the right § is in the top 5 for 78.7 %, and for whole articles 90.9 %. multilingual-e5-base: 44.2 %,
+  73.6 %, 90.9 %.
+- Predicted links at threshold 0.20: precision 0.318 (0.414 in scope), recall 0.130 of gold pairs (a link counts
+  for a gold provision only when predicted on that provision or one of its parts).
+
+### Changed
+- Version 0.3.0; User-Agent `OpenAcquis/0.3`.
+
+### Known limitations
+- The LLM judge has not been run against the evaluation set (no API key yet); the rule judge does not help.
+- Gap candidates are mostly false alarms so far (66 of 118 are listed in the official table).
+- Only NIS2 × Czechia, and only the Cybersecurity Act; the table describes the 2024 bill.
+
 ## 0.2.0 (2026-10-12)
 
 Texts in: directive texts and Czech law, split into provisions with stable IDs.
