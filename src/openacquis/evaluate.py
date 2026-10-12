@@ -47,13 +47,15 @@ transposes NIS2 correctly.
 from __future__ import annotations
 
 import json
+import math
 from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass, replace
 from datetime import date
 from pathlib import Path
 from typing import Any
 
-from .align import AlignedProvision, AlignmentResult, align, extra_rule_candidates
+from .align import RANK_ONLY_NOTE, AlignedProvision, AlignmentResult, align, default_gap_margin, rank_only
+from .leftovers import Leftovers, find_leftovers
 from .evalset import GoldLink, load_jsonl
 from .match import MatchResult, level_id
 from .provisions import Document
@@ -263,8 +265,12 @@ def threshold_view(result: AlignmentResult, threshold: float, per_eu: int = 1) -
     provs = [AlignedProvision(a.eu_id, a.candidates,
                               links=[c.national_id for c in a.candidates[:per_eu] if c.score >= threshold])
              for a in result.provisions]
-    extra = extra_rule_candidates(result.match, provs, threshold, result.transposing_acts)
-    return replace(result, provisions=provs, judge=None, extra_rule_candidates=extra, threshold=threshold)
+    gaps = not rank_only(result.method)
+    lo = find_leftovers(result.match, {a.eu_id: a.links for a in provs}, threshold=threshold,
+                        acts=result.transposing_acts, gap_margin=default_gap_margin(result.method),
+                        gaps=gaps, gap_note=None if gaps else RANK_ONLY_NOTE)
+    return replace(result, provisions=provs, judge=None, threshold=threshold, leftovers=lo,
+                   extra_rule_candidates=[x.to_dict() for x in lo.extra_rule_candidates])
 
 
 def predicted_links(result: AlignmentResult) -> list[tuple[str, str]]:
@@ -346,19 +352,222 @@ def coverage(result: AlignmentResult, gold: Sequence[GoldLink]) -> dict:
     extras = [x["national_id"] for x in result.extra_rule_candidates]
     extra_in_gold = [x for x in extras if _any_on_path(x, gold_nat)]
     nat_units = [u.id for u in result.match.national_units if u.id.split(":")[1] in result.transposing_acts]
+    unlinked = result.unlinked
+    lo = result.leftovers
     return {
+        "gap_note": lo.gap_note if lo is not None else None,
         "eu_units": len(units),
         "eu_units_covered_by_table": len(covered_units),
         "eu_units_with_link": len(linked),
         "gold_eu_provisions": len(gold_eu),
         "gold_eu_provisions_with_link": gold_with_link,
         "gold_eu_coverage": _r(gold_with_link / len(gold_eu)) if gold_eu else 0.0,
+        "unlinked_eu_units": len(unlinked),
+        "unlinked_listed_in_table": sum(1 for g in unlinked if _any_on_path(g, gold_eu)),
         "gap_candidates": len(gaps),
         "gap_candidates_listed_in_table": len(gap_in_gold),
         "national_units": len(nat_units),
         "national_units_in_table": sum(1 for u in nat_units if _any_on_path(u, gold_nat)),
         "extra_rule_candidates": len(extras),
         "extra_rule_candidates_listed_in_table": len(extra_in_gold),
+    }
+
+
+def wilson(k: int, n: int, z: float = 1.96) -> tuple[float, float] | None:
+    """Wilson score interval for ``k`` successes out of ``n`` (95 % by default)."""
+    if n <= 0:
+        return None
+    p = k / n
+    d = 1 + z * z / n
+    c = (p + z * z / (2 * n)) / d
+    h = z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / d
+    return (_r(max(0.0, c - h)), _r(min(1.0, c + h)))
+
+
+def _article_number(eu_doc: Document, article_id: str) -> int | None:
+    art = eu_doc.get(article_id)
+    try:
+        return int(art.number) if art is not None else None
+    except (TypeError, ValueError):
+        return None
+
+
+def gap_by_article(lo: Leftovers, gold_eu: Sequence[str]) -> list[dict]:
+    """Gap candidates per EU article: ``{article_id, candidates, listed_in_table}``, largest first.
+
+    Candidates of one article are not independent (a whole article the act transposes
+    elsewhere, or not at all, gives many at once), so a list's precision can rest on one
+    cluster; this shows how much.
+    """
+    out: dict[str, dict] = {}
+    for g in lo.gap_candidates:
+        a = out.setdefault(g.article_id, {"article_id": g.article_id, "candidates": 0, "listed_in_table": 0})
+        a["candidates"] += 1
+        a["listed_in_table"] += _any_on_path(g.eu_id, gold_eu)
+    return sorted(out.values(), key=lambda a: -a["candidates"])
+
+
+def _leftover_scores(lo: Leftovers, gold_eu: Sequence[str], gold_nat: Sequence[str]) -> dict:
+    gaps = [g.eu_id for g in lo.gap_candidates]
+    extras = [x.national_id for x in lo.extra_rule_candidates]
+    gi = sum(1 for g in gaps if _any_on_path(g, gold_eu))
+    xi = sum(1 for x in extras if _any_on_path(x, gold_nat))
+    secs = lo.extra_rule_sections()
+    si = sum(1 for x in secs if _any_on_path(x["section_id"], gold_nat))
+    arts = gap_by_article(lo, gold_eu)
+    top = arts[0] if arts else None
+    rest_n = len(gaps) - (top["candidates"] if top else 0)
+    rest_i = gi - (top["listed_in_table"] if top else 0)
+    return {
+        "gap_candidates": len(gaps),
+        "gap_listed_in_table": gi,
+        "gap_precision": _r(1 - gi / len(gaps)) if gaps else None,
+        "gap_precision_ci": wilson(len(gaps) - gi, len(gaps)),
+        "gap_articles": len(lo.gap_articles()),
+        # the article with most candidates, and precision without it (cluster sensitivity)
+        "gap_top_article": top["article_id"] if top else None,
+        "gap_top_article_candidates": top["candidates"] if top else 0,
+        "gap_precision_outside_top_article": _r(1 - rest_i / rest_n) if rest_n else None,
+        "gap_candidates_outside_top_article": rest_n,
+        "extra_rule_candidates": len(extras),
+        "extra_cited_in_table": xi,
+        "extra_precision": _r(1 - xi / len(extras)) if extras else None,
+        "extra_rule_sections": len(secs),
+        "extra_sections_cited_in_table": si,
+        # unlinked EU units the scope filter set aside, and how many of them the table maps
+        "eu_set_aside": len(lo.eu_out_of_scope),
+        "eu_set_aside_listed_in_table": sum(1 for e in lo.eu_out_of_scope if _any_on_path(e, gold_eu)),
+        "eu_linked_out_of_scope": len(lo.eu_linked_out_of_scope),
+    }
+
+
+def default_margins(method: str) -> list[float]:
+    """Gap margins for the ablation and the margin CV: multiples of the method's default margin."""
+    m = default_gap_margin(method)
+    return [0.0] + [round(m * f, 6) for f in (0.5, 0.75, 1.0, 1.5, 2.0, 3.0)]
+
+
+def cross_validated_gap_margin(
+    result: AlignmentResult,
+    gold: Sequence[GoldLink],
+    margins: Sequence[float] | None = None,
+) -> dict:
+    """Out-of-sample precision of the gap list when the margin is chosen on held-out articles.
+
+    The margin is chosen on the training articles by the Wilson lower bound of the gap
+    precision (a precision of 2/2 does not beat 12/13), and scored on the test articles.
+    Two splits: by EU article parity (``parity``, 2 folds) and leave-one-article-out
+    (``by_article``: each article with candidates scored with the margin chosen on all
+    others). Conditional on ``result``'s links: the link threshold and the embedder preset
+    are **not** re-tuned per fold, so if they were tuned on the same evaluation set this
+    is still optimistic. The result depends on ``margins`` (the precision is not monotonic
+    in the margin): the grid is reported with it.
+    """
+    mr = result.match
+    eu = mr.eu_doc
+    links = {a.eu_id: a.links for a in result.provisions}
+    gold_eu = sorted({g.eu_id for g in gold})
+    margins = list(margins) if margins is not None else default_margins(result.method)
+    # per margin: [(article_id, listed)] of the gap candidates
+    cands: dict[float, list[tuple[str, bool]]] = {}
+    for m in margins:
+        lo = find_leftovers(mr, links, threshold=result.threshold, acts=result.transposing_acts, gap_margin=m)
+        cands[m] = [(g.article_id, _any_on_path(g.eu_id, gold_eu)) for g in lo.gap_candidates]
+
+    def lb(m: float, keep: Callable[[str], bool]) -> float:
+        xs = [listed for a, listed in cands[m] if keep(a)]
+        w = wilson(sum(1 for x in xs if not x), len(xs))
+        return w[0] if w else -1.0
+
+    def choose(keep: Callable[[str], bool]) -> float:
+        # best lower bound; ties go to the smaller margin (the longer list)
+        return max(margins, key=lambda m: (lb(m, keep), -m))
+
+    def pooled(pairs: list[tuple[float, Callable[[str], bool]]]) -> dict:
+        n = ok = 0
+        for m, test in pairs:
+            xs = [listed for a, listed in cands[m] if test(a)]
+            n += len(xs)
+            ok += sum(1 for x in xs if not x)
+        return {"candidates": n, "not_listed": ok, "precision": _r(ok / n) if n else None, "ci": wilson(ok, n)}
+
+    def parity(a: str) -> int | None:
+        x = _article_number(eu, a)
+        return x % 2 if x is not None else None
+
+    folds = []
+    for f in (0, 1):
+        def train(a: str, f: int = f) -> bool:
+            return parity(a) != f
+
+        def test(a: str, f: int = f) -> bool:
+            return parity(a) == f
+
+        folds.append((choose(train), test))
+    articles = sorted({a for m in margins for a, _ in cands[m]})
+    loao = []
+    for art in articles:
+        loao.append((choose(lambda a, art=art: a != art), lambda a, art=art: a == art))
+    return {
+        "margins": margins,
+        "threshold": result.threshold,
+        "parity": {"chosen": [m for m, _ in folds], **pooled(folds)},
+        "by_article": {"articles": len(articles), **pooled(loao)},
+        "note": "conditional on the link threshold and preset (not re-tuned per fold)",
+    }
+
+
+def leftover_ablation(
+    result: AlignmentResult,
+    gold: Sequence[GoldLink],
+    margins: Sequence[float] | None = None,
+) -> dict:
+    """Gap and extra-rule candidates against the table, step by step (docs/evaluation.md).
+
+    Precision here is the share of candidates the table does **not** list (gap) or cite
+    (extra rule), i.e. agreement with the table's silence; ``base_rate`` is the same share
+    over all EU units / all units of the transposing act, what a random list would get.
+    Rows: v0.3 (all unlinked units), + scope / boilerplate filters, + structure, then the
+    gap margin (the extra-rule margin stays 0); ``margins`` default to
+    :func:`default_margins` (multiples of the method's default margin). Also reports the
+    gap candidates per article at the default margin (``gap_by_article``) and the
+    cross-validated margin (:func:`cross_validated_gap_margin`). Gap lists are measured
+    even for rank-fusion scores, for which :func:`openacquis.align.align` reports none.
+    """
+    mr = result.match
+    links = {a.eu_id: a.links for a in result.provisions}
+    gold_eu = sorted({g.eu_id for g in gold})
+    gold_nat = sorted({g.national_id for g in gold})
+    acts = result.transposing_acts
+    t = result.threshold
+    margins = list(margins) if margins is not None else default_margins(result.method)
+    default_m = default_gap_margin(result.method)
+    eu_units = [u.id for u in mr.eu_units]
+    nat_units = [u.id for u in mr.national_units if u.id.split(":")[1] in acts]
+    rows = []
+
+    def run(name: str, **kw) -> Leftovers:
+        lo = find_leftovers(mr, links, threshold=t, acts=acts, **kw)
+        rows.append({"step": name, **_leftover_scores(lo, gold_eu, gold_nat)})
+        return lo
+
+    run("v0.3: every unlinked unit", gap_margin=0, scope_filter=False, boilerplate_filter=False, structure=False)
+    run("+ scope and boilerplate filters", gap_margin=0, structure=False)
+    run("+ structure", gap_margin=0)
+    for m in margins:
+        if m:
+            run(f"+ gap margin {m:g}", gap_margin=m)
+    lo_default = find_leftovers(mr, links, threshold=t, acts=acts, gap_margin=default_m)
+    return {
+        "threshold": t,
+        "default_margin": default_m,
+        "rank_only": rank_only(result.method),
+        "base_rate_gap": _r(sum(1 for u in eu_units if not _any_on_path(u, gold_eu)) / len(eu_units)) if eu_units else None,
+        "base_rate_extra": _r(sum(1 for u in nat_units if not _any_on_path(u, gold_nat)) / len(nat_units)) if nat_units else None,
+        "rows": rows,
+        "gap_by_article": gap_by_article(lo_default, gold_eu),
+        "eu_set_aside_listed": sorted(e for e in lo_default.eu_out_of_scope if _any_on_path(e, gold_eu)),
+        "margin_cv": cross_validated_gap_margin(result, gold, margins),
     }
 
 
@@ -445,6 +654,7 @@ def evaluate(
         "best_threshold": best,
         "cross_validated": cross_validated_threshold(mr, gold, grid),
         "coverage": coverage(plain, gold),
+        "leftovers": leftover_ablation(plain, gold),
         "sweep": sw,
     }
     if judge is not None:
@@ -516,10 +726,47 @@ def format_report(report: dict) -> str:
         f"({c['gold_eu_coverage']:.1%})",
         f"  EU units with a link: {c['eu_units_with_link']}/{c['eu_units']} "
         f"(the table covers {c['eu_units_covered_by_table']})",
-        f"  gap candidates: {c['gap_candidates']} ({c['gap_candidates_listed_in_table']} of them listed in the table)",
+        f"  EU units with no link: {c['unlinked_eu_units']} ({c['unlinked_listed_in_table']} of them listed in the table)",
+        f"  gap candidates: {c['gap_candidates']} ({c['gap_candidates_listed_in_table']} of them listed in the table)"
+        + (f" -- {c['gap_note']}" if c.get("gap_note") else ""),
         f"  extra-rule candidates: {c['extra_rule_candidates']} of {c['national_units']} national units "
         f"({c['extra_rule_candidates_listed_in_table']} of them listed in the table)",
     ]
+    lv = report.get("leftovers")
+    if lv:
+        lines += [
+            "",
+            "Gap and extra-rule candidates, step by step (precision = share the table does not list / cite;"
+            f" base rate {_pct(lv['base_rate_gap'])} / {_pct(lv['base_rate_extra'])})",
+            f"  {'step':<34}{'gaps':>6}{'P':>8}{'extras':>8}{'P':>8}{'§§':>5}",
+        ]
+        for r in lv["rows"]:
+            lines.append(f"  {r['step']:<34}{r['gap_candidates']:>6}{_pct(r['gap_precision']):>8}"
+                         f"{r['extra_rule_candidates']:>8}{_pct(r['extra_precision']):>8}{r['extra_rule_sections']:>5}")
+        if lv.get("rank_only"):
+            lines.append("  (rank-fusion scores: align reports no gap list; the gap rows are for comparison only)")
+        arts = lv.get("gap_by_article") or []
+        if arts:
+            top = arts[0]
+            rest_n = sum(a["candidates"] for a in arts[1:])
+            rest_ok = sum(a["candidates"] - a["listed_in_table"] for a in arts[1:])
+            lines.append(f"  at the default margin {lv['default_margin']:g}: {top['candidates']} of "
+                         f"{top['candidates'] + rest_n} gap candidates in {top['article_id'].split(':')[-1]} "
+                         f"({top['candidates'] - top['listed_in_table']} not listed); outside it "
+                         f"{rest_ok}/{rest_n} not listed")
+        listed = lv.get("eu_set_aside_listed") or []
+        if listed:
+            lines.append(f"  unlinked EU units set aside by the scope filter that the table maps: "
+                         f"{', '.join(x.split(':')[-1] for x in listed)}")
+        mc = lv.get("margin_cv")
+        if mc:
+            for name, key in (("2-fold by article parity", "parity"), ("leave one article out", "by_article")):
+                r = mc[key]
+                ci = f" (95% CI {_pct(r['ci'][0])}-{_pct(r['ci'][1])})" if r.get("ci") else ""
+                chosen = f", margins {r['chosen']}" if "chosen" in r else ""
+                lines.append(f"  margin chosen out of sample, {name}{chosen}: {r['not_listed']}/{r['candidates']} "
+                             f"not listed = {_pct(r['precision'])}{ci}")
+            lines.append(f"    grid {mc['margins']}; {mc['note']}")
     j = report.get("judge")
     if j:
         lines += [

@@ -4,7 +4,15 @@ import json
 import pytest
 
 from openacquis.match import (
+    BM25Embedder,
     Candidate,
+    Channel,
+    HybridEmbedder,
+    StructuralPrior,
+    make_hybrid,
+    reciprocal_rank_fusion,
+    standardize,
+    weighted_fusion,
     Embedder,
     LexicalEmbedder,
     Matcher,
@@ -267,6 +275,149 @@ def test_matcher_with_dense_stub(tmp_path):
     assert res.candidates()[0].method == "embed:intfloat/multilingual-e5-base"
 
 
+# --- v0.4: BM25, fusion, structural prior --------------------------------------
+
+
+class FixedEmbedder:
+    """Returns a fixed score matrix (ignores the texts); records what it was given."""
+
+    def __init__(self, rows, name="fixed"):
+        self.rows = rows
+        self.name = name
+        self.seen = []
+
+    def similarities(self, queries, passages):
+        self.seen.append((list(queries), list(passages)))
+        return [list(r) for r in self.rows]
+
+
+def test_bm25_ranks_shared_words_first():
+    rows = BM25Embedder().similarities(
+        ["hlášení incidentu do 24 hodin"],
+        ["incident se hlásí do 24 hodin", "pokuta za přestupek", "hlášení incidentů Úřadu"])
+    assert rows[0][0] > rows[0][1] and rows[0][2] > rows[0][1]
+    assert rows[0][1] == 0.0
+    assert BM25Embedder().similarities(["x"], []) == [[]]
+    res = Matcher(BM25Embedder(), k=1).match(eu_doc(), cz_doc())
+    best = {tail(c.eu_id): tail(c.national_id) for c in res.candidates()}
+    assert best["art2.par1.pt_a"] == "par5.odst1.pism_a" and res.method == "bm25"
+
+
+def test_standardize_and_weighted_fusion():
+    m = [[1.0, 2.0, 3.0], [3.0, 3.0, 3.0]]
+    g = standardize(m, "global")
+    assert abs(sum(x for r in g for x in r)) < 1e-9
+    q = standardize(m, "query")
+    assert q[1] == [0.0, 0.0, 0.0] and q[0][0] < 0 < q[0][2]
+    assert standardize(m, "none") == m
+    with pytest.raises(ValueError):
+        standardize(m, "rank")
+    # opposite rankings: the weight decides
+    a = [[1.0, 0.0]]
+    b = [[0.0, 1.0]]
+    assert weighted_fusion([a, b], [2, 1], "query")[0][0] > weighted_fusion([a, b], [2, 1], "query")[0][1]
+    assert weighted_fusion([a, b], [1, 2], "query")[0][0] < weighted_fusion([a, b], [1, 2], "query")[0][1]
+    with pytest.raises(ValueError):
+        weighted_fusion([a, b], [1])
+
+
+def test_reciprocal_rank_fusion():
+    a = [[0.9, 0.5, 0.1]]   # ranks 1, 2, 3
+    b = [[0.1, 0.8, 0.7]]   # ranks 3, 1, 2
+    f = reciprocal_rank_fusion([a, b], k=60)[0]
+    assert f[1] == pytest.approx(1 / 62 + 1 / 61)
+    assert max(range(3), key=lambda j: f[j]) == 1  # good in both beats best in one
+    assert reciprocal_rank_fusion([a, b], [1, 0])[0] == pytest.approx([1 / 61, 1 / 62, 1 / 63])
+
+
+def test_hybrid_embedder_keeps_the_first_channels_scale_and_finds_both_hits():
+    lex = FixedEmbedder([[0.30, 0.02, 0.01], [0.01, 0.02, 0.03]], "lexical:char3-5")
+    dense = FixedEmbedder([[0.80, 0.79, 0.78], [0.78, 0.90, 0.79]], "embed:e5")
+    h = HybridEmbedder([lex, dense])
+    rows = h.similarities(["q1", "q2"], ["p1", "p2", "p3"])
+    assert max(range(3), key=lambda j: rows[0][j]) == 0   # lexical's clear hit survives
+    assert max(range(3), key=lambda j: rows[1][j]) == 1   # dense rescues the second query
+    flat = [x for r in rows for x in r]
+    mu = sum(flat) / len(flat)
+    lex_flat = [x for r in lex.rows for x in r]
+    assert mu == pytest.approx(sum(lex_flat) / len(lex_flat))  # back on the lexical scale
+    assert h.name.startswith("hybrid:z-global(lexical:char3-5*1,embed:e5*1)")
+    r = HybridEmbedder([lex, dense], fusion="rrf")
+    assert r.name.startswith("hybrid:rrf60(")
+    with pytest.raises(ValueError):
+        HybridEmbedder([lex], fusion="max")
+    with pytest.raises(ValueError):
+        HybridEmbedder([])
+
+
+def test_hybrid_body_channel_and_matcher_integration():
+    lex = LexicalEmbedder()
+    body = Channel(LexicalEmbedder(), 0.5, "body")
+    h = HybridEmbedder([lex, body])
+    res = Matcher(h, k=1).match(eu_doc(), cz_doc())
+    best = {tail(c.eu_id): tail(c.national_id) for c in res.candidates()}
+    assert best["art2.par1.pt_a"] == "par5.odst1.pism_a"
+    assert best["art2.par2"] == "par9.odst1"
+    assert all(c.status == "candidate" and c.method.startswith("hybrid:") for c in res.candidates())
+    assert "@body*0.5" in res.method
+    with pytest.raises(ValueError):
+        h.similarities(["a"], ["b"])  # body needs units
+    with pytest.raises(ValueError):
+        Channel(lex, 1, "heading")
+
+
+def test_body_channel_reads_unit_bodies():
+    rec = FixedEmbedder([[0.0] * 5] * 5)
+    HybridEmbedder([Channel(rec, 1, "body")]).score_units(
+        units(eu_doc()), units(cz_doc()), eu_doc(), {u.id: cz_doc() for u in units(cz_doc())})
+    queries, _ = rec.seen[0]
+    assert queries[2].startswith("nejpozději do 24 hodin") and "|" not in queries[2]
+
+
+def test_structural_prior_section_and_siblings():
+    eu, cz = eu_doc(), cz_doc()
+    eu_u, cz_u = units(eu), units(cz)
+    nat = {u.id: cz for u in cz_u}
+    ids = [tail(u.id) for u in cz_u]
+    assert ids == ["par1.odst1", "par5.odst1", "par5.odst1.pism_a", "par5.odst1.pism_b", "par9.odst1"]
+    eids = [tail(u.id) for u in eu_u]
+    assert eids == ["art1.par1", "art2.par1", "art2.par1.pt_a", "art2.par1.pt_b", "art2.par2"]
+    # pt_b is ambiguous between par1 and par5.odst1.pism_b; its siblings point to § 5
+    s = [[0.9, 0.1, 0.1, 0.1, 0.1],
+         [0.1, 0.8, 0.3, 0.3, 0.1],
+         [0.1, 0.3, 0.9, 0.2, 0.1],
+         [0.50, 0.1, 0.1, 0.48, 0.1],
+         [0.1, 0.1, 0.1, 0.1, 0.7]]
+    assert StructuralPrior().apply(s, eu_u, cz_u, eu, nat) == s
+    out = StructuralPrior(sibling_weight=1.0).apply(s, eu_u, cz_u, eu, nat)
+    assert max(range(5), key=lambda j: out[3][j]) == 3          # siblings pull pt_b into § 5
+    assert out[0] == pytest.approx(s[0])                         # art1.par1 has no sibling: unchanged
+    sec = StructuralPrior(section_weight=1.0).apply(s, eu_u, cz_u, eu, nat)
+    # the best unit of a § keeps its score; weaker units of a strong § move up
+    assert sec[2][2] == pytest.approx(0.9) and sec[2][3] > s[2][3]
+    assert StructuralPrior(0.5, 0.25, 1.0).label == "+prior(sec0.5,odst0.25,sib1)"
+    # through the hybrid embedder and Matcher
+    h = HybridEmbedder([FixedEmbedder(s)], prior=StructuralPrior(sibling_weight=1.0))
+    res = Matcher(h, k=1).match(eu, cz)
+    assert tail(res.for_eu(eu_u[3].id)[0].national_id) == "par5.odst1.pism_b"
+    assert "+prior(sib1)" in res.method
+
+
+def test_make_hybrid_names():
+    h = make_hybrid("hybrid-lex")
+    assert isinstance(h, HybridEmbedder) and all(
+        not isinstance(c.embedder, SentenceTransformerEmbedder) for c in h.channels)
+    stub = SentenceTransformerEmbedder(model=StubModel(), cache_dir=False)
+    full = make_hybrid("hybrid", dense=stub)
+    assert any(c.embedder is stub for c in full.channels)
+    assert sum(c.embedder is stub for c in full.channels) == 2  # text and body channels share the stub
+    assert make_hybrid("hybrid-rrf", dense=stub).fusion == "rrf"
+    res = Matcher(full, k=1).match(eu_doc(), cz_doc())
+    assert len(res.candidates()) == 5
+    with pytest.raises(ValueError):
+        make_hybrid("hybrid-nope")
+
+
 # --- live -----------------------------------------------------------------------
 
 
@@ -291,3 +442,20 @@ def test_live_e5_embedder_runs():
     rows = emb.similarities(["hlášení incidentu do 24 hodin"],
                             ["incident hlásí do 24 hodin", "pokuta za přestupek"])
     assert rows[0][0] > rows[0][1]
+
+
+@pytest.mark.live
+def test_live_e5_is_cross_lingual():
+    """The dense path compares across languages (DE / SK directive text vs a Czech provision);
+    lexical does not. Same-language matching is still the default (directive fetched in the
+    country's language)."""
+    pytest.importorskip("sentence_transformers")
+    emb = SentenceTransformerEmbedder(cache_dir=False, device="cpu", prefixes=("query: ", "query: "))
+    cz = ["do 24 hodin po zjištění významného incidentu předloží včasné varování",
+          "za přestupek lze uložit pokutu do 10 000 000 Kč"]
+    for q in ("unverzüglich, in jedem Fall innerhalb von 24 Stunden nach Kenntnisnahme des erheblichen "
+              "Sicherheitsvorfalls, eine Frühwarnung",
+              "bez zbytočného odkladu a v každom prípade do 24 hodín od zistenia významného incidentu "
+              "včasné varovanie"):
+        row = emb.similarities([q], cz)[0]
+        assert row[0] > row[1]

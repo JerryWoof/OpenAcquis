@@ -29,6 +29,20 @@ Similarity is pluggable through the :class:`Embedder` protocol:
   multilingual dense embeddings, default ``intfloat/multilingual-e5-base`` with
   its ``query: `` / ``passage: `` prefixes; ``BAAI/bge-m3`` also works. Vectors
   are cached on disk (``$OPENACQUIS_CACHE/embeddings``) keyed by model and text.
+* :class:`BM25Embedder` (stdlib): Okapi BM25 over the same normalised words.
+* :class:`HybridEmbedder` (v0.4): fuses several of the above (weighted z-score
+  fusion or reciprocal rank fusion), optionally reading only a unit's own text
+  (:class:`Channel` ``field="body"``) and adding a :class:`StructuralPrior`
+  (sibling EU provisions and other parts of the same § vote).
+  :func:`make_hybrid` builds the evaluated presets: ``"hybrid-lex"`` (stdlib)
+  and ``"hybrid"`` (lexical + multilingual-e5).
+
+Language: lexical and BM25 compare surface forms, so they need the directive
+and the national act in the *same* language. The directive is therefore fetched
+in the country's language (Czech for CZ, Slovak for SK, German for AT and DE;
+:func:`openacquis.align.load_documents`). Only the dense channels are
+cross-lingual (e5 and bge-m3 are multilingual); for a cross-language pair use a
+dense embedder alone (docs/evaluation.md, "v0.4 hybrid matching").
 
 Matching units: by default every provision with its own text (articles'
 paragraphs and points, § odstavce and písmena; *leaf-ish* units), embedded with
@@ -59,12 +73,19 @@ from .provisions import Document, Provision
 
 # --- provision kinds ---------------------------------------------------------
 
-# Article-level units on either side (EU article / annex / recital; Czech § / článek / příloha).
-ARTICLE_KINDS = {"article", "annex", "recital", "par", "cl", "priloha"}
-# Paragraph-level units (EU paragraph; Czech odstavec).
-PARAGRAPH_KINDS = {"paragraph", "odst"}
-# Never matched: Czech structural units (část, hlava, díl ...) and footnotes.
-SKIP_KINDS = {"cast", "hlava", "dil", "oddil", "pododdil", "ppc", "part", "title", "chapter", "section"}
+# Article-level units on either side: EU article / annex / recital; § (all countries), Czech and
+# Slovak článek / příloha, Austrian and German Artikel / Anlage / Anhang.
+ARTICLE_KINDS = {"article", "annex", "recital", "par", "cl", "priloha", "art", "anl", "anlage", "anhang"}
+# Paragraph-level units: EU paragraph; Czech odstavec, Slovak odsek, Austrian and German Absatz.
+PARAGRAPH_KINDS = {"paragraph", "odst", "ods", "abs"}
+# Never matched: structural units (část, hlava, díl; diel, oddiel; Teil, Hauptstück, Abschnitt,
+# Kapitel ...) and footnotes (Czech ppc, Slovak pozn).
+SKIP_KINDS = {
+    "cast", "hlava", "dil", "oddil", "pododdil", "ppc", "part", "title", "chapter", "section",
+    "diel", "oddiel", "pododdiel", "pozn",
+    "teil", "unterteil", "hauptstueck", "abschnitt", "unterabschnitt", "kapitel", "unterkapitel", "buch",
+    "titel", "untertitel", "gliederung",
+}
 
 GRANULARITIES = ("leaf", "paragraph", "article")
 LEVELS = ("paragraph", "article")
@@ -573,6 +594,441 @@ class SentenceTransformerEmbedder:
         return (np.asarray(q, dtype=np.float32) @ np.asarray(p, dtype=np.float32).T).tolist()
 
 
+# --- BM25 (stdlib) -------------------------------------------------------------
+
+
+class BM25Embedder:
+    """Okapi BM25 over normalised words (stdlib only, deterministic).
+
+    Words are lower-cased, stemmed with :func:`czech_stem` and stripped of
+    diacritics (``stem=False`` for languages other than Czech). IDF is fitted on
+    the passages (the national units), as in a search engine. Scores are
+    unbounded (not cosines); :class:`HybridEmbedder` standardises them before
+    fusing. Same-language only, like :class:`LexicalEmbedder`.
+    """
+
+    def __init__(self, k1: float = 1.2, b: float = 0.75, stem: bool = True, diacritics: bool = False):
+        self.k1 = k1
+        self.b = b
+        self.stem = stem
+        self.diacritics = diacritics
+        self.name = "bm25" + ("" if stem else ":nostem")
+
+    def similarities(self, queries: Sequence[str], passages: Sequence[str]) -> list[list[float]]:
+        docs = [normalize_tokens(p, self.stem, self.diacritics) for p in passages]
+        n = len(docs)
+        if not n:
+            return [[] for _ in queries]
+        avgdl = sum(len(d) for d in docs) / n or 1.0
+        df: dict[str, int] = {}
+        postings: dict[str, list[tuple[int, int]]] = {}
+        for j, d in enumerate(docs):
+            tf: dict[str, int] = {}
+            for t in d:
+                tf[t] = tf.get(t, 0) + 1
+            for t, c in tf.items():
+                df[t] = df.get(t, 0) + 1
+                postings.setdefault(t, []).append((j, c))
+        norm = [self.k1 * (1 - self.b + self.b * len(d) / avgdl) for d in docs]
+        rows = []
+        for q in queries:
+            acc = [0.0] * n
+            qtf: dict[str, int] = {}
+            for t in normalize_tokens(q, self.stem, self.diacritics):
+                qtf[t] = qtf.get(t, 0) + 1
+            for t, qc in qtf.items():
+                plist = postings.get(t)
+                if not plist:
+                    continue
+                idf = math.log(1 + (n - df[t] + 0.5) / (df[t] + 0.5))
+                for j, c in plist:
+                    acc[j] += qc * idf * c * (self.k1 + 1) / (c + norm[j])
+            rows.append(acc)
+        return rows
+
+
+# --- hybrid matching: score fusion + structural prior ----------------------------
+#
+# Lexical and dense embedders find different hits (docs/evaluation.md): on NIS2 x CZ
+# 36 gold EU provisions are in the lexical top 5 only, 12 in the e5 top 5 only.
+# HybridEmbedder fuses several score matrices; StructuralPrior then lets the
+# document structure vote (a national § that matches the EU unit's siblings, or
+# other parts of the same §, is more likely). Both are plain arithmetic on the
+# score matrices: stdlib only, deterministic.
+
+FUSIONS = ("weighted", "rrf")
+NORMS = ("global", "query", "none")
+FIELDS = ("text", "body")
+
+
+def _mean_sd(values: Iterable[float]) -> tuple[float, float]:
+    n = 0
+    s = s2 = 0.0
+    for v in values:
+        n += 1
+        s += v
+        s2 += v * v
+    if not n:
+        return 0.0, 1.0
+    mu = s / n
+    var = max(s2 / n - mu * mu, 0.0)
+    return mu, (math.sqrt(var) or 1.0)
+
+
+def standardize(rows: Rows, norm: str = "global") -> list[list[float]]:
+    """z-scores of a score matrix.
+
+    ``"global"``: one mean and SD over the whole matrix, so absolute strength is
+    kept (an EU unit that matches nothing stays low: needed for gap candidates);
+    ``"query"``: per row (each EU unit's best candidate scores high, whatever its
+    absolute score); ``"none"``: unchanged.
+    """
+    if norm not in NORMS:
+        raise ValueError(f"unknown norm {norm!r}; expected one of {NORMS}")
+    if norm == "none":
+        return [list(r) for r in rows]
+    if norm == "global":
+        mu, sd = _mean_sd(x for r in rows for x in r)
+        return [[(x - mu) / sd for x in r] for r in rows]
+    out = []
+    for r in rows:
+        mu, sd = _mean_sd(r)
+        out.append([(x - mu) / sd for x in r])
+    return out
+
+
+def weighted_fusion(matrices: Sequence[Rows], weights: Sequence[float] | None = None,
+                    norm: str = "global") -> list[list[float]]:
+    """Weighted sum of standardised score matrices (same shape). Weights default to equal."""
+    if not matrices:
+        raise ValueError("nothing to fuse")
+    w = list(weights) if weights is not None else [1.0] * len(matrices)
+    if len(w) != len(matrices):
+        raise ValueError("one weight per matrix")
+    zs = [standardize(m, norm) for m in matrices]
+    nrows = len(zs[0])
+    out = []
+    for i in range(nrows):
+        acc = [0.0] * len(zs[0][i])
+        for wm, z in zip(w, zs):
+            if wm:
+                acc = [a + wm * x for a, x in zip(acc, z[i])]
+        out.append(acc)
+    return out
+
+
+def _ranks(row: Sequence[float]) -> list[int]:
+    """1-based rank of each column (ties broken by column order, as :func:`_top_k`)."""
+    order = sorted(range(len(row)), key=lambda j: (-row[j], j))
+    r = [0] * len(row)
+    for pos, j in enumerate(order, 1):
+        r[j] = pos
+    return r
+
+
+def reciprocal_rank_fusion(matrices: Sequence[Rows], weights: Sequence[float] | None = None,
+                           k: int = 60) -> list[list[float]]:
+    """Reciprocal rank fusion (Cormack et al. 2009): ``sum_m w_m / (k + rank_m)``.
+
+    Uses only ranks, so no score calibration is needed; the fused score has no
+    absolute meaning (every EU unit's top candidate scores about the same). A threshold
+    on it can still select links (both channels rank the candidate near the top; the
+    maximum for two channels with weight 1 is 2 / (k + 1)), but a low best score does
+    not mean "nothing similar", so :func:`openacquis.align.align` reports no gap
+    candidates for it.
+    """
+    if not matrices:
+        raise ValueError("nothing to fuse")
+    w = list(weights) if weights is not None else [1.0] * len(matrices)
+    if len(w) != len(matrices):
+        raise ValueError("one weight per matrix")
+    out = []
+    for i in range(len(matrices[0])):
+        acc = [0.0] * len(matrices[0][i])
+        for wm, m in zip(w, matrices):
+            if wm:
+                acc = [a + wm / (k + r) for a, r in zip(acc, _ranks(m[i]))]
+        out.append(acc)
+    return out
+
+
+@dataclass
+class StructuralPrior:
+    """Let the structure of both texts vote on a score matrix.
+
+    For EU unit *i* and national unit *j* in national § *g* (odstavec *o*):
+
+    * ``section_weight``: + w × the best score of *i* against any unit of *g*
+      (a § that matches strongly somewhere lifts all its parts);
+    * ``paragraph_weight``: the same at odstavec level;
+    * ``sibling_weight``: + w × the mean, over the other EU units in *i*'s
+      enclosing ``sibling_level`` provision (its sibling points and the
+      lead-in), of their best score against *g* (points of one EU paragraph tend
+      to be transposed in the same §).
+
+    The result is divided by ``1 + sum of weights``, so a unit that is the best
+    of its § (and whose siblings agree) keeps its score: thresholds stay on the
+    input's scale. Linear, so it works on any score scale. All zero = no change.
+    """
+
+    section_weight: float = 0.0
+    paragraph_weight: float = 0.0
+    sibling_weight: float = 0.0
+    sibling_level: str = "paragraph"
+
+    @property
+    def active(self) -> bool:
+        return bool(self.section_weight or self.paragraph_weight or self.sibling_weight)
+
+    @property
+    def label(self) -> str:
+        parts = []
+        if self.section_weight:
+            parts.append(f"sec{self.section_weight:g}")
+        if self.paragraph_weight:
+            parts.append(f"odst{self.paragraph_weight:g}")
+        if self.sibling_weight:
+            parts.append(f"sib{self.sibling_weight:g}" + ("" if self.sibling_level == "paragraph" else "a"))
+        return "+prior(" + ",".join(parts) + ")" if parts else ""
+
+    def apply(
+        self,
+        scores: Rows,
+        eu_units: Sequence[Unit],
+        nat_units: Sequence[Unit],
+        eu_doc: Document,
+        nat_doc: dict[str, Document],
+    ) -> list[list[float]]:
+        out = [list(r) for r in scores]
+        if not self.active or not out or not nat_units:
+            return out
+        total_w = 1.0 + self.section_weight + self.paragraph_weight + self.sibling_weight
+
+        def groups(level: str) -> tuple[list[int], int]:
+            keys: dict[str, int] = {}
+            col = []
+            for u in nat_units:
+                key = level_id(nat_doc[u.id], u.id, level)
+                col.append(keys.setdefault(key, len(keys)))
+            return col, len(keys)
+
+        sec_col, nsec = groups("article")
+
+        def group_max(row: Sequence[float], col: Sequence[int], ng: int) -> list[float]:
+            best = [-math.inf] * ng
+            for j, s in enumerate(row):
+                if s > best[col[j]]:
+                    best[col[j]] = s
+            return best
+
+        sec_best = [group_max(r, sec_col, nsec) for r in scores]
+        if self.section_weight:
+            w = self.section_weight
+            for i, r in enumerate(out):
+                b = sec_best[i]
+                out[i] = [s + w * b[sec_col[j]] for j, s in enumerate(r)]
+        if self.paragraph_weight:
+            odst_col, nodst = groups("paragraph")
+            w = self.paragraph_weight
+            for i, r in enumerate(out):
+                b = group_max(scores[i], odst_col, nodst)
+                out[i] = [s + w * b[odst_col[j]] for j, s in enumerate(r)]
+        if self.sibling_weight:
+            fam: dict[str, list[int]] = {}
+            for i, u in enumerate(eu_units):
+                fam.setdefault(level_id(eu_doc, u.id, self.sibling_level), []).append(i)
+            w = self.sibling_weight
+            for members in fam.values():
+                if len(members) < 2:
+                    # no sibling to vote: count the unit's own score, so ranking and scale are unchanged
+                    i = members[0]
+                    out[i] = [s + w * x for s, x in zip(out[i], scores[i])]
+                    continue
+                total = [0.0] * nsec
+                for i in members:
+                    total = [t + b for t, b in zip(total, sec_best[i])]
+                for i in members:
+                    others = [(t - b) / (len(members) - 1) for t, b in zip(total, sec_best[i])]
+                    out[i] = [s + w * others[sec_col[j]] for j, s in enumerate(out[i])]
+        return [[s / total_w for s in r] for r in out]
+
+
+@dataclass
+class Channel:
+    """One input of a :class:`HybridEmbedder`: an embedder, its weight, and which unit
+    text it reads (``"text"``: context + body, as :class:`Matcher` embeds it;
+    ``"body"``: the provision's own text only, which helps short list items whose
+    words are diluted by a long context)."""
+
+    embedder: Embedder
+    weight: float = 1.0
+    field: str = "text"
+
+    def __post_init__(self) -> None:
+        if self.field not in FIELDS:
+            raise ValueError(f"unknown field {self.field!r}; expected one of {FIELDS}")
+
+    @property
+    def label(self) -> str:
+        return self.embedder.name + ("@body" if self.field == "body" else "") + f"*{self.weight:g}"
+
+
+class HybridEmbedder:
+    """Fuse several embedders' scores, optionally with a :class:`StructuralPrior`.
+
+    ``channels``: :class:`Channel` objects, or bare embedders (weight 1, field
+    ``"text"``). ``fusion``: ``"weighted"`` (weighted sum of z-scores, see
+    :func:`standardize` for ``norm``) or ``"rrf"`` (:func:`reciprocal_rank_fusion`
+    with ``rrf_k``).
+
+    With ``fusion="weighted"`` the fused z-score is mapped back onto the scale
+    of the first channel (its mean and SD over the whole matrix for
+    ``norm="global"``, over each row for ``norm="query"``), so a threshold for
+    that embedder (lexical 0.20) stays roughly meaningful and an EU unit that
+    matches nothing still scores low.
+
+    :class:`Matcher` calls :meth:`score_units` (units and documents are needed for
+    the ``"body"`` field and the prior); :meth:`similarities` is the plain
+    :class:`Embedder` interface (text field only, no prior).
+    """
+
+    def __init__(
+        self,
+        channels: Sequence[Channel | Embedder],
+        fusion: str = "weighted",
+        norm: str = "global",
+        rrf_k: int = 60,
+        prior: StructuralPrior | None = None,
+        name: str | None = None,
+    ):
+        if fusion not in FUSIONS:
+            raise ValueError(f"unknown fusion {fusion!r}; expected one of {FUSIONS}")
+        if norm not in NORMS:
+            raise ValueError(f"unknown norm {norm!r}; expected one of {NORMS}")
+        self.channels = [c if isinstance(c, Channel) else Channel(c) for c in channels]
+        if not self.channels:
+            raise ValueError("HybridEmbedder needs at least one channel")
+        self.fusion = fusion
+        self.norm = norm
+        self.rrf_k = rrf_k
+        self.prior = prior
+        how = f"rrf{rrf_k}" if fusion == "rrf" else f"z-{norm}"
+        self.name = name or (
+            "hybrid:" + how + "(" + ",".join(c.label for c in self.channels) + ")"
+            + (prior.label if prior else "")
+        )
+
+    def _fuse(self, matrices: Sequence[Rows]) -> list[list[float]]:
+        weights = [c.weight for c in self.channels]
+        if self.fusion == "rrf":
+            return reciprocal_rank_fusion(matrices, weights, self.rrf_k)
+        fused = weighted_fusion(matrices, weights, self.norm)
+        tot = sum(weights) or 1.0
+        if self.norm == "global":
+            # back onto the first channel's scale: z * sd + mu (weights normalised to sum 1)
+            mu, sd = _mean_sd(x for r in matrices[0] for x in r)
+            fused = [[mu + sd * x / tot for x in r] for r in fused]
+        elif self.norm == "query":
+            # per row, back onto the first channel's row: the ranking is the per-query fusion,
+            # the level is the anchor's, so an EU unit that matches nothing still scores low
+            out = []
+            for r, a in zip(fused, matrices[0]):
+                mu, sd = _mean_sd(a)
+                out.append([mu + sd * x / tot for x in r])
+            fused = out
+        return fused
+
+    def channel_scores(self, eu_units: Sequence[Unit], nat_units: Sequence[Unit]) -> list[list[list[float]]]:
+        """One raw score matrix per channel."""
+        out = []
+        for c in self.channels:
+            q = [u.text if c.field == "text" else u.body for u in eu_units]
+            p = [u.text if c.field == "text" else u.body for u in nat_units]
+            out.append([list(r) for r in c.embedder.similarities(q, p)])
+        return out
+
+    def combine(
+        self,
+        matrices: Sequence[Rows],
+        eu_units: Sequence[Unit] = (),
+        nat_units: Sequence[Unit] = (),
+        eu_doc: Document | None = None,
+        nat_doc: dict[str, Document] | None = None,
+    ) -> list[list[float]]:
+        """Fuse precomputed channel matrices and apply the prior (used for tuning
+        without recomputing embeddings)."""
+        fused = self._fuse(matrices)
+        if self.prior is not None and eu_doc is not None and nat_doc is not None:
+            fused = self.prior.apply(fused, eu_units, nat_units, eu_doc, nat_doc)
+        return fused
+
+    def score_units(
+        self,
+        eu_units: Sequence[Unit],
+        nat_units: Sequence[Unit],
+        eu_doc: Document,
+        nat_doc: dict[str, Document],
+    ) -> list[list[float]]:
+        return self.combine(self.channel_scores(eu_units, nat_units), eu_units, nat_units, eu_doc, nat_doc)
+
+    def similarities(self, queries: Sequence[str], passages: Sequence[str]) -> list[list[float]]:
+        if any(c.field != "text" for c in self.channels):
+            raise ValueError("a 'body' channel needs units: use Matcher (score_units), not similarities()")
+        return self._fuse([[list(r) for r in c.embedder.similarities(queries, passages)]
+                           for c in self.channels])
+
+
+#: Ready-made hybrids (``openacquis eval nis2-cz --embedder hybrid-lex``). Weights and the
+#: prior were chosen by 2-fold cross-validation by article parity on NIS2 x CZ (provision-level
+#: MRR on one fold, scored on the other; docs/evaluation.md, "v0.4 hybrid matching").
+HYBRIDS = ("hybrid-lex", "hybrid", "hybrid-rrf")
+DENSE_HYBRIDS = ("hybrid", "hybrid-rrf")
+
+
+def make_hybrid(name: str = "hybrid-lex", dense: Embedder | None = None,
+                dense_body: Embedder | None = None, stem: bool = True) -> HybridEmbedder:
+    """A ready-made :class:`HybridEmbedder`.
+
+    * ``"hybrid-lex"`` (stdlib only, the CI default): lexical on the unit text
+      (weight 1) + lexical on the body only (0.5) + BM25 (0.5), per-query
+      z-scores, structural prior (§ 0.25, EU siblings 1).
+    * ``"hybrid"`` (needs ``openacquis[embeddings]``): lexical (1) + lexical on
+      the body (0.25) + multilingual-e5-base with ``query:`` on both sides (1)
+      + e5 on the body (0.25), per-query z-scores, no prior.
+    * ``"hybrid-rrf"``: reciprocal rank fusion of lexical and symmetric e5
+      (no tuning, a reference point).
+
+    ``dense`` / ``dense_body`` inject the dense embedders (tests, another model
+    such as ``BAAI/bge-m3``); by default symmetric and asymmetric e5.
+    ``stem=False`` turns off the (Czech) stemmer of the lexical and BM25 channels,
+    for languages it does not fit (German); Slovak is close enough to keep it.
+    All are cross-lingual only through the dense channels: lexical and BM25
+    need both texts in the same language (see docs/evaluation.md).
+    """
+    if name == "hybrid-lex":
+        return HybridEmbedder(
+            [Channel(LexicalEmbedder(stem=stem), 1.0), Channel(LexicalEmbedder(stem=stem), 0.5, "body"),
+             Channel(BM25Embedder(stem=stem), 0.5)],
+            norm="query", prior=StructuralPrior(section_weight=0.25, sibling_weight=1.0),
+        )
+    if name in DENSE_HYBRIDS:
+        if dense is None:
+            dense = SentenceTransformerEmbedder("intfloat/multilingual-e5-base", prefixes=("query: ", "query: "))
+            dense.name += ":sym"
+            if dense_body is None:
+                dense_body = SentenceTransformerEmbedder("intfloat/multilingual-e5-base")
+        if name == "hybrid-rrf":
+            return HybridEmbedder([LexicalEmbedder(stem=stem), dense], fusion="rrf")
+        if dense_body is None:
+            dense_body = dense
+        return HybridEmbedder(
+            [Channel(LexicalEmbedder(stem=stem), 1.0), Channel(LexicalEmbedder(stem=stem), 0.25, "body"),
+             Channel(dense, 1.0), Channel(dense_body, 0.25, "body")],
+            norm="query",
+        )
+    raise ValueError(f"unknown hybrid {name!r}; expected one of {HYBRIDS}")
+
+
 # --- matching ----------------------------------------------------------------
 
 
@@ -708,7 +1164,10 @@ class Matcher:
                     raise ValueError(f"national provision id {u.id!r} occurs in two documents")
                 nat_doc[u.id] = d
                 nat_units.append(u)
-        if eu_units and nat_units:
+        if eu_units and nat_units and callable(getattr(self.embedder, "score_units", None)):
+            # unit-aware embedders (HybridEmbedder): body-only channels, structural prior
+            scores = [list(r) for r in self.embedder.score_units(eu_units, nat_units, eu_doc, nat_doc)]
+        elif eu_units and nat_units:
             scores = [list(r) for r in self.embedder.similarities([u.text for u in eu_units],
                                                                   [u.text for u in nat_units])]
         else:

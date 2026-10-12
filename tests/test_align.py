@@ -158,7 +158,7 @@ def test_load_documents_skips_unfetchable_acts():
     with pytest.raises(LookupError):
         load_documents(EU, "cz", ["2/2099"], eurlex=eurlex, national_client=esb)
     with pytest.raises(ValueError):
-        load_documents(EU, "sk", [ACT], eurlex=eurlex, national_client=esb)
+        load_documents(EU, "fr", [ACT], eurlex=eurlex, national_client=esb)
 
 
 def test_load_documents_pins_default_version():
@@ -178,14 +178,18 @@ def test_align_links_gaps_and_extras():
     a = by[f"eu:{EU}:cs:art2.par1.pt_a"]
     assert a.links == [f"cz:{ACT}:par5.odst1.pism_a"]
     assert a.candidates[0].status == "candidate"
-    # the Commission's review clause has nothing similar in national law -> gap candidate
-    assert f"eu:{EU}:cs:art3.par1" in res.gap_candidates
+    # the Commission's review clause has nothing similar in national law, but no member state
+    # transposes it: set aside (final provisions), not a gap candidate
+    assert f"eu:{EU}:cs:art3.par1" in res.unlinked
+    assert f"eu:{EU}:cs:art3.par1" not in res.gap_candidates
+    assert res.leftovers.eu_out_of_scope[f"eu:{EU}:cs:art3.par1"] == "final_provisions"
     extras = {x["national_id"] for x in res.extra_rule_candidates}
     assert f"cz:{ACT}:par12.odst1" in extras  # official notice board: nothing in the directive
     assert f"cz:{ACT}:par5.odst1.pism_a" not in extras
     assert all(x["status"] == "candidate" for x in res.extra_rule_candidates)
     s = res.summary()
     assert s["eu_units"] == len(res.provisions) and s["gap_candidates"] == len(res.gap_candidates)
+    assert s["extra_rule_sections"] == 1
 
 
 def test_align_json_export_keeps_evidence():
@@ -202,7 +206,9 @@ def test_align_json_export_keeps_evidence():
     assert top["rank"] == 1 and top["national_label"] == "§ 5 odst. 1 písm. a)"
     nat = d["national_texts"][top["national_id"]]
     assert nat["act"] == ACT and "24 hodin" in nat["text"] and nat["url"]
-    assert d["gap_candidates"] == res.gap_candidates
+    assert [g["eu_id"] for g in d["gap_candidates"]] == res.gap_candidates
+    assert d["schema"] == 2 and "leftovers" in d
+    assert all(g["status"] == "candidate" for g in d["gap_candidates"])
 
 
 def test_align_with_judge_uses_related_labels():
@@ -321,11 +327,13 @@ def test_evaluate_with_judge():
 
 
 def test_coverage_counts_gaps_listed_in_table():
-    res = align(eu_doc(), cz_doc(), threshold=0.99)  # nothing passes: everything is a gap
+    res = align(eu_doc(), cz_doc(), threshold=0.99)  # nothing passes: every unit is unlinked
     c = coverage(res, GOLD)
     assert c["eu_units_with_link"] == 0
-    assert c["gap_candidates"] == len(res.provisions)
-    assert c["gap_candidates_listed_in_table"] == 5  # art1.par1, art2.par1 (+a, b), art2.par2
+    assert c["unlinked_eu_units"] == len(res.provisions)
+    assert c["unlinked_listed_in_table"] == 5  # art1.par1, art2.par1 (+a, b), art2.par2
+    # the review clause (art3, "Přezkum") is a final provision, not a gap candidate
+    assert c["gap_candidates"] == 5 and c["gap_candidates_listed_in_table"] == 5
 
 
 # --- CLI ------------------------------------------------------------------------------------
@@ -333,7 +341,7 @@ def test_coverage_counts_gaps_listed_in_table():
 
 def test_cli_align_writes_json(tmp_path, capsys):
     out = tmp_path / "out.json"
-    rc = main(["align", EU, "cz", "--acts", ACT, "--threshold", "0.25", "-o", str(out)],
+    rc = main(["align", EU, "cz", "--acts", ACT, "-e", "lexical", "--threshold", "0.25", "-o", str(out)],
               eurlex=FakeEurLex(), esbirka=FakeESbirka())
     assert rc == 0
     d = json.loads(out.read_text(encoding="utf-8"))
@@ -343,7 +351,7 @@ def test_cli_align_writes_json(tmp_path, capsys):
 
 
 def test_cli_align_rule_judge_to_stdout(capsys):
-    rc = main(["align", EU, "cz", "--acts", ACT, "--judge", "rule", "--judge-k", "1"],
+    rc = main(["align", EU, "cz", "--acts", ACT, "-e", "lexical", "--judge", "rule", "--judge-k", "1"],
               eurlex=FakeEurLex(), esbirka=FakeESbirka())
     assert rc == 0
     assert json.loads(capsys.readouterr().out)["judge"] == "rule-judge"
@@ -359,13 +367,13 @@ def test_cli_eval(tmp_path, capsys):
     gold = tmp_path / "gold.jsonl"
     save_jsonl(GOLD, gold)
     report = tmp_path / "report.json"
-    rc = main(["eval", "nis2-cz", "--gold", str(gold), "--acts", ACT, "--k", "1,3", "--errors", "2",
+    rc = main(["eval", "nis2-cz", "--gold", str(gold), "--acts", ACT, "-e", "lexical", "--k", "1,3", "--errors", "2",
                "-o", str(report)], eurlex=FakeEurLex(), esbirka=FakeESbirka())
     assert rc == 0
     out = capsys.readouterr().out
     assert "R@1" in out and "R@3" in out
     assert json.loads(report.read_text(encoding="utf-8"))["ks"] == [1, 3]
-    rc = main(["eval", "nis2-cz", "--gold", str(gold), "--acts", ACT, "-f", "json"],
+    rc = main(["eval", "nis2-cz", "--gold", str(gold), "--acts", ACT, "-e", "hybrid-lex", "-f", "json"],
               eurlex=FakeEurLex(), esbirka=FakeESbirka())
     assert rc == 0 and "retrieval" in json.loads(capsys.readouterr().out)
 
@@ -452,19 +460,25 @@ def test_write_alignments_live_static_and_fallback(tmp_path):
     static = tmp_path / "static"
     out = tmp_path / "data"
 
+    review = build_site.review_page_data(ENTRY, res, now=NOW)
+
     # live build, refreshing the static copy
-    missing = build_site.write_alignments(out, [ENTRY], write_static=True, static_dir=static,
-                                          build=lambda e, log: data)
+    missing = build_site.write_alignments(out, [ENTRY], write_static=True, static_dir=static, reviews_dir=tmp_path,
+                                          build=lambda e, log: {"alignment": data, "review": review})
     assert missing == []
     assert json.loads((out / "align" / f"{EU}_cz.json").read_text(encoding="utf-8"))["mode"] == "live"
     assert json.loads((static / f"{EU}_cz.json").read_text(encoding="utf-8"))["mode"] == "static"
+    assert json.loads((out / "review" / f"{EU}_cz.json").read_text(encoding="utf-8"))["suggestions"]
+    m = json.loads((out / "matrix" / f"{EU}.json").read_text(encoding="utf-8"))
+    assert [c["code"] for c in m["countries"]] == ["cz"] and m["articles"][0]["cells"]["cz"]["href"]
 
     # live fails -> static copy
     def broken(e, log):
         raise TimeoutError("e-Sbírka timed out")
 
     logs = []
-    assert build_site.write_alignments(out, [ENTRY], static_dir=static, build=broken, log=logs.append) == []
+    assert build_site.write_alignments(out, [ENTRY], static_dir=static, build=broken, log=logs.append,
+                                       reviews_dir=tmp_path) == []
     assert json.loads((out / "align" / f"{EU}_cz.json").read_text(encoding="utf-8"))["mode"] == "static"
     assert any("static copy" in m for m in logs)
 
@@ -472,21 +486,37 @@ def test_write_alignments_live_static_and_fallback(tmp_path):
     assert build_site.write_alignments(tmp_path / "o", [ENTRY], offline=True, static_dir=tmp_path / "none") == [f"{EU}_cz"]
 
 
+PORTALS = {"cz": ("https://e-sbirka.gov.cz/",), "sk": ("https://static.slov-lex.sk/",),
+           "at": ("https://ris.bka.gv.at/", "https://www.ris.bka.gv.at/"), "de": ("https://www.gesetze-im-internet.de/",)}
+
+
 def test_committed_static_alignment_is_valid():
-    """The fallback copy the Pages build uses when texts cannot be fetched."""
+    """The fallback copies the Pages build uses when texts cannot be fetched."""
+    assert {e.country_code for e in build_site.ALIGNMENTS} == {"cz", "sk", "at", "de"}
     for e in build_site.ALIGNMENTS:
         p = build_site.STATIC_DIR / f"{e.slug}.json"
         assert p.exists(), f"run python scripts/build_site.py --write-static to create {p}"
         d = json.loads(p.read_text(encoding="utf-8"))
         assert d["schema"] == build_site.ALIGNMENT_SCHEMA and d["celex"] == e.celex
-        assert d["summary"]["rows"] > 100 and d["summary"]["rows_with_official"] > 50
-        assert d["method"].startswith("lexical")
+        assert d["summary"]["rows"] > 100
+        assert d["has_official"] == bool(e.gold)
+        if e.gold:
+            assert d["summary"]["rows_with_official"] > 50
+        assert d["method"].startswith("hybrid:") and "embed:" not in d["method"]  # stdlib only
+        assert d["eu"]["language"] == {"cz": "cs", "sk": "sk", "at": "de", "de": "de"}[e.country_code]
         for a in d["articles"]:
             for r in a["rows"]:
                 assert r["url"].startswith("https://eur-lex.europa.eu/")
                 for nid in r["official"] + [m["id"] for m in r["machine"]]:
+                    assert nid.startswith(e.country_code + ":")
                     url = d["national_texts"][nid]["url"]
-                    assert url is None or url.startswith("https://e-sbirka.gov.cz/")
+                    assert url is None or url.startswith(PORTALS[e.country_code])
+        rv = json.loads((build_site.STATIC_DIR / f"{e.slug}.review.json").read_text(encoding="utf-8"))
+        kinds = {s["kind"] for s in rv["suggestions"]}
+        assert "link" in kinds and "extra_rule" in kinds
+        for s in rv["suggestions"]:
+            assert (s["eu_id"] is None or s["eu_id"] in rv["eu_texts"])
+            assert (s["national_id"] is None or s["national_id"] in rv["national_texts"])
 
 
 def test_offline_site_build_includes_alignment(tmp_path):
@@ -496,6 +526,15 @@ def test_offline_site_build_includes_alignment(tmp_path):
     index = json.loads((tmp_path / "index.json").read_text(encoding="utf-8"))
     nis2 = next(x for x in index["directives"] if x["celex"] == "32022L2555")
     assert nis2["alignments"][0]["href"] == "alignment.html?id=32022L2555_cz"
+    assert [a["country"] for a in nis2["alignments"]] == ["CZE", "SVK", "AUT", "DEU"]
+    assert nis2["matrix_href"] == "matrix.html?celex=32022L2555"
+    m = json.loads((tmp_path / "matrix" / "32022L2555.json").read_text(encoding="utf-8"))
+    assert [c["code"] for c in m["countries"]] == ["cz", "sk", "at", "de"]
+    art23 = next(a for a in m["articles"] if a["key"] == "art23")
+    assert art23["heading"] == "Reporting obligations"
+    assert art23["cells"]["cz"]["official"] and art23["cells"]["sk"]["official"] is None
+    assert (tmp_path / "review" / "32022L2555_sk.json").exists()
+    assert (tmp_path / "dataset" / "links.csv").exists() and (tmp_path / "dataset" / "datapackage.json").exists()
 
 
 def test_site_never_uses_innerhtml():
