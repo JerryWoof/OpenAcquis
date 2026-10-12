@@ -1,0 +1,97 @@
+{
+ "head": {
+  "vars": [
+   "celex",
+   "mc",
+   "notif"
+  ]
+ },
+ "results": {
+  "bindings": [
+   {
+    "celex": {
+     "type": "literal",
+     "value": "32022L2555"
+    },
+    "mc": {
+     "type": "literal",
+     "value": "72022L2555CZE_120325"
+    },
+    "notif": {
+     "type": "literal",
+     "value": "2005-04-19"
+    }
+   },
+   {
+    "celex": {
+     "type": "literal",
+     "value": "32022L2555"
+    },
+    "mc": {
+     "type": "literal",
+     "value": "72022L2555CZE_132694"
+    },
+    "notif": {
+     "type": "literal",
+     "value": "2006-06-20"
+    }
+   },
+   {
+    "celex": {
+     "type": "literal",
+     "value": "32022L2555"
+    },
+    "mc": {
+     "type": "literal",
+     "value": "72022L2555CZE_132709"
+    },
+    "notif": {
+     "type": "literal",
+     "value": "2006-06-21"
+    }
+   },
+   {
+    "celex": {
+     "type": "literal",
+     "value": "32022L2555"
+    },
+    "mc": {
+     "type": "literal",
+     "value": "72022L2555DEU_202404474"
+    },
+    "notif": {
+     "type": "literal",
+     "value": "2024-10-22"
+    }
+   },
+   {
+    "celex": {
+     "type": "literal",
+     "value": "32022L2555"
+    },
+    "mc": {
+     "type": "literal",
+     "value": "72022L2555DEU_202404476"
+    },
+    "notif": {
+     "type": "literal",
+     "value": "2024-10-22"
+    }
+   },
+   {
+    "celex": {
+     "type": "literal",
+     "value": "32022L2555"
+    },
+    "mc": {
+     "type": "literal",
+     "value": "72022L2555DEU_202404480"
+    },
+    "notif": {
+     "type": "literal",
+     "value": "2024-10-22"
+    }
+   }
+  ]
+ }
+}

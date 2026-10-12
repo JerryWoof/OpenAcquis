@@ -1,0 +1,40 @@
+{
+ "souvislosti": [
+  {
+   "typ": "MENI",
+   "pocetDokumentuSbirky": 2,
+   "dokumentySbirky": [
+    {
+     "staleUrl": "/sb/2017/104",
+     "nazev": "Zákon, kterým se mění zákon č. 365/2000 Sb., o informačních ",
+     "kodDokumentuSbirky": "104/2017 Sb.",
+     "stavDokumentuSbirky": "AKTUALNE_PLATNY"
+    },
+    {
+     "staleUrl": "/sb/2017/183",
+     "nazev": "Zákon, kterým se mění některé zákony v souvislosti s přijetí",
+     "kodDokumentuSbirky": "183/2017 Sb.",
+     "stavDokumentuSbirky": "AKTUALNE_PLATNY"
+    }
+   ]
+  },
+  {
+   "typ": "JE_PROVADEN",
+   "pocetDokumentuSbirky": 2,
+   "dokumentySbirky": [
+    {
+     "staleUrl": "/sb/2025/334",
+     "nazev": "Vyhláška o Portálu Národního úřadu pro kybernetickou a infor",
+     "kodDokumentuSbirky": "334/2025 Sb.",
+     "stavDokumentuSbirky": "AKTUALNE_PLATNY"
+    },
+    {
+     "staleUrl": "/sb/2025/408",
+     "nazev": "Vyhláška o regulovaných službách",
+     "kodDokumentuSbirky": "408/2025 Sb.",
+     "stavDokumentuSbirky": "AKTUALNE_PLATNY"
+    }
+   ]
+  }
+ ]
+}

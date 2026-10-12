@@ -1,0 +1,156 @@
+name: Change alerts
+
+# Weekly check of the watched EU and national sources (scripts/check_changes.py, docs/alerts.md): CELLAR
+# (amendments, corrigenda, consolidations, notified national measures), e-Sbírka, Slov-Lex, RIS and
+# gesetze-im-internet.de. One issue per changed item (label "change-alert"; later changes to the same item
+# are comments on the open issue), the new state committed to main, and a site rebuild so site/feed.xml
+# carries the new entries.
+#
+# Least privilege, three jobs:
+#   check         contents: read. Runs the checker; fetched content is parsed as data, never executed. No
+#                 token is left in .git/config. Hands state.json and the issue texts on as an artifact.
+#   commit-state  contents: write. Runs no repository code: checks the artifact is a state file (stdlib
+#                 json), copies it to data/alerts/state.json and pushes as github-actions[bot].
+#   notify        issues: write, actions: write. No checkout. Opens or comments issues from the files the
+#                 checker wrote (passed to gh as --title/--body-file values, never interpolated into a
+#                 script), keeps one "alerts-health" issue for sources failing 3+ runs in a row, and
+#                 dispatches pages.yml (a push made with GITHUB_TOKEN does not trigger workflows).
+# A source that fails is a warning in the job summary, not an issue: it keeps its previous fingerprint.
+
+on:
+  schedule:
+    - cron: "41 5 * * 1"  # weekly, Monday 05:41 UTC (after the Website workflow's 04:17 refresh)
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: alerts
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    outputs:
+      changes: ${{ steps.run.outputs.changes }}
+      state_changed: ${{ steps.run.outputs.state_changed }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e '.[tls]'
+      - name: Check the sources
+        id: run
+        run: |
+          out="$RUNNER_TEMP/alerts"
+          # site/data/ is not built in this job (and is gitignored): name alignment pages from the committed copies.
+          python scripts/check_changes.py check --align-dir site/static-data --out-dir "$out"
+          cat "$out/summary.md" >> "$GITHUB_STEP_SUMMARY"
+          echo "changes=$(jq '.changes | length' "$out/changes.json")" >> "$GITHUB_OUTPUT"
+          if [ -n "$(git status --porcelain -- data/alerts/state.json)" ]; then
+            cp data/alerts/state.json "$out/state.json"
+            echo "state_changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "state_changed=false" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: alerts
+          path: ${{ runner.temp }}/alerts
+          retention-days: 7
+
+  commit-state:
+    needs: check
+    if: needs.check.outputs.state_changed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/download-artifact@v4
+        with:
+          name: alerts
+          path: ${{ runner.temp }}/alerts
+      - name: Commit data/alerts/state.json
+        run: |
+          python3 -I -c 'import json, sys; d = json.load(open(sys.argv[1], encoding="utf-8")); assert d.get("schema") == 1 and isinstance(d.get("items"), dict), "not a state file"' "$RUNNER_TEMP/alerts/state.json"
+          cp "$RUNNER_TEMP/alerts/state.json" data/alerts/state.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/alerts/state.json
+          if git diff --cached --quiet; then echo "state unchanged"; exit 0; fi
+          git commit -m "alerts: update change-alert state ($(date -u +%F))"
+          for i in 1 2 3; do
+            git push origin HEAD:main && exit 0
+            sleep $((i * 10))
+            git pull --rebase origin main
+          done
+          echo "::error::could not push data/alerts/state.json to main"
+          exit 1
+
+  notify:
+    needs: [check, commit-state]
+    # Only after the state is saved (or unchanged): otherwise the next run would report the same changes again.
+    if: ${{ !cancelled() && needs.check.result == 'success' && (needs.commit-state.result == 'success' || needs.commit-state.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      issues: write
+      actions: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      CHANGES: ${{ needs.check.outputs.changes }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: alerts
+          path: ${{ runner.temp }}/alerts
+      - name: Labels
+        run: |
+          have="$(gh label list --limit 500 --json name --jq '.[].name')"
+          grep -qx 'change-alert' <<<"$have" || \
+            gh label create change-alert --color FBCA04 --description "A watched legal source changed (automatic signal)"
+          grep -qx 'alerts-health' <<<"$have" || \
+            gh label create alerts-health --color D93F0B --description "A change-alert source keeps failing"
+      - name: One issue per changed item
+        run: |
+          dir="$RUNNER_TEMP/alerts/issues"
+          [ -d "$dir" ] || { echo "no changes"; exit 0; }
+          gh issue list --label change-alert --state open --limit 500 --json number,body > "$RUNNER_TEMP/open.json"
+          for d in "$dir"/*/; do
+            marker="$(cat "$d/key")"
+            title="$(cat "$d/title")"  # already bounded (180 characters + a short suffix) by the checker
+            n="$(jq -r --arg m "$marker" '[.[] | select(.body | contains($m))][0].number // empty' "$RUNNER_TEMP/open.json")"
+            if [ -n "$n" ]; then
+              gh issue comment "$n" --body-file "$d/comment.md"
+            else
+              gh issue create --title "$title" --body-file "$d/body.md" --label change-alert
+            fi
+            sleep 2
+          done
+      - name: Source health issue
+        run: |
+          health="$RUNNER_TEMP/alerts/health.md"
+          n="$(gh issue list --label alerts-health --state open --limit 1 --json number --jq '.[0].number // empty')"
+          if [ -f "$health" ]; then
+            if [ -n "$n" ]; then
+              gh issue edit "$n" --body-file "$health"
+            else
+              gh issue create --title "[change-alert] some sources keep failing" --body-file "$health" --label alerts-health
+            fi
+          elif [ -n "$n" ]; then
+            gh issue close "$n" --comment "Every source answered again in the latest run."
+          fi
+      - name: Rebuild the site (feed.xml)
+        if: needs.check.outputs.changes != '0'
+        run: gh workflow run pages.yml --ref main || echo "::warning::could not dispatch pages.yml"

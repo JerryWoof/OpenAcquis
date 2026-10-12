@@ -1,0 +1,49 @@
+{
+ "historie": [
+  {
+   "datumUcinnostiZneniOd": "2027-01-01",
+   "datumCasVyhlaseni": "2012-03-22T00:00:00.000+01:00",
+   "staleUrl": "/sb/2012/89/2027-01-01",
+   "typZneni": "BUDOUCI",
+   "novely": [
+    {
+     "staleUrl": "/sb/2016/460",
+     "kodDokumentuSbirky": "460/2016 Sb."
+    },
+    {
+     "staleUrl": "/sb/2026/159",
+     "kodDokumentuSbirky": "159/2026 Sb."
+    }
+   ],
+   "cisloZneni": 20,
+   "poznamky": []
+  },
+  {
+   "datumUcinnostiZneniOd": "2026-01-01",
+   "datumUcinnostiZneniDo": "2026-12-31",
+   "datumCasVyhlaseni": "2012-03-22T00:00:00.000+01:00",
+   "staleUrl": "/sb/2012/89/2026-01-01",
+   "typZneni": "AKTUALNI",
+   "novely": [
+    {
+     "staleUrl": "/sb/2025/176",
+     "kodDokumentuSbirky": "176/2025 Sb."
+    },
+    {
+     "staleUrl": "/sb/2025/268",
+     "kodDokumentuSbirky": "268/2025 Sb."
+    }
+   ],
+   "cisloZneni": 19,
+   "poznamky": []
+  },
+  {
+   "datumUcinnostiZneniOd": "2012-03-22",
+   "datumCasVyhlaseni": "2012-03-22T00:00:00.000+01:00",
+   "staleUrl": "/sb/2012/89/0000-00-00",
+   "typZneni": "VYHLASENE",
+   "novely": [],
+   "poznamky": []
+  }
+ ]
+}

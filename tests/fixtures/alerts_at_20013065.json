@@ -1,0 +1,219 @@
+{
+ "OgdSearchResult": {
+  "OgdDocumentResults": {
+   "Hits": {
+    "@pageNumber": "1",
+    "@pageSize": "100",
+    "#text": "3"
+   },
+   "OgdDocumentReference": [
+    {
+     "Data": {
+      "Metadaten": {
+       "Technisch": {
+        "ID": "NOR40273913",
+        "Applikation": "BrKons",
+        "Organ": "BKA (Bundeskanzleramt)",
+        "ImportTimestamp": {
+         "@xsi:nil": "true",
+         "@xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance"
+        }
+       },
+       "Allgemein": {
+        "Veroeffentlicht": "2025-12-30",
+        "Geaendert": "2026-04-29",
+        "DokumentUrl": "https://ogd.ris.bka.gv.at/eli/bgbl/i/2025/94/P0/NOR40273913"
+       },
+       "Bundesrecht": {
+        "Kurztitel": "Netz- und Informationssystemsicherheitsgesetz 2026",
+        "Titel": "Bundesgesetz zur Gewährleistung eines hohen Cybersicherheitsniveaus von Netz- un",
+        "Eli": "https://ris.bka.gv.at/eli/bgbl/i/2025/94/P0/NOR40273913",
+        "BrKons": {
+         "Kundmachungsorgan": "BGBl. I Nr. 94/2025",
+         "Typ": "BG",
+         "Dokumenttyp": "Norm",
+         "ArtikelParagraphAnlage": "§ 0",
+         "Paragraphnummer": "0",
+         "StammnormPublikationsorgan": "BGBl. I Nr.",
+         "StammnormBgblnummer": "94/2025",
+         "Inkrafttretensdatum": "2025-12-24",
+         "Ausserkrafttretensdatum": "2026-09-30",
+         "Abkuerzung": "NISG 2026",
+         "Indizes": {
+          "item": "41/01 Sicherheitsrecht"
+         },
+         "Aenderung": "BGBl. I Nr. 94/2025",
+         "Schlagworte": "Inh, Inkrafttretensbestimmung, Außerkrafttretensbestimmung",
+         "Gesetzesnummer": "20013065",
+         "GesamteRechtsvorschriftUrl": "https://ogd.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=Bundesnormen&Gesetzesnummer=20013065"
+        }
+       }
+      },
+      "Dokumentliste": {
+       "ContentReference": {
+        "ContentType": "MainDocument",
+        "Name": "Hauptdokument",
+        "Urls": {
+         "ContentUrl": [
+          {
+           "DataType": "Xml",
+           "Url": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40273913/NOR40273913.xml"
+          },
+          {
+           "DataType": "Html",
+           "Url": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40273913/NOR40273913.html"
+          },
+          {
+           "DataType": "Rtf",
+           "Url": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40273913/NOR40273913.rtf"
+          },
+          {
+           "DataType": "Pdf",
+           "Url": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40273913/NOR40273913.pdf"
+          }
+         ]
+        }
+       }
+      }
+     }
+    },
+    {
+     "Data": {
+      "Metadaten": {
+       "Technisch": {
+        "ID": "NOR40277627",
+        "Applikation": "BrKons",
+        "Organ": "BKA (Bundeskanzleramt)",
+        "ImportTimestamp": {
+         "@xsi:nil": "true",
+         "@xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance"
+        }
+       },
+       "Allgemein": {
+        "Veroeffentlicht": "2026-04-29",
+        "Geaendert": "2026-04-29",
+        "DokumentUrl": "https://ogd.ris.bka.gv.at/eli/bgbl/i/2025/94/P0/NOR40277627"
+       },
+       "Bundesrecht": {
+        "Kurztitel": "Netz- und Informationssystemsicherheitsgesetz 2026",
+        "Titel": "Bundesgesetz zur Gewährleistung eines hohen Cybersicherheitsniveaus von Netz- un",
+        "Eli": "https://ris.bka.gv.at/eli/bgbl/i/2025/94/P0/NOR40277627",
+        "BrKons": {
+         "Kundmachungsorgan": "BGBl. I Nr. 94/2025",
+         "Typ": "BG",
+         "Dokumenttyp": "Norm",
+         "ArtikelParagraphAnlage": "§ 0",
+         "Paragraphnummer": "0",
+         "StammnormPublikationsorgan": "BGBl. I Nr.",
+         "StammnormBgblnummer": "94/2025",
+         "Inkrafttretensdatum": "2026-10-01",
+         "Abkuerzung": "NISG 2026",
+         "Indizes": {
+          "item": "41/01 Sicherheitsrecht"
+         },
+         "Aenderung": "",
+         "Schlagworte": "Inh, Inkrafttretensbestimmung, Außerkrafttretensbestimmung",
+         "Gesetzesnummer": "20013065",
+         "GesamteRechtsvorschriftUrl": "https://ogd.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=Bundesnormen&Gesetzesnummer=20013065"
+        }
+       }
+      },
+      "Dokumentliste": {
+       "ContentReference": {
+        "ContentType": "MainDocument",
+        "Name": "Hauptdokument",
+        "Urls": {
+         "ContentUrl": [
+          {
+           "DataType": "Xml",
+           "Url": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40277627/NOR40277627.xml"
+          },
+          {
+           "DataType": "Html",
+           "Url": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40277627/NOR40277627.html"
+          },
+          {
+           "DataType": "Rtf",
+           "Url": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40277627/NOR40277627.rtf"
+          },
+          {
+           "DataType": "Pdf",
+           "Url": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40277627/NOR40277627.pdf"
+          }
+         ]
+        }
+       }
+      }
+     }
+    },
+    {
+     "Data": {
+      "Metadaten": {
+       "Technisch": {
+        "ID": "NOR40273860",
+        "Applikation": "BrKons",
+        "Organ": "BKA (Bundeskanzleramt)",
+        "ImportTimestamp": {
+         "@xsi:nil": "true",
+         "@xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance"
+        }
+       },
+       "Allgemein": {
+        "Veroeffentlicht": "2025-12-30",
+        "Geaendert": "2025-12-30",
+        "DokumentUrl": "https://ogd.ris.bka.gv.at/eli/bgbl/i/2025/94/P1/NOR40273860"
+       },
+       "Bundesrecht": {
+        "Kurztitel": "Netz- und Informationssystemsicherheitsgesetz 2026",
+        "Eli": "https://ris.bka.gv.at/eli/bgbl/i/2025/94/P1/NOR40273860",
+        "BrKons": {
+         "Kundmachungsorgan": "BGBl. I Nr. 94/2025",
+         "Typ": "BG",
+         "Dokumenttyp": "Paragraph",
+         "ArtikelParagraphAnlage": "§ 1",
+         "Paragraphnummer": "1",
+         "StammnormPublikationsorgan": "BGBl. I Nr.",
+         "StammnormBgblnummer": "94/2025",
+         "Inkrafttretensdatum": "2026-10-01",
+         "Abkuerzung": "NISG 2026",
+         "Indizes": {
+          "item": "41/01 Sicherheitsrecht"
+         },
+         "Aenderung": "",
+         "Gesetzesnummer": "20013065",
+         "GesamteRechtsvorschriftUrl": "https://ogd.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=Bundesnormen&Gesetzesnummer=20013065"
+        }
+       }
+      },
+      "Dokumentliste": {
+       "ContentReference": {
+        "ContentType": "MainDocument",
+        "Name": "Hauptdokument",
+        "Urls": {
+         "ContentUrl": [
+          {
+           "DataType": "Xml",
+           "Url": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40273860/NOR40273860.xml"
+          },
+          {
+           "DataType": "Html",
+           "Url": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40273860/NOR40273860.html"
+          },
+          {
+           "DataType": "Rtf",
+           "Url": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40273860/NOR40273860.rtf"
+          },
+          {
+           "DataType": "Pdf",
+           "Url": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40273860/NOR40273860.pdf"
+          }
+         ]
+        }
+       }
+      }
+     }
+    }
+   ]
+  }
+ }
+}
