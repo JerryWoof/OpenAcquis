@@ -3,6 +3,31 @@
 All notable changes to OpenAcquis. Versions follow [Semantic Versioning](https://semver.org/); while the
 version is 0.x, the command-line options and data formats can still change.
 
+## Unreleased
+
+### Added
+- **The first LLM judge run: NIS2 × Czechia.** `data/judgments/32022L2555_cz.jsonl` holds 606 judgments, the top 3
+  machine candidates of each of the 202 rows of the alignment page. They come from Claude Opus 5.5 in Claude Code
+  subagents with the Czech judge prompt (`judge-cs-2026-10-12.2`). All 96 related judgments have verified
+  quotes. Against the official table, pairs the judge calls related have precision 0.755 (§ level 0.883), against
+  0.449 for the machine's top-1. The judge keeps 71 of 106 table-confirmed candidates and rejects 285 of 308
+  others. Caveats (recall bounded by the 3 candidates, a single run, the table's limits) are in
+  [docs/evaluation.md](docs/evaluation.md#llm-judge-nis2--cz).
+- **`scripts/judge_session.py`** runs the judge with Claude Code subagents instead of the API, so no key is
+  needed. `prep` exports the country's system prompt, the output schema, instructions and chunks of pairs
+  (same workload and messages as `judge-batch`). `collect` reads `result_NNN.json` files or a workflow output,
+  checks labels, IDs and the manifest hash, runs the evidence checks and writes the `judge-batch` JSONL format.
+  `evaluate` scores a judgments JSONL against an official table. See
+  [docs/judge.md](docs/judge.md#running-it-in-claude-code-no-api-key).
+- `openacquis.evaluate.judgment_agreement` / `format_judgment_agreement`: precision of the machine's top-1,
+  of the pairs the judge calls related, and of `same`/`partial` pairs, at provision and § level; how many
+  table pairs the judge keeps and how many other pairs it rejects.
+- **Website**: alignment pages show judge labels from `data/judgments/` next to each judged candidate, marked
+  "AI judge (Claude), unreviewed suggestion": label, confidence, rationale and the checked quotes. They add an
+  "AI judge says related" filter and a KPI. Matrix cells count `stricter` / `different value` labels. The
+  labels are merged at build time, so the committed `site/static-data/` copies are unchanged. The static API
+  leaves them out.
+
 ## 0.5.0 (2026-10-12): v1.0 preview
 
 Twelve directives × four countries at provision level, six held-out official correlation tables, a static API,

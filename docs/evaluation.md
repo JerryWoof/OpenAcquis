@@ -3,6 +3,9 @@
 > **New in 0.5:** [held-out generalisation](#v05-held-out-generalisation-six-more-official-tables) on six more
 > official correlation tables (Czechia: CER, Accessibility Act, Whistleblower; Slovakia: NIS2, CER, Pay
 > Transparency), scored with the thresholds tuned on NIS2 × Czechia and not retuned.
+>
+> **New (unreleased):** the [LLM judge, run once on NIS2 × Czechia](#llm-judge-nis2--cz) (Claude Opus 5.5 in Claude
+> Code, top 3 candidates): precision against the table 0.45 (machine top-1) → 0.76 (pairs the judge calls related).
 
 *Sections up to "Take-aways" were run on 2026-10-12 with OpenAcquis 0.3.0; the v0.4 sections at the end with
 0.4.0. Since 0.4.0 the default embedder of `align` and `eval` is `auto` (`hybrid` with the embeddings extra,
@@ -121,6 +124,7 @@ candidates are provisions that the government explicitly maps to a Czech section
 |---|---|---|
 | `RuleJudge` (keyless heuristics, top 3 lexical candidates) | run | 1,017 pairs judged. Of the 225 pairs that are in the table, 55.1 % were labelled related. Of the 792 other pairs, 64.4 % were labelled unrelated. Keeping only links it labels related gives P 0.225 (in scope 0.305), R 0.158 and F1 0.186, with 86 gold EU provisions getting a correct link and 177 gap candidates (117 listed in the table). **It does not help:** precision drops compared with the score threshold alone |
 | `AnthropicJudge` (Claude, `--judge anthropic`) | **requires ANTHROPIC_API_KEY; not yet run** | Implemented and tested offline with a fake client only. Estimated cost for 473 units × 3 candidates (about 1,400 pairs): about $8 with Sonnet 5.5, or about $4 through the Batches API (see [judge.md](judge.md)). These are estimates, not measured spend |
+| Claude Opus 5.5 with the same prompt, in Claude Code subagents (later, see [LLM judge (NIS2 × CZ)](#llm-judge-nis2--cz)) | run once, top 3 candidates of the 202 page rows | 414 pairs in scope. Related pairs: P 0.755 (§ 0.883), against 0.449 for the machine's top-1. Keeps 71 of 106 table-confirmed candidates and rejects 285 of 308 others |
 
 ## Errors: five examples
 
@@ -617,3 +621,94 @@ list (a listed one is a false alarm against the table).
 by text comparison (renumbered and unresolved IDs are listed in each `_summary.json`). The Czech tables have no
 compatibility column; the Slovak ones mark almost everything as fully compatible and never flag gold-plating, so
 they cannot test the extra-rule candidates. Agreement with a table is not legal correctness.
+
+## LLM judge (NIS2 × CZ)
+
+*Run on 2026-10-12 with OpenAcquis 0.5.0 and prompt `judge-cs-2026-10-12.2`; scored on 2026-10-13. The judgments
+are in [`data/judgments/32022L2555_cz.jsonl`](../data/judgments/32022L2555_cz.jsonl).*
+
+The pair judge ([judge.md](judge.md)) was run once on NIS2 × Czechia. There is no API key, so it was not run
+through the Anthropic API or the batch runner. The same prompts were answered by **Claude Opus 5.5 in Claude Code
+subagents** inside the maintainer's Claude subscription
+([how](judge.md#running-it-in-claude-code-no-api-key)). The pairs are the **top 3 machine candidates** of each of the
+202 rows (directive paragraphs) of the website's alignment page `site/static-data/32022L2555_cz.json`
+(`hybrid-lex`), which makes **606 pairs**. Each of 31 subagents judged 20 pairs with the exact Czech system prompt
+and user messages of the API judge. `scripts/judge_session.py collect` then ran the usual evidence checks.
+**All 96 related judgments have quotes found verbatim in both texts.** Labels: unrelated 510, partial 57, same 16,
+option 9, different value 8, stricter 6.
+
+Reproduce the scores (offline, stdlib):
+
+```bash
+python scripts/judge_session.py evaluate data/judgments/32022L2555_cz.jsonl --examples 23
+```
+
+**What is scored.** We only score pairs whose EU row the official table covers: 414 pairs in 138 rows. A candidate
+counts as **confirmed** when the table links the same EU unit, or one above or below it, to the same national
+provision, or one above or below it. "§ level" only asks for the same act and §. "Related" means any label except
+`unrelated`, at any rank.
+
+| Selection (414 pairs in scope) | Pairs | Precision | Precision, § level |
+|---|---:|---:|---:|
+| Machine top-1 candidate (no judge) | 138 | 0.449 | 0.558 |
+| Judge: related (any label but `unrelated`, rank 1–3) | 94 | **0.755** | **0.883** |
+| Judge: `same` or `partial` | 71 | **0.831** | **0.915** |
+
+| Agreement with the table | |
+|---|---|
+| Table-confirmed candidates the judge keeps (labels them related) | 71 of 106 (67 %) |
+| Candidates not in the table that the judge rejects (`unrelated`) | 285 of 308 (93 %) |
+| Related, but not in the table | 23 |
+
+**What it shows.** The judge filters well. Keeping only the pairs it calls related raises precision against the
+table from 0.45 (machine top-1) to 0.76, or 0.83 for `same`/`partial`. At § level that is 0.88–0.92. It rejects
+93 % of the candidates the table does not list. It also finds table links at rank 2 or 3, where the machine's
+top-1 is wrong: 39 of the 94 related pairs are not the top-1 candidate.
+
+**Caveats. Read these before quoting the numbers.**
+
+- **Recall is bounded by the candidates.** The judge only saw the top 3 machine candidates per row. Of the 138
+  covered rows, only 75 have a table-confirmed provision among them, and the judge keeps one for 51. The machine's
+  top-1 is confirmed for 62. Higher precision comes with fewer rows that have any link: 58 of 138 rows get a
+  related candidate. Whatever the matcher misses, the judge cannot find.
+- **It drops a third of the table's links.** 35 table-confirmed candidates were labelled `unrelated`. Some are
+  probably judge errors. Others are table links that the two texts alone do not show (the table pairs whole
+  paragraphs with § ranges, or definitions with the provisions that use them). The prompt tells the judge to use
+  only the two texts.
+- **The 23 related pairs the table does not list could be real finds or errors.** Nobody has reviewed them. Five
+  examples, with the judge's rationale as written in the JSONL:
+  1. Art. 3(4) → § 34(1)(c), `partial` (0.80): "Both require current contact details including e-mail addresses
+     and telephone numbers. The national item does not mention address or IP ranges, and it does not cover the
+     other listed items or the duty to notify changes." This may be a real find: the table pairs Art. 3(4) with
+     §§ 6, 9 and 11, not with § 34.
+  2. Art. 26(5) → § 54(3), `option` (0.75): "The directive allows a requested Member State to take supervisory
+     measures within the limits of a mutual assistance request; Czechia uses this, letting the Office inspect
+     providers with a main establishment elsewhere only on, and within the scope of, such a request."
+  3. Art. 27(3) → § 11(2), `stricter` (0.55): "Both require notification of changes to submitted data; the
+     directive allows up to three months, the Czech act 14 days, though only for data not held as reference data
+     in base registers." This is a gold-plating candidate the table, which has no compatibility column, cannot
+     confirm.
+  4. Art. 34(4) → § 59(4)(b), `different_value` (0.50): "Both set maximum fines, but the Czech letter sets CZK
+     175 million or 1.4% of turnover, below the directive's EUR 10 million or 2% for essential entities. It
+     appears to address a different (lower) tier of offences." Most likely the wrong tier of offences: a
+     wrong pairing, not a difference in values.
+  5. Art. 15(2) → § 42(4)(f), `partial` (0.50): "The directive says the CSIRT network consists of representatives
+     of national CSIRTs and CERT-EU, with the Commission as observer and ENISA as secretariat. The Czech provision
+     covers only the national side, sending representatives to the CSIRT network." This is a loose match. The same
+     Czech letter is called `partial` for four different EU paragraphs (Art. 10(6), 14(3), 15(2) and 16(2)).
+- **One run, one model, not the API.** It was a single run with no repeat and no inter-run agreement. The model was
+  Opus 5.5 in Claude Code subagents, not the default Sonnet 5.5 through the batch API. Structured output was not
+  enforced: the subagents wrote JSON files that `collect` validated. Subagents may differ in calibration. The
+  confidences are uncalibrated: 19 of the 96 related judgments have confidence 0.5 or less.
+- **The pairs differ from the API path's.** They come from the page data, where texts are clipped at 2,500
+  characters (21 pairs have a clipped text, noted in their JSONL lines). Rows are directive paragraphs, not the
+  473 EU units of `openacquis align`.
+- **The table is not perfect.** It describes the 2024 bill, and its numbering was mapped to the act as published
+  (see [`data/eval/README.md`](../data/eval/README.md)). It has no compatibility column, so it cannot check the
+  `stricter` / `different_value` / `option` labels at all. "Not in the table" does not mean wrong. Agreement with
+  the table is not legal correctness.
+
+On the website, every judged candidate on the
+[NIS2 × Czechia page](https://jerrywoof.github.io/OpenAcquis/alignment.html?id=32022L2555_cz) shows its label,
+confidence, rationale and checked quotes, marked "AI judge (Claude), unreviewed suggestion". A "AI judge says
+related" filter lists them, and the matrix counts `stricter` / `different value` labels per article.

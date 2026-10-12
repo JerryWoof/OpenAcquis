@@ -61,14 +61,15 @@ Results: [docs/evaluation.md](docs/evaluation.md) ("v0.4" sections).
 - [ ] Better matching: lexical + dense hybrid, following cross-references (sanctions), short list items; run the LLM judge
   - [x] Hybrid matching (`hybrid-lex` stdlib, the default without extras: MRR 0.445 → about 0.50 cross-validated; `hybrid` with e5: R@5 0.563 → 0.635). Body-only channels fix short list items (Art. 21(2)(i): rank 7 → 1).
   - [ ] Following cross-references for sanctions (Art. 36 still missed).
-  - [ ] LLM judge run (needs `ANTHROPIC_API_KEY`).
+  - [x] LLM judge run for NIS2 × CZ (Unreleased: Opus 5.5 in Claude Code, no key; related pairs P 0.755 against the
+    machine's top-1 at 0.449, [evaluation](docs/evaluation.md#llm-judge-nis2--cz)). Other pairs still to run.
 - [x] Review queue for human reviewers; reviewed results exported as an open CC-BY dataset
   - `review.html` queue, review records in `data/reviews/`, `openacquis review validate|add|stats` ([docs/review.md](docs/review.md)).
   - GitHub issue form and a validate-and-comment workflow. It does not auto-commit, by design.
   - `openacquis dataset build` writes `links.csv` / `links.jsonl` / `datapackage.json` (CC-BY-4.0), also published on the website ([docs/dataset.md](docs/dataset.md)).
   - Today: 568 official-table links (NIS2 × CZ); no reviews yet. Release attachments come with the first tagged release.
 
-## v0.5: v1.0 preview (done; judge run and reviews pending)
+## v0.5: v1.0 preview (done; judge run for one pair only, reviews pending)
 See [CHANGELOG](CHANGELOG.md#050-2026-10-12-v10-preview). Registry of 12 directives, 46 alignment pages, six held-out
 official tables (CZ: CER, Accessibility Act, Whistleblower; SK: NIS2, CER, Pay Transparency), `openacquis eval <CELEX> <cc>`,
 static API, change alerts, batch judge.
@@ -91,9 +92,16 @@ static API, change alerts, batch judge.
   - [ ] CSRD (consolidated EU references, auditors act) and Work-Life Balance stay act level only
 - [x] Alerts when a national law or directive changes (v0.5): weekly workflow, GitHub issues, [Atom feed](https://jerrywoof.github.io/OpenAcquis/feed.xml) ([docs/alerts.md](docs/alerts.md))
   - Seeded with 365 watched items; first live weeks still to come. National acts not yet on the list are only caught once CELLAR lists them
-- [ ] LLM judge run: batch runner and dispatch-only workflow are ready (v0.5, about $53 for all 12 directives × 4 countries with
-  Sonnet 5.5 batches, estimate; `--max-cost` caps the worst case, no cache hits and every answer at `--max-tokens`,
-  about 8 times the typical estimate: $13.90 for NIS2 × CZ); **not run**, it needs an API key in the repository's `llm` environment
+- [ ] LLM judge run for every pair
+  - [x] NIS2 × CZ (Unreleased): 606 pairs judged by Opus 5.5 in Claude Code subagents with `scripts/judge_session.py`, no
+    API key. The labels are on the website. Against the official table, precision is 0.755 for pairs called related and
+    0.449 for the machine's top-1, and recall is bounded by the top 3 candidates
+    ([evaluation](docs/evaluation.md#llm-judge-nis2--cz)). A single run, not reviewed.
+  - [ ] The other 45 pairs: through `judge_session.py` (subscription), or through the batch runner and its
+    dispatch-only workflow (v0.5). With Sonnet 5.5 batches, the estimate is about $53 for all 12 directives × 4
+    countries, and `--max-cost` caps the worst case ($13.90 for NIS2 × CZ). The batch path needs an API key in the
+    repository's `llm` environment.
+  - [ ] Repeat runs and model comparison (Sonnet 5.5 via the API against Opus 5.5) on the seven official tables
 - [ ] Human review at scale: review pages exist for every pair; 0 reviews so far
 
 ## Later

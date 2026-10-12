@@ -13,8 +13,11 @@ Spot gaps, gold-plating and national choices, with links to the source texts.
 > tuned on one of them (NIS2 × CZ) only. On the six held-out tables, a provision the government lists is
 > among the top 5 machine candidates for 60–90 % of EU provisions, and the right § for 77–96 %
 > ([docs/evaluation.md](docs/evaluation.md#v05-held-out-generalisation-six-more-official-tables)). Austria and
-> Germany have no table to check against. The LLM judge is built but **not run** (it needs an API key), and
-> there are **no human reviews yet**: everything at provision level is an unreviewed machine suggestion.
+> Germany have no table to check against. The LLM judge has been **run once, for NIS2 × Czechia**: Claude Opus 5.5
+> judged the top 3 candidates per paragraph (606 pairs) inside Claude Code, with no API key. Pairs it calls related agree with
+> the official table 76 % of the time, against 45 % for the machine's top suggestion, but it can only pick from those 3
+> candidates ([details and caveats](docs/evaluation.md#llm-judge-nis2--cz)). There are **no human reviews yet**: everything
+> at provision level, judge labels included, is an unreviewed machine suggestion.
 >
 > Website: **https://jerrywoof.github.io/OpenAcquis/**, rebuilt weekly by GitHub Actions. You can see:
 > - notified national measures for 14 directives, with a map and a searchable table;
@@ -53,7 +56,7 @@ EUR-Lex / CELLAR ──► which national acts implement directive X   (v0.1)
 Directive text (24 languages) + national law texts (national portals)   (v0.2 CZ; v0.4 SK, AT, DE)
         │
         ▼
-Split into provisions ──► candidate matching ──► judge per pair (implemented, LLM run pending)
+Split into provisions ──► candidate matching ──► judge per pair (LLM run: NIS2 × CZ only)
         │                  lexical / hybrid / embeddings   (same / partial / different value / stricter / option chosen)
         ▼
 Leftovers: gap candidates (EU provisions with nothing similar) and extra-rule candidates
@@ -231,7 +234,7 @@ Predicted links (best candidate per EU unit, score >= 0.200)
 *(v0.3 output with the lexical embedder. In v0.4, `hybrid-lex` with the new filters gives 16 gap candidates (3 of them
 listed in the table) and 33 extra-rule candidates in 11 §§; the eval report has a step-by-step table.)*
 
-Every entry in `nis2_cz.json` keeps the provision IDs, scores, texts and links to EUR-Lex and e-Sbírka; for NIS2 Art. 23(4)(a) (the 24-hour early warning) the first candidate is `cz:264/2025:par16.odst1` (score 0.58), the 24-hour initial report. Everything is labelled `status: "candidate"`: a gap candidate means "nothing similar found in the acts searched", not a transposition failure. The multilingual e5 model scores lower than the stdlib lexical baseline on this test (R@5 0.442 vs 0.563); the LLM judge is implemented but has not been run yet (it needs an API key). Details and error analysis: [docs/evaluation.md](docs/evaluation.md).
+Every entry in `nis2_cz.json` keeps the provision IDs, scores, texts and links to EUR-Lex and e-Sbírka; for NIS2 Art. 23(4)(a) (the 24-hour early warning) the first candidate is `cz:264/2025:par16.odst1` (score 0.58), the 24-hour initial report. Everything is labelled `status: "candidate"`: a gap candidate means "nothing similar found in the acts searched", not a transposition failure. The multilingual e5 model scores lower than the stdlib lexical baseline on this test (R@5 0.442 vs 0.563); the LLM judge has been run once on NIS2 × CZ: see [docs/evaluation.md](docs/evaluation.md#llm-judge-nis2--cz). Details and error analysis: [docs/evaluation.md](docs/evaluation.md).
 
 ### Review and dataset (v0.4)
 
@@ -264,6 +267,8 @@ openacquis eval --list                     # nis2-cz (tuning set), cer-cz, eaa-c
 openacquis eval 32023L0970 sk              # held-out test: Pay Transparency x Slovakia
 openacquis alerts check --dry-run          # change alerts for the watched sources (also: alerts feed)
 openacquis judge-batch run site/static-data/32022L2557_cz.json --dry-run   # cost estimate, no key needed
+python scripts/judge_session.py prep site/static-data/32022L2555_cz.json cz work/nis2_cz   # judge in Claude Code, no key
+python scripts/judge_session.py evaluate data/judgments/32022L2555_cz.jsonl                # judge vs the official table
 
 python scripts/build_alignments.py --only 32022L2557   # refresh the site's precomputed alignments (cached, resumable)
 python scripts/build_api.py --check        # static API from the built site, schema-checked

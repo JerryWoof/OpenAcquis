@@ -353,6 +353,51 @@ and `force` (after an interrupted submission you have checked in the Console). S
   Pull requests opened with the workflow token do not trigger CI: close and reopen the PR to run it.
 - Review the PR like any data change: the lines are suggestions for human review, not findings.
 
+## Running it in Claude Code (no API key)
+
+`scripts/judge_session.py` runs the same judge without an API key, inside a Claude Code session on a Claude
+subscription. Claude Code subagents answer the prompts and the script handles everything else. Only the
+transport changes:
+
+- the pairs are the same as the batch runner's (`load_workload`, top `k` = 3 candidates per row);
+- the system prompt is the country's own (`system_prompt_for`);
+- the user message is the same (`build_user_message`);
+- the answers go through the same checks (`verify_evidence`, `_parse_confidence`);
+- the output format is the same (`data/judgments/<celex>_<cc>.jsonl`, one `record()` per pair).
+
+```bash
+# 1. Export: system.txt, schema.json, instructions.txt, manifest.json and chunk_000.json … (20 pairs each)
+python scripts/judge_session.py prep site/static-data/32022L2555_cz.json cz work/nis2_cz [--size 20]
+
+# 2. In Claude Code, ask for one subagent per chunk, for example:
+#    "For each work/nis2_cz/chunk_NNN.json, start a subagent that follows work/nis2_cz/instructions.txt
+#     for that chunk and writes work/nis2_cz/result_NNN.json."
+#    Each subagent reads system.txt as its instructions and writes {"chunk": N, "judgments": [...]}.
+
+# 3. Collect: checks the answers and quotes and writes data/judgments/32022L2555_cz.jsonl
+python scripts/judge_session.py collect site/static-data/32022L2555_cz.json cz work/nis2_cz
+#    or pass a workflow's output JSON (a list of chunk results, or {"result": ...}) instead of the directory;
+#    --out elsewhere.jsonl, --model "…" (default "claude-opus-5-5 (Claude Code session)")
+
+# 4. Score against the official correlation table (the set registered for the directive and country)
+python scripts/judge_session.py evaluate data/judgments/32022L2555_cz.jsonl [--gold nis2-cz] [--examples 5] [--json]
+```
+
+- **Checks.** `collect` rejects an answer that has an unknown label, an `n` outside the workload, or `eu_id` /
+  `national_id` values that do not match pair `n`. A later answer for the same pair replaces an earlier one. It
+  writes what it has and exits with 4 when pairs have no valid answer. Judge those chunks again, then run
+  `collect` again. `manifest.json` holds a hash of the exported pairs, so `collect` refuses when the alignment
+  has changed since `prep`. `prep` refuses to export into a directory that already holds `result_*.json`
+  files (`--force` overrides).
+- **What differs from the API.** Structured output is not enforced: the subagents write JSON that `collect`
+  validates. There is no prompt cache, no cost accounting and no refusal fallback. The `model` field records
+  the session, not an API model ID. Results do not go into the judge's disk cache.
+- **Cost and limits.** Usage counts against the subscription's limits, not an API bill. 606 pairs were 31
+  subagents of 20 pairs each.
+- **First run.** NIS2 × CZ, Opus 5.5, 2026-10-12: 606 judgments, scored in
+  [evaluation.md](evaluation.md#llm-judge-nis2--cz). The website shows them on the alignment page (see
+  [website.md](website.md)).
+
 ## Running with a key
 
 ```bash

@@ -95,6 +95,21 @@ site/*.html + assets/app.js   plain HTML/CSS/JS, no build step, no external CDNs
   changing the matcher, refresh the copies and commit them with `python scripts/build_site.py --write-static`
   (about 15 s with a warm cache; Austria needs about 60 requests the first time). `--no-alignment` skips
   these pages, `--countries cz sk` limits them.
+- **LLM judge labels.** When `data/judgments/<CELEX>_<cc>.jsonl` exists (from `openacquis judge-batch` or
+  `scripts/judge_session.py`, see [judge.md](judge.md)), `build_site.py` adds them at build time. Each
+  machine candidate whose (EU row, national provision) pair was judged gets a `judge` object: `label`,
+  `confidence`, `rationale`, `evidence_eu`, `evidence_national`, `evidence_verified` and `notes`. The page gets
+  `judge`, which describes the run: source file, models, prompt versions, `status: "unreviewed"`, pairs, shown,
+  related and label counts. Judgments of pairs that are no longer on the page are counted, not shown. On the
+  alignment page they appear as "AI judge (Claude), unreviewed suggestion": a label pill under the top
+  suggestion, "AI judge also relates" for candidates 2–3, and the rationale with the checked quotes in the
+  texts panel. The "AI judge says related" filter is shown only when the page has judgments. Matrix cells get
+  `judge: {related, stricter, different_value}`, and the page shows the stricter / different-value counts. All
+  of it is model output and is inserted with `textContent` only. The static API leaves these fields out. **The
+  committed `site/static-data/` copies do not change**, because the labels are merged into `site/data/` at
+  build time, so there is nothing to rebuild. If the candidates change (for example after
+  `scripts/build_alignments.py` or `--write-static`), run the judge again for the new pairs:
+  `judge_session.py prep` exports only the current pairs.
 - **Review data** is rebuilt from the same alignment; the `reviewed` marks come from `data/reviews/` at build
   time, so a merged review hides its suggestion from the queue on the next deploy, even from a static copy.
 - **The dataset** is built from `data/eval/` and `data/reviews/`; an invalid review file skips the dataset
