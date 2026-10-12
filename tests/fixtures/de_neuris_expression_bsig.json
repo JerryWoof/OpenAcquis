@@ -1,0 +1,238 @@
+{
+ "@type": "Legislation",
+ "@context": "https://testphase.rechtsinformationen.bund.de/v1/context.jsonld",
+ "@id": "/v1/legislation/eli/bund/bgbl-1/2025/301-2/2026-07-29/1/deu",
+ "name": "Gesetz über das Bundesamt für Sicherheit in der Informationstechnik und über die Sicherheit in der Informationstechnik von Einrichtungen",
+ "abbreviation": "BSIG",
+ "risAbbreviation": "BSIG 2025",
+ "alternateName": "BSI-Gesetz",
+ "exampleOfWork": {
+  "@type": "Legislation",
+  "@id": "/v1/legislation/eli/bund/bgbl-1/2025/301-2",
+  "legislationIdentifier": "eli/bund/bgbl-1/2025/301-2",
+  "legislationDate": "2025-12-02",
+  "datePublished": "2025-12-05",
+  "isPartOf": {
+   "@type": "PublicationIssue",
+   "name": "BGBl I, 2025 301-2"
+  }
+ },
+ "legislationIdentifier": "eli/bund/bgbl-1/2025/301-2/2026-07-29/1/deu",
+ "temporalCoverage": null,
+ "legislationLegalForce": "InForce",
+ "hasPart": [
+  {
+   "@type": "Legislation",
+   "@id": "/v1/legislation/eli/bund/bgbl-1/2025/301-2/2026-07-29/1/deu#hauptteil-n1_teil-n1",
+   "eId": "hauptteil-n1_teil-n1",
+   "name": "Teil 1",
+   "headline": "Allgemeine Vorschriften",
+   "temporalCoverage": "",
+   "partType": null,
+   "revision": null,
+   "encoding": [],
+   "hasPart": [
+    {
+     "@type": "Legislation",
+     "@id": "/v1/legislation/eli/bund/bgbl-1/2025/301-2/2026-07-29/1/deu#art-z1",
+     "eId": "art-z1",
+     "name": "§ 1",
+     "headline": "Bundesamt für Sicherheit in der Informationstechnik",
+     "temporalCoverage": "1001-01-01/..",
+     "partType": "article",
+     "revision": null,
+     "encoding": [],
+     "hasPart": []
+    },
+    {
+     "@type": "Legislation",
+     "@id": "/v1/legislation/eli/bund/bgbl-1/2025/301-2/2026-07-29/1/deu#art-z2",
+     "eId": "art-z2",
+     "name": "§ 2",
+     "headline": "Begriffsbestimmungen",
+     "temporalCoverage": "1001-01-01/..",
+     "partType": "article",
+     "revision": null,
+     "encoding": [],
+     "hasPart": []
+    }
+   ]
+  },
+  {
+   "@type": "Legislation",
+   "@id": "/v1/legislation/eli/bund/bgbl-1/2025/301-2/2026-07-29/1/deu#hauptteil-n1_teil-n2",
+   "eId": "hauptteil-n1_teil-n2",
+   "name": "Teil 2",
+   "headline": "Das Bundesamt",
+   "temporalCoverage": "",
+   "partType": null,
+   "revision": null,
+   "encoding": [],
+   "hasPart": [
+    {
+     "@type": "Legislation",
+     "@id": "/v1/legislation/eli/bund/bgbl-1/2025/301-2/2026-07-29/1/deu#hauptteil-n1_teil-n2_kapitel-n1",
+     "eId": "hauptteil-n1_teil-n2_kapitel-n1",
+     "name": "Kapitel 1",
+     "headline": "Aufgaben und Befugnisse",
+     "temporalCoverage": "",
+     "partType": null,
+     "revision": null,
+     "encoding": [],
+     "hasPart": [
+      {
+       "@type": "Legislation",
+       "@id": "/v1/legislation/eli/bund/bgbl-1/2025/301-2/2026-07-29/1/deu#art-z8",
+       "eId": "art-z8",
+       "name": "§ 8",
+       "headline": "Abwehr von Schadprogrammen und Gefahren für die Kommunikationstechnik des Bundes",
+       "temporalCoverage": "1001-01-01/..",
+       "partType": "article",
+       "revision": null,
+       "encoding": [],
+       "hasPart": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "@type": "Legislation",
+   "@id": "/v1/legislation/eli/bund/bgbl-1/2025/301-2/2026-07-29/1/deu#hauptteil-n1_teil-n3",
+   "eId": "hauptteil-n1_teil-n3",
+   "name": "Teil 3",
+   "headline": "Sicherheit in der Informationstechnik von Einrichtungen",
+   "temporalCoverage": "",
+   "partType": null,
+   "revision": null,
+   "encoding": [],
+   "hasPart": [
+    {
+     "@type": "Legislation",
+     "@id": "/v1/legislation/eli/bund/bgbl-1/2025/301-2/2026-07-29/1/deu#hauptteil-n1_teil-n3_kapitel-n1",
+     "eId": "hauptteil-n1_teil-n3_kapitel-n1",
+     "name": "Kapitel 1",
+     "headline": "Anwendungsbereich",
+     "temporalCoverage": "",
+     "partType": null,
+     "revision": null,
+     "encoding": [],
+     "hasPart": [
+      {
+       "@type": "Legislation",
+       "@id": "/v1/legislation/eli/bund/bgbl-1/2025/301-2/2026-07-29/1/deu#art-z28",
+       "eId": "art-z28",
+       "name": "§ 28",
+       "headline": "Besonders wichtige Einrichtungen und wichtige Einrichtungen",
+       "temporalCoverage": "1001-01-01/..",
+       "partType": "article",
+       "revision": null,
+       "encoding": [],
+       "hasPart": []
+      }
+     ]
+    },
+    {
+     "@type": "Legislation",
+     "@id": "/v1/legislation/eli/bund/bgbl-1/2025/301-2/2026-07-29/1/deu#hauptteil-n1_teil-n3_kapitel-n2",
+     "eId": "hauptteil-n1_teil-n3_kapitel-n2",
+     "name": "Kapitel 2",
+     "headline": "Risikomanagement, Melde-, Registrierungs-, Nachweis- und Unterrichtungspflichten",
+     "temporalCoverage": "",
+     "partType": null,
+     "revision": null,
+     "encoding": [],
+     "hasPart": [
+      {
+       "@type": "Legislation",
+       "@id": "/v1/legislation/eli/bund/bgbl-1/2025/301-2/2026-07-29/1/deu#art-z30",
+       "eId": "art-z30",
+       "name": "§ 30",
+       "headline": "Risikomanagementmaßnahmen besonders wichtiger Einrichtungen und wichtiger Einrichtungen",
+       "temporalCoverage": "1001-01-01/..",
+       "partType": "article",
+       "revision": null,
+       "encoding": [],
+       "hasPart": []
+      },
+      {
+       "@type": "Legislation",
+       "@id": "/v1/legislation/eli/bund/bgbl-1/2025/301-2/2026-07-29/1/deu#art-z32",
+       "eId": "art-z32",
+       "name": "§ 32",
+       "headline": "Meldepflichten",
+       "temporalCoverage": "1001-01-01/..",
+       "partType": "article",
+       "revision": null,
+       "encoding": [],
+       "hasPart": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "@type": "Legislation",
+   "@id": "/v1/legislation/eli/bund/bgbl-1/2025/301-2/2026-07-29/1/deu#anlagen-n1_anlage-n1",
+   "eId": "anlagen-n1_anlage-n1",
+   "name": "Anlage 1",
+   "headline": "Sektoren besonders wichtiger und wichtiger Einrichtungen",
+   "temporalCoverage": null,
+   "partType": "attachment",
+   "revision": null,
+   "encoding": [
+    {
+     "@type": "LegislationObject",
+     "@id": "/v1/legislation/eli/bund/bgbl-1/2025/301-2/2026-07-29/1/deu/2026-07-30/anlage-regelungstext-1/xml",
+     "contentUrl": "/v1/legislation/eli/bund/bgbl-1/2025/301-2/2026-07-29/1/deu/2026-07-30/anlage-regelungstext-1.xml",
+     "encodingFormat": "application/xml",
+     "inLanguage": "de"
+    }
+   ],
+   "hasPart": []
+  },
+  {
+   "@type": "Legislation",
+   "@id": "/v1/legislation/eli/bund/bgbl-1/2025/301-2/2026-07-29/1/deu#anlagen-n1_anlage-n2",
+   "eId": "anlagen-n1_anlage-n2",
+   "name": "Anlage 2",
+   "headline": "Sektoren wichtiger Einrichtungen",
+   "temporalCoverage": null,
+   "partType": "attachment",
+   "revision": null,
+   "encoding": [
+    {
+     "@type": "LegislationObject",
+     "@id": "/v1/legislation/eli/bund/bgbl-1/2025/301-2/2026-07-29/1/deu/2026-07-30/anlage-regelungstext-2/xml",
+     "contentUrl": "/v1/legislation/eli/bund/bgbl-1/2025/301-2/2026-07-29/1/deu/2026-07-30/anlage-regelungstext-2.xml",
+     "encodingFormat": "application/xml",
+     "inLanguage": "de"
+    }
+   ],
+   "hasPart": []
+  }
+ ],
+ "encoding": [
+  {
+   "@type": "LegislationObject",
+   "@id": "/v1/legislation/eli/bund/bgbl-1/2025/301-2/2026-07-29/1/deu/2026-07-30/regelungstext-verkuendung-1/html",
+   "contentUrl": "/v1/legislation/eli/bund/bgbl-1/2025/301-2/2026-07-29/1/deu/2026-07-30/regelungstext-verkuendung-1.html",
+   "encodingFormat": "text/html",
+   "inLanguage": "de"
+  },
+  {
+   "@type": "LegislationObject",
+   "@id": "/v1/legislation/eli/bund/bgbl-1/2025/301-2/2026-07-29/1/deu/2026-07-30/regelungstext-verkuendung-1/xml",
+   "contentUrl": "/v1/legislation/eli/bund/bgbl-1/2025/301-2/2026-07-29/1/deu/2026-07-30/regelungstext-verkuendung-1.xml",
+   "encodingFormat": "application/xml",
+   "inLanguage": "de"
+  },
+  {
+   "@type": "LegislationObject",
+   "@id": "/v1/legislation/eli/bund/bgbl-1/2025/301-2/2026-07-29/1/deu/2026-07-30/zip",
+   "contentUrl": "/v1/legislation/eli/bund/bgbl-1/2025/301-2/2026-07-29/1/deu/2026-07-30.zip",
+   "encodingFormat": "application/zip",
+   "inLanguage": "de"
+  }
+ ]
+}

@@ -1,0 +1,346 @@
+{
+ "measures": {
+  "head": {
+   "link": [],
+   "vars": [
+    "m",
+    "c",
+    "reference",
+    "title",
+    "act_type",
+    "journal",
+    "journal_date",
+    "notified",
+    "commission_ref"
+   ]
+  },
+  "results": {
+   "distinct": false,
+   "ordered": true,
+   "bindings": [
+    {
+     "m": {
+      "type": "uri",
+      "value": "http://publications.europa.eu/resource/cellar/b7ea5df2-f8de-4d3e-8447-692b51f01982"
+     },
+     "c": {
+      "type": "uri",
+      "value": "http://publications.europa.eu/resource/authority/country/DEU"
+     },
+     "title": {
+      "type": "literal",
+      "datatype": "http://www.w3.org/2001/XMLSchema#string",
+      "value": "Gesetz zur Stärkung der Informationssicherheit des Landes Nordrhein-Westfalen (Informationssicherheitsgesetz\nNordrhein-Westfalen – InfoSiG NRW)"
+     },
+     "act_type": {
+      "type": "literal",
+      "datatype": "http://www.w3.org/2001/XMLSchema#string",
+      "value": "Gesetz"
+     },
+     "journal_date": {
+      "type": "literal",
+      "datatype": "http://www.w3.org/2001/XMLSchema#date",
+      "value": "2026-01-14"
+     },
+     "notified": {
+      "type": "literal",
+      "datatype": "http://www.w3.org/2001/XMLSchema#date",
+      "value": "2026-01-19"
+     },
+     "commission_ref": {
+      "type": "literal",
+      "datatype": "http://www.w3.org/2001/XMLSchema#string",
+      "value": "MNE(2026)00549"
+     }
+    },
+    {
+     "m": {
+      "type": "uri",
+      "value": "http://publications.europa.eu/resource/cellar/ec0bbb91-8059-44e4-8a3f-57847afa898c"
+     },
+     "c": {
+      "type": "uri",
+      "value": "http://publications.europa.eu/resource/authority/country/DEU"
+     },
+     "title": {
+      "type": "literal",
+      "datatype": "http://www.w3.org/2001/XMLSchema#string",
+      "value": "Gesetz zur Umsetzung der NIS-2-Richtlinie und zur Regelung wesentlicher Grundzüge des Informationssicherheitsmanagements in der Bundesverwaltung"
+     },
+     "act_type": {
+      "type": "literal",
+      "datatype": "http://www.w3.org/2001/XMLSchema#string",
+      "value": "Gesetz"
+     },
+     "journal_date": {
+      "type": "literal",
+      "datatype": "http://www.w3.org/2001/XMLSchema#date",
+      "value": "2025-12-05"
+     },
+     "notified": {
+      "type": "literal",
+      "datatype": "http://www.w3.org/2001/XMLSchema#date",
+      "value": "2025-12-08"
+     },
+     "commission_ref": {
+      "type": "literal",
+      "datatype": "http://www.w3.org/2001/XMLSchema#string",
+      "value": "MNE(2025)06762"
+     }
+    },
+    {
+     "m": {
+      "type": "uri",
+      "value": "http://publications.europa.eu/resource/cellar/00352923-eb98-4ccd-a5d5-8cabe8e8a614"
+     },
+     "c": {
+      "type": "uri",
+      "value": "http://publications.europa.eu/resource/authority/country/DEU"
+     },
+     "title": {
+      "type": "literal",
+      "datatype": "http://www.w3.org/2001/XMLSchema#string",
+      "value": "Amtsblatt für Schleswig-Holstein - 2025 346 Informationssicherheitsleitlinie für die Landesverwaltung Schleswig-Holstein"
+     },
+     "act_type": {
+      "type": "literal",
+      "datatype": "http://www.w3.org/2001/XMLSchema#string",
+      "value": "Gesetz"
+     },
+     "journal_date": {
+      "type": "literal",
+      "datatype": "http://www.w3.org/2001/XMLSchema#date",
+      "value": "2025-10-13"
+     },
+     "notified": {
+      "type": "literal",
+      "datatype": "http://www.w3.org/2001/XMLSchema#date",
+      "value": "2025-10-16"
+     },
+     "commission_ref": {
+      "type": "literal",
+      "datatype": "http://www.w3.org/2001/XMLSchema#string",
+      "value": "MNE(2025)05702"
+     }
+    },
+    {
+     "m": {
+      "type": "uri",
+      "value": "http://publications.europa.eu/resource/cellar/a0dc7725-574c-4f87-9a1a-00d50cd067fa"
+     },
+     "c": {
+      "type": "uri",
+      "value": "http://publications.europa.eu/resource/authority/country/DEU"
+     },
+     "title": {
+      "type": "literal",
+      "datatype": "http://www.w3.org/2001/XMLSchema#string",
+      "value": "Gemeinsamer Runderlass zur Umsetzung europarechtlicher Vorgaben für die Gewährleistung eines hohen gemeinsamen Cybersicherheitsniveaus in der Union1"
+     },
+     "act_type": {
+      "type": "literal",
+      "datatype": "http://www.w3.org/2001/XMLSchema#string",
+      "value": "Gesetz"
+     },
+     "journal_date": {
+      "type": "literal",
+      "datatype": "http://www.w3.org/2001/XMLSchema#date",
+      "value": "2024-12-23"
+     },
+     "notified": {
+      "type": "literal",
+      "datatype": "http://www.w3.org/2001/XMLSchema#date",
+      "value": "2025-01-30"
+     },
+     "commission_ref": {
+      "type": "literal",
+      "datatype": "http://www.w3.org/2001/XMLSchema#string",
+      "value": "MNE(2025)00703"
+     }
+    },
+    {
+     "m": {
+      "type": "uri",
+      "value": "http://publications.europa.eu/resource/cellar/f98e4733-2125-4d02-a046-d88392c432e4"
+     },
+     "c": {
+      "type": "uri",
+      "value": "http://publications.europa.eu/resource/authority/country/DEU"
+     },
+     "title": {
+      "type": "literal",
+      "datatype": "http://www.w3.org/2001/XMLSchema#string",
+      "value": "Hessisches Gesetz zum Schutz der elektronischen Verwaltung (Hessisches IT-Sicherheitsgesetz - HITSiG"
+     },
+     "act_type": {
+      "type": "literal",
+      "datatype": "http://www.w3.org/2001/XMLSchema#string",
+      "value": "Gesetz"
+     },
+     "journal_date": {
+      "type": "literal",
+      "datatype": "http://www.w3.org/2001/XMLSchema#date",
+      "value": "2023-07-10"
+     },
+     "notified": {
+      "type": "literal",
+      "datatype": "http://www.w3.org/2001/XMLSchema#date",
+      "value": "2025-01-13"
+     },
+     "commission_ref": {
+      "type": "literal",
+      "datatype": "http://www.w3.org/2001/XMLSchema#string",
+      "value": "MNE(2025)00224"
+     }
+    },
+    {
+     "m": {
+      "type": "uri",
+      "value": "http://publications.europa.eu/resource/cellar/c427e00f-f51d-48f5-949b-4a593f859f4e"
+     },
+     "c": {
+      "type": "uri",
+      "value": "http://publications.europa.eu/resource/authority/country/DEU"
+     },
+     "title": {
+      "type": "literal",
+      "datatype": "http://www.w3.org/2001/XMLSchema#string",
+      "value": "Explanatory documents"
+     },
+     "act_type": {
+      "type": "literal",
+      "datatype": "http://www.w3.org/2001/XMLSchema#string",
+      "value": "Gesetz"
+     },
+     "journal_date": {
+      "type": "literal",
+      "datatype": "http://www.w3.org/2001/XMLSchema#date",
+      "value": "2009-07-30"
+     },
+     "notified": {
+      "type": "literal",
+      "datatype": "http://www.w3.org/2001/XMLSchema#date",
+      "value": "2025-01-30"
+     },
+     "commission_ref": {
+      "type": "literal",
+      "datatype": "http://www.w3.org/2001/XMLSchema#string",
+      "value": "MNE(2025)00587"
+     }
+    }
+   ]
+  }
+ },
+ "numbers": {
+  "head": {
+   "link": [],
+   "vars": [
+    "m",
+    "number",
+    "pages"
+   ]
+  },
+  "results": {
+   "distinct": false,
+   "ordered": true,
+   "bindings": [
+    {
+     "m": {
+      "type": "uri",
+      "value": "http://publications.europa.eu/resource/cellar/b7ea5df2-f8de-4d3e-8447-692b51f01982"
+     },
+     "number": {
+      "type": "literal",
+      "datatype": "http://www.w3.org/2001/XMLSchema#string",
+      "value": "1"
+     },
+     "pages": {
+      "type": "literal",
+      "datatype": "http://www.w3.org/2001/XMLSchema#string",
+      "value": "00006-00011"
+     }
+    },
+    {
+     "m": {
+      "type": "uri",
+      "value": "http://publications.europa.eu/resource/cellar/ec0bbb91-8059-44e4-8a3f-57847afa898c"
+     },
+     "number": {
+      "type": "literal",
+      "datatype": "http://www.w3.org/2001/XMLSchema#string",
+      "value": "301"
+     },
+     "pages": {
+      "type": "literal",
+      "datatype": "http://www.w3.org/2001/XMLSchema#string",
+      "value": "00001-00068"
+     }
+    },
+    {
+     "m": {
+      "type": "uri",
+      "value": "http://publications.europa.eu/resource/cellar/f98e4733-2125-4d02-a046-d88392c432e4"
+     },
+     "number": {
+      "type": "literal",
+      "datatype": "http://www.w3.org/2001/XMLSchema#string",
+      "value": "21"
+     },
+     "pages": {
+      "type": "literal",
+      "datatype": "http://www.w3.org/2001/XMLSchema#string",
+      "value": "00433-00440"
+     }
+    },
+    {
+     "m": {
+      "type": "uri",
+      "value": "http://publications.europa.eu/resource/cellar/c427e00f-f51d-48f5-949b-4a593f859f4e"
+     },
+     "number": {
+      "type": "literal",
+      "datatype": "http://www.w3.org/2001/XMLSchema#string",
+      "value": "13"
+     },
+     "pages": {
+      "type": "literal",
+      "datatype": "http://www.w3.org/2001/XMLSchema#string",
+      "value": "00397-00428"
+     }
+    },
+    {
+     "m": {
+      "type": "uri",
+      "value": "http://publications.europa.eu/resource/cellar/a0dc7725-574c-4f87-9a1a-00d50cd067fa"
+     },
+     "number": {
+      "type": "literal",
+      "datatype": "http://www.w3.org/2001/XMLSchema#string",
+      "value": "52"
+     },
+     "pages": {
+      "type": "literal",
+      "datatype": "http://www.w3.org/2001/XMLSchema#string",
+      "value": "01215-01218"
+     }
+    },
+    {
+     "m": {
+      "type": "uri",
+      "value": "http://publications.europa.eu/resource/cellar/00352923-eb98-4ccd-a5d5-8cabe8e8a614"
+     },
+     "number": {
+      "type": "literal",
+      "datatype": "http://www.w3.org/2001/XMLSchema#string",
+      "value": "2025/346"
+     },
+     "pages": {
+      "type": "literal",
+      "datatype": "http://www.w3.org/2001/XMLSchema#string",
+      "value": "00001-00017"
+     }
+    }
+   ]
+  }
+ }
+}

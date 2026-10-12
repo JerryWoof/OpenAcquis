@@ -1,0 +1,63 @@
+{
+ "@type": "hydra:Collection",
+ "@context": "https://testphase.rechtsinformationen.bund.de/v1/context.jsonld",
+ "@id": "/v1/legislation?pageIndex=0&size=50",
+ "totalItems": 1,
+ "member": [
+  {
+   "@type": "SearchResult",
+   "item": {
+    "@type": "Legislation",
+    "@id": "/v1/legislation/eli/bund/bgbl-1/2025/301-2/2026-07-29/1/deu",
+    "name": "Gesetz über das Bundesamt für Sicherheit in der Informationstechnik und über die Sicherheit in der Informationstechnik von Einrichtungen",
+    "legislationIdentifier": "eli/bund/bgbl-1/2025/301-2/2026-07-29/1/deu",
+    "exampleOfWork": {
+     "@type": "Legislation",
+     "@id": "/v1/legislation/eli/bund/bgbl-1/2025/301-2",
+     "legislationIdentifier": "eli/bund/bgbl-1/2025/301-2",
+     "legislationDate": "2025-12-02",
+     "datePublished": "2025-12-05",
+     "isPartOf": {
+      "@type": "PublicationIssue",
+      "name": "BGBl I, 2025 301-2"
+     }
+    },
+    "temporalCoverage": null,
+    "abbreviation": "BSIG",
+    "alternateName": "BSI-Gesetz",
+    "legislationLegalForce": "InForce",
+    "encoding": [
+     {
+      "@type": "LegislationObject",
+      "@id": "/v1/legislation/eli/bund/bgbl-1/2025/301-2/2026-07-29/1/deu/2026-07-30/regelungstext-verkuendung-1/html",
+      "contentUrl": "/v1/legislation/eli/bund/bgbl-1/2025/301-2/2026-07-29/1/deu/2026-07-30/regelungstext-verkuendung-1.html",
+      "encodingFormat": "text/html",
+      "inLanguage": "de"
+     },
+     {
+      "@type": "LegislationObject",
+      "@id": "/v1/legislation/eli/bund/bgbl-1/2025/301-2/2026-07-29/1/deu/2026-07-30/regelungstext-verkuendung-1/xml",
+      "contentUrl": "/v1/legislation/eli/bund/bgbl-1/2025/301-2/2026-07-29/1/deu/2026-07-30/regelungstext-verkuendung-1.xml",
+      "encodingFormat": "application/xml",
+      "inLanguage": "de"
+     },
+     {
+      "@type": "LegislationObject",
+      "@id": "/v1/legislation/eli/bund/bgbl-1/2025/301-2/2026-07-29/1/deu/2026-07-30/zip",
+      "contentUrl": "/v1/legislation/eli/bund/bgbl-1/2025/301-2/2026-07-29/1/deu/2026-07-30.zip",
+      "encodingFormat": "application/zip",
+      "inLanguage": "de"
+     }
+    ]
+   },
+   "textMatches": []
+  }
+ ],
+ "view": {
+  "@type": "hydra:PartialCollectionView",
+  "first": "/v1/legislation?pageIndex=0&size=50",
+  "previous": null,
+  "next": null,
+  "last": "/v1/legislation?pageIndex=0&size=50"
+ }
+}
