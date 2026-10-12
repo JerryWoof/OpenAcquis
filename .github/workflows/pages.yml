@@ -7,10 +7,8 @@ on:
     - cron: "17 4 * * 1"  # weekly, Monday 04:17 UTC: refresh CELLAR data
   workflow_dispatch:
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
+# Least privilege: the build job (tests, live fetching and parsing) only reads; only deploy can publish.
+permissions: {}
 
 # One deployment at a time; don't cancel a run that is already deploying.
 concurrency:
@@ -21,24 +19,38 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - run: pip install -e '.[dev]'
       - name: Offline tests (a broken build never deploys)
         run: pytest -m "not live" -q
-      - name: Build site data (CELLAR measures; NIS2 x CZ/SK/AT/DE alignment, review queue and matrix with the stdlib hybrid-lex matcher, each falling back to site/static-data; dataset)
+      - name: Build site data (CELLAR measures for every directive of data/directives.json; NIS2 alignments computed live with the stdlib hybrid-lex matcher, the other directives from site/static-data; review queues, matrices, dataset, feed.xml)
         run: python scripts/build_site.py
+      - name: Build the static API and validate it against its schemas
+        run: python scripts/build_api.py --check
+      - name: Assemble the Pages artifact (without site/static-data, which the pages never read)
+        run: |
+          mkdir _site
+          rsync -a --exclude static-data site/ _site/
+          du -sh _site
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: site
+          path: _site
 
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

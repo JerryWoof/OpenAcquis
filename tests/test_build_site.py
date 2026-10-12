@@ -120,9 +120,11 @@ def test_offline_build_from_bundled_samples(tmp_path):
     assert index["mode"] == "offline-sample"
     celexes = {d["celex"] for d in index["directives"]}
     assert "32022L2555" in celexes
+    assert celexes >= {e.celex for e in build_site.DIRECTIVES}  # every directive is listed
     for d in index["directives"]:
-        assert d["error"] is None and d["total_measures"] > 0
+        assert d["error"] is None and (d["total_measures"] > 0) == d["measures_available"]
         assert (tmp_path / f"{d['celex']}.json").exists()
+    assert sum(d["measures_available"] for d in index["directives"]) == len(build_site.sample_celexes())
     # every provision-level link points at data that was written
     nis2 = next(d for d in index["directives"] if d["celex"] == "32022L2555")
     assert index["dataset"] is True and nis2["dataset"] is True
@@ -241,3 +243,101 @@ def test_curated_list_is_valid():
     assert len(set(celexes)) == len(celexes) >= 8
     for c in celexes:
         assert validate_directive_celex(c) == c
+
+
+def test_offline_build_v05_states_feed_and_pages(tmp_path):
+    """Every registry pair is built from site/static-data; countries with nothing to align, baseline acts,
+    official tables (CZ and SK) and the change feed show up where the pages read them."""
+    out = tmp_path / "data"
+    assert build_site.main(["--offline", "--out", str(out)]) == 0
+    index = json.loads((out / "index.json").read_text(encoding="utf-8"))
+    mw = next(d for d in index["directives"] if d["celex"] == "32022L2041")
+    assert [n["country_code"] for n in mw["not_aligned"]] == ["at"] and mw["matrix_href"]
+    m = json.loads((out / "matrix" / "32022L2041.json").read_text(encoding="utf-8"))
+    assert [c["code"] for c in m["countries"]] == ["cz", "sk", "de"] and m["not_aligned"][0]["code"] == "at"
+    pay = json.loads((out / "align" / "32023L0970_de.json").read_text(encoding="utf-8"))
+    assert pay["registry"]["status"] == "baseline" and pay["has_official"] is False
+    cer = json.loads((out / "align" / "32022L2557_sk.json").read_text(encoding="utf-8"))
+    assert cer["has_official"] and cer["official_source"]["url"].startswith("https://www.nrsr.sk/")
+    csrd = next(d for d in index["directives"] if d["celex"] == "32022L2464")
+    assert csrd["provision_level"] is False and csrd["alignments"] == []
+    assert (tmp_path / "feed.xml").read_text(encoding="utf-8").startswith("<?xml")
+    for page in ("index.html", "directive.html", "alignment.html", "matrix.html", "review.html", "data.html"):
+        html = (ROOT / "site" / page).read_text(encoding="utf-8")
+        assert 'type="application/atom+xml"' in html and 'href="data.html"' in html
+
+
+def test_cli_passes_through_to_alerts_and_judge_batch(tmp_path, capsys):
+    from openacquis.cli import main as cli
+
+    (tmp_path / "data" / "alerts").mkdir(parents=True)
+    assert cli(["alerts", "--root", str(tmp_path), "feed", "--out", str(tmp_path / "feed.xml")]) == 0
+    assert (tmp_path / "feed.xml").exists()
+    with pytest.raises(SystemExit):
+        cli(["judge-batch", "--help"])
+    assert "Message Batches" in capsys.readouterr().out
+
+
+# --- baseline pairs and public notes (v0.5 review findings) -------------------------------------
+
+def test_public_note_drops_developer_clauses():
+    pn = build_site.public_note
+    assert pn("via the GesLeiPoG amendment; CELLAR's measures map to 'EU' / 'GesLeiPoG' / BVergG") == "via the GesLeiPoG amendment"
+    assert pn("both AT measures map as no_reference; AWG 2002 by hand") == "AWG 2002 by hand"
+    assert pn("CELLAR maps the DE measure to the 2015 FüPoG (bgrembg_2015); the second measure is not_found") == ""
+    assert pn("all 13 DE measures map as not_found", override=True) == build_site.HAND_SET_NOTE
+    keep = "AT: no federal measure notified (28 of 30 measures are Land laws); GlBG aligned as the existing federal equal-treatment law"
+    assert pn(keep) == keep and pn("") == ""
+
+
+def test_offline_build_baseline_pairs_and_public_notes(tmp_path):
+    out = tmp_path / "data"
+    assert build_site.main(["--offline", "--out", str(out)]) == 0
+    index = json.loads((out / "index.json").read_text(encoding="utf-8"))
+    internal = build_site._INTERNAL_NOTE
+    for d in index["directives"]:
+        for a in d["alignments"]:
+            assert not internal.search(a["note"]), (d["celex"], a["note"])
+        for n in d["not_aligned"]:
+            assert not internal.search(n["note"]), (d["celex"], n["note"])
+    for path in (out / "align").glob("*.json"):
+        assert not internal.search(json.loads(path.read_text(encoding="utf-8"))["registry"].get("note", "")), path.name
+    pay = next(d for d in index["directives"] if d["celex"] == "32023L0970")
+    assert {a["country_code"]: a["status"] for a in pay["alignments"]}["at"] == "baseline"
+    # the review page of a baseline pair knows it (notice and reworded question)
+    rv = json.loads((out / "review" / "32023L0970_at.json").read_text(encoding="utf-8"))
+    assert rv["registry"]["status"] == "baseline"
+    assert json.loads((out / "review" / "32022L2555_cz.json").read_text(encoding="utf-8"))["registry"]["status"] == "ok"
+
+
+def test_site_never_says_not_notified_from_registry_status():
+    js = APP_JS.read_text(encoding="utf-8")
+    index_html = (ROOT / "site" / "index.html").read_text(encoding="utf-8")
+    for wrong in ("No measure notified for this directive", "no measure notified for ", "Notified transposition",
+                  "not notified: compared", "has notified no measure for this directive that"):
+        assert wrong not in js, wrong
+    assert "no measure notified" not in index_html and '<span aria-hidden="true">✓</span>' not in index_html
+    assert 'className: "pill gap", style: "margin-left:0"' not in js and "pill baseline" in js
+    assert "safeHref(d.eurlex_nim_url)" in js and '$("nim-link").href = d.eurlex_nim_url;' not in js.replace(
+        'if (d.eurlex_nim_url && safeHref(d.eurlex_nim_url)) $("nim-link").href = d.eurlex_nim_url;', "")
+    assert '"aria-label": code + " " + r.name + ": no act to align"' not in js
+    assert "KIND_TEXT_BASELINE" in js and "pruneApiLinks" in js
+    css = (ROOT / "site" / "assets" / "style.css").read_text(encoding="utf-8")
+    assert ".pill.baseline" in css and "table.prov" in css
+
+
+@pytest.mark.skipif(NODE is None, reason="node not installed")
+def test_js_baseline_text_uses_the_measure_count():
+    at, de, unknown = run_app_js('[O._baselineText("Austria", "GlBG", 30), O._baselineText("Germany", "EntgTranspG", 0),'
+                                 ' O._baselineText("Austria", "GlBG", null)]')
+    assert "Austria notified 30 measures" in at and "notified no measure" not in at
+    assert "Germany notified no measure" in de
+    assert unknown == "GlBG was not notified for this directive; it is compared as existing law."
+
+
+@pytest.mark.skipif(NODE is None, reason="node not installed")
+def test_js_review_articles_in_numeric_order():
+    keys = ["art34", "art8", "anx_ii", "art27", "art10a", "art10", "anx_i", "art2"]
+    assert run_app_js(f"O._sortArts({json.dumps(keys)})") == [
+        "art2", "art8", "art10", "art10a", "art27", "art34", "anx_i", "anx_ii"]
+    assert run_app_js('[O._artLabel("anx_iii"), O._artLabel("art5")]') == ["Annex III", "Art. 5"]

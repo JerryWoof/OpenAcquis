@@ -185,6 +185,105 @@
     getJSON("data/index.json").then(pruneLinks).catch(function () { /* optional */ });
   }
 
+  // ---------------------------------------------------------------- provision-level states
+
+  // One chip per country of a directive: a link to its alignment page, marked when an official
+  // correlation table is shown next to it, when the act aligned was not notified for the directive
+  // (baseline), or when there is nothing to align (no act).
+  var CC_ORDER = { cz: 0, sk: 1, at: 2, de: 3 };
+  function countryRows(d) {
+    var rows = (d.alignments || []).map(function (a) {
+      return { kind: a.status === "baseline" ? "baseline" : "ok", code: a.country_code || (a.href.split("_")[1] || ""), a: a,
+        country: a.country, name: a.country_name };
+    }).concat((d.not_aligned || []).map(function (n) {
+      return { kind: "none", code: n.country_code, country: n.country, name: n.country_name, note: n.note };
+    }));
+    function ord(r) { return r.code in CC_ORDER ? CC_ORDER[r.code] : 9; }
+    rows.sort(function (x, y) { return ord(x) - ord(y); });
+    return rows;
+  }
+
+  // A "baseline" pair: the act aligned was not notified for the directive and is compared as existing
+  // law. Whether the country notified other measures (e.g. Land laws) is said from the measure count,
+  // never assumed: "not notified" would be false for a country with notified measures.
+  function baselineText(name, act, measures) {
+    var n = Number(measures);
+    var head = (act || "The act aligned") + " was not notified for this directive";
+    if (measures === null || measures === undefined || isNaN(n)) return head + "; it is compared as existing law.";
+    if (n === 0) return head + " (" + name + " notified no measure); it is compared as existing law.";
+    return head + " (" + name + " notified " + fmtInt(n) + (n === 1 ? " measure" : " measures") +
+      ", none of them the act aligned here); it is compared as existing law.";
+  }
+
+  function countryChips(d) {
+    var line = el("span", { className: "card-link chips" }, ["Provision level: "]);
+    countryRows(d).forEach(function (r) {
+      var code = ALPHA2[r.country] || r.code.toUpperCase();
+      if (r.kind === "none") {
+        // a generic span cannot be named with aria-label: the explanation is visually hidden text
+        line.appendChild(el("span", { className: "chip none", title: r.name + ": no national act to align" + (r.note ? " (" + r.note + ")" : "") }, [
+          code, el("span", { "aria-hidden": "true", text: " –" }), el("span", { className: "sr-only", text: " " + r.name + ": no act to align" })]));
+        return;
+      }
+      var extra = (r.a.official ? ", official correlation table" : "") + (r.kind === "baseline" ? ", compared with existing law (act not notified for this directive)" : "");
+      line.appendChild(el("a", { href: r.a.href, className: "chip" + (r.a.official ? " official" : "") + (r.kind === "baseline" ? " baseline" : ""),
+        title: d.short + " × " + r.name + extra, "aria-label": code + " " + r.name + extra,
+        text: code + (r.a.official ? " ✓" : "") + (r.kind === "baseline" ? " *" : "") }));
+    });
+    if (d.matrix_href) line.appendChild(el("a", { href: d.matrix_href, className: "chip matrix", text: "matrix →" }));
+    return line;
+  }
+
+  // The directive page's "provision by provision" table: one row per country of the registry.
+  function drawProvisionLevel(d, host) {
+    if (!host) return;
+    var rows = countryRows(d);
+    if (!rows.length) {
+      if (d.provision_level === false) {
+        host.appendChild(el("p", { className: "small muted", text: "Act level only: OpenAcquis lists the notified measures for " +
+          d.short + " but does not align it provision by provision yet." }));
+      }
+      return;
+    }
+    host.setAttribute("aria-labelledby", "prov-h");
+    host.appendChild(el("h2", { id: "prov-h", text: "Provision by provision" }));
+    host.appendChild(el("p", { className: "small muted" }, [
+      "Each EU paragraph next to the most similar provision of the main national act (unreviewed machine suggestions)" +
+      ", and next to the government's official correlation table where one is available.",
+      d.matrix_href ? el("span", {}, [" All countries at once: ", el("a", { href: d.matrix_href, text: "article × country matrix" }), "."]) : null
+    ]));
+    var tbody = el("tbody");
+    rows.forEach(function (r) {
+      var state, links;
+      if (r.kind === "none") {
+        state = el("span", { className: "muted", text: "No act aligned" });
+        links = el("span", { className: "small muted", text: r.note || "Nothing to align for this country." });
+      } else {
+        state = el("span", {}, [r.kind === "baseline"
+          ? el("span", { className: "pill baseline", text: "existing law" })
+          : el("span", { text: "Main act (registry)" }),
+          r.a.official ? el("span", {}, [" ", el("span", { className: "pill official", text: "official table" })]) : null]);
+        links = el("span", {}, [el("a", { href: r.a.href, text: "Alignment" }),
+          r.a.review_href ? el("span", {}, [" · ", el("a", { href: r.a.review_href, text: "Review" })]) : null,
+          r.kind === "baseline" || r.a.note ? el("div", { className: "small muted", text: r.kind === "baseline"
+            ? baselineText(r.name, r.a.act, d.measures_available === false || d.error ? null : (d.counts || {})[r.country]) +
+              (r.a.note ? " Note: " + r.a.note + "." : "")
+            : r.a.note }) : null]);
+      }
+      tbody.appendChild(el("tr", {}, [
+        el("th", { scope: "row", text: r.name }),
+        el("td", { "data-label": "Main act", lang: LANGS[r.country] || null, text: r.kind === "none" ? "—" : (r.a.act || "") }),
+        el("td", { "data-label": "Status" }, [state]),
+        el("td", { "data-label": "Pages" }, [links])
+      ]));
+    });
+    host.appendChild(el("div", { className: "table-wrap" }, [el("table", { className: "prov" }, [
+      el("thead", {}, [el("tr", {}, [el("th", { scope: "col", text: "Country" }), el("th", { scope: "col", text: "Main act" }),
+        el("th", { scope: "col", text: "Status" }), el("th", { scope: "col", text: "Pages" })])]),
+      tbody
+    ])]));
+  }
+
   // ---------------------------------------------------------------- index page
 
   function renderIndex() {
@@ -199,6 +298,8 @@
         var stats;
         if (d.error) {
           stats = el("div", { className: "stats" }, [el("span", { text: "Data unavailable in this build." })]);
+        } else if (d.measures_available === false) {
+          stats = el("div", { className: "stats" }, [el("span", { text: "Notified measures: not in this sample build." })]);
         } else {
           var pct = Math.round(100 * d.countries_with_measures / total);
           stats = el("div", {}, [
@@ -213,17 +314,10 @@
           ]);
         }
         var aligned = [];
-        if ((d.alignments || []).length) {
-          var line = el("span", { className: "card-link" }, ["Provision level: "]);
-          d.alignments.forEach(function (a, i) {
-            if (i) line.appendChild(document.createTextNode(" · "));
-            line.appendChild(el("a", { href: a.href, title: d.short + " × " + a.country_name, "aria-label": (ALPHA2[a.country] || a.country) + " " + a.country_name, text: ALPHA2[a.country] || a.country }));
-          });
-          if (d.matrix_href) {
-            line.appendChild(document.createTextNode(" · "));
-            line.appendChild(el("a", { href: d.matrix_href, text: "matrix →" }));
-          }
-          aligned.push(line);
+        if ((d.alignments || []).length || (d.not_aligned || []).length) {
+          aligned.push(countryChips(d));
+        } else if (d.provision_level === false) {
+          aligned.push(el("span", { className: "small muted", text: "Act level only (notified measures)." }));
         }
         cards.appendChild(el("li", { className: "card" + (d.error ? " failed" : "") }, [
           el("span", { className: "celex", text: d.celex + " · " + (d.topic || "") }),
@@ -272,7 +366,8 @@
     document.title = d.short + " · OpenAcquis";
     $("d-title").textContent = d.short;
     $("d-full").textContent = d.title || "";
-    $("nim-link").href = d.eurlex_nim_url;
+    if (d.eurlex_nim_url && safeHref(d.eurlex_nim_url)) $("nim-link").href = d.eurlex_nim_url;
+    else $("nim-link").removeAttribute("href");
     setBuilt(d);
 
     var meta = $("d-meta");
@@ -288,18 +383,14 @@
     ]));
 
     sampleNote(d, $("d-notes"));
-    if ((d.alignments || []).length) {
-      var links = el("span", {});
-      d.alignments.forEach(function (a, i) {
-        if (i) links.appendChild(document.createTextNode(", "));
-        links.appendChild(el("a", { href: a.href, text: d.short + " × " + a.country_name }));
-      });
-      $("d-notes").appendChild(el("div", { className: "note info", role: "note" }, [
-        el("strong", { text: "Provision by provision: " }), links,
-        ". Each paragraph next to the top machine suggestion (and the official correlation table where one exists), with both texts side by side",
-        d.matrix_href ? el("span", {}, ["; all countries at once in the ", el("a", { href: d.matrix_href, text: "article × country matrix" })]) : null,
-        "."
+    drawProvisionLevel(d, $("d-provision"));
+    if (d.measures_available === false) {
+      $("d-notes").appendChild(el("div", { className: "note", role: "note" }, [
+        el("strong", { text: "Notified measures are not part of this build. " }),
+        "This local sample build has no CELLAR data for " + d.short + ". See the ",
+        el("a", { href: d.eurlex_nim_url, text: "EUR-Lex national transposition page" }), "."
       ]));
+      return;
     }
     if (d.error) {
       $("d-notes").appendChild(el("div", { className: "note error", role: "alert" }, [
@@ -483,6 +574,7 @@
     match: { text: "matches table", cls: "ok" },
     same_section: { text: "same § as table", cls: "near" },
     differs: { text: "differs from table", cls: "off" },
+    other_act: { text: "table cites an act not searched", cls: "" },
     article_level: { text: "", cls: "" },
     no_table_entry: { text: "", cls: "" }
   };
@@ -595,10 +687,22 @@
     notes.appendChild(el("div", { className: "note", role: "note" }, [
       el("strong", { text: "Suggestions, not findings. " }),
       "A machine suggestion is the national provision whose wording is most similar; nobody has reviewed it. " +
-      (official ? "A difference from the table does not mean either is wrong, and neither column" : "It does not") +
-      " say whether " + d.country_name + " transposed " + d.short + " correctly. " + built + " ",
+      (official ? "A difference from the table does not mean either is wrong, and neither column says" : "It does not say") +
+      " whether " + d.country_name + " transposed " + d.short + " correctly. " + built + " ",
       el("a", { href: "review.html?id=" + encodeURIComponent(d.id), text: "Help review these suggestions →" })
     ]));
+
+    var reg = d.registry || {};
+    if (reg.status === "baseline") {
+      notes.appendChild(el("div", { className: "note", role: "note" }, [
+        el("strong", { text: "Existing law, not a notified transposition. " }),
+        actList + " was not notified by " + d.country_name + " for " + d.short + " (any measures it notified are not aligned " +
+        "here), so this page compares the directive with existing law on the subject. A difference here is not a finding that " +
+        "the directive is missing from " + d.country_name + "'s law." + (reg.note ? " Note: " + reg.note + "." : "")
+      ]));
+    } else if (reg.note) {
+      notes.appendChild(el("p", { className: "small muted", text: "Note: " + reg.note + "." }));
+    }
 
     var src = d.official_source || {};
     var os = $("a-official-src");
@@ -631,7 +735,8 @@
       kpi((s.eu_units_with_link || 0) + " / " + (s.eu_units || 0), "EU provisions with a suggestion above the threshold");
     }
     kpi(String(s.gap_candidates || 0), "gap candidates" + (s.gap_articles ? " in " + s.gap_articles + " articles" : ""));
-    kpi(String(s.extra_rule_sections || 0), "§§ with extra-rule candidates");
+    if (d.extra_note) kpi("–", "extra-rule list not reported (see below)");
+    else kpi(String(s.extra_rule_sections || 0), "§§ with extra-rule candidates");
 
     var show = $("f-show");
     if (!official) {
@@ -732,7 +837,9 @@
           var panels = [textPanel(d.short + " " + r.label, "eu", [{ label: "EUR-Lex", url: r.url, text: r.text }], euLang)];
           if (official) {
             panels.push(textPanel("Official correlation table", "official", r.official.map(function (o) {
-              return { label: nationalRef(nat, o, acts), url: (nat[o] || {}).url, text: (nat[o] || {}).text };
+              var n = nat[o] || {};
+              return { label: nationalRef(nat, o, acts), url: n.url, text: n.text,
+                extra: n.not_searched ? "(in an act not searched here: no text shown)" : "" };
             }), natLang));
           }
           panels.push(textPanel("Machine suggestions", "machine", r.machine.map(function (x, i) {
@@ -829,7 +936,12 @@
       ") in §§ with no link to the directive whose wording matches nothing in it, after setting aside definitions, penalty lists, " +
       "transitional, repeal and entry-into-force clauses and amendments of other acts. Often ordinary national procedure or " +
       "organisation; possibly rules that go beyond the directive. Not a finding of gold-plating." }));
-    if (!extras.length) host.appendChild(el("p", { className: "muted", text: "None at the current thresholds." }));
+    if (!extras.length) {
+      var sup = (d.summary || {}).extra_rule_candidates_suppressed;
+      host.appendChild(el("p", { className: "muted", text: d.extra_note
+        ? d.extra_note.charAt(0).toUpperCase() + d.extra_note.slice(1) + (sup && d.extra_note.indexOf(String(sup)) < 0 ? " (" + sup + (sup === 1 ? " provision" : " provisions") + " set aside)." : ".")
+        : "None at the current thresholds." }));
+    }
     extras.forEach(function (x) {
       var det = el("details", { className: "extra" });
       det.appendChild(el("summary", {}, [
@@ -879,6 +991,19 @@
     $("m-back").textContent = "← " + m.short + ": notified measures";
     $("footer-built").textContent = "Matrix built " + fmtBuilt(m.built_at) + ".";
     var cols = m.countries || [];
+    var withTable = cols.filter(function (c) { return c.has_official; }).map(function (c) { return c.name; });
+    $("m-official").textContent = withTable.length
+      ? "Official correlation tables: " + withTable.join(", ") + "; the other countries have machine suggestions only."
+      : "No official correlation table is available for this directive yet; every cell is a machine suggestion.";
+    (m.not_aligned || []).forEach(function (n) {
+      $("m-notes").appendChild(el("p", { className: "small muted", text: n.name + ": no national act aligned" + (n.note ? " (" + n.note + ")" : "") + "." }));
+    });
+    cols.forEach(function (c) {
+      if (c.status === "baseline") {
+        $("m-notes").appendChild(el("p", { className: "small muted", text: c.name + ": " + c.act + " was not notified for " + m.short +
+          "; the column (marked “existing law”) compares the directive with existing law, not with a transposition." }));
+      }
+    });
     $("m-lede").textContent = "Each row is an article of " + m.short + "; each column a country. A cell shows the national section the " +
       "machine most often suggests for the article's paragraphs, how many of the article's provisions have a suggestion, gap " +
       "candidates, and, where a government published one, the sections its official correlation table lists. Click a cell to " +
@@ -897,7 +1022,7 @@
     g.addEventListener("change", function () { state.gaps = g.checked; update(); });
 
     function cell(c, country) {
-      var td = el("td", { className: "mcell" });
+      var td = el("td", { className: "mcell" + (country.status === "baseline" ? " baseline" : "") });
       if (!c) { td.appendChild(el("span", { className: "muted", text: "—" })); return td; }
       var lang = CC_LANG[country.code] || null;
       var top = c.top ? el("a", { href: c.href, className: "mtop", lang: lang, text: c.top,
@@ -941,8 +1066,11 @@
     var head = $("m-head");
     head.appendChild(el("th", { scope: "col", className: "mart", text: "Article" }));
     cols.forEach(function (c) {
-      head.appendChild(el("th", { scope: "col" }, [el("a", { href: "alignment.html?id=" + encodeURIComponent(c.id), text: c.name }),
-        el("span", { className: "small muted", text: " " + c.act })]));
+      head.appendChild(el("th", { scope: "col", className: c.status === "baseline" ? "baseline" : null }, [
+        el("a", { href: "alignment.html?id=" + encodeURIComponent(c.id), text: c.name }),
+        el("span", { className: "small muted", text: " " + c.act }),
+        c.status === "baseline" ? el("span", {}, [" ", el("span", { className: "pill baseline", text: "existing law" }),
+          el("span", { className: "sr-only", text: " (not notified for this directive)" })]) : null]));
     });
     $("m-body").hidden = false;
     update();
@@ -957,6 +1085,43 @@
     gap: "Gap candidate: is it right that no provision of the acts searched implements this EU provision?",
     extra_rule: "Extra-rule candidate: is it right that this national provision implements nothing in the directive?"
   };
+
+  // the question for a baseline pair: the act was not notified, so a link means "covers", not "implements"
+  var KIND_TEXT_BASELINE = {
+    link: "Suggested link: does this provision of existing national law cover this EU provision? (The act was not notified as a transposition.)",
+    gap: KIND_TEXT.gap,
+    extra_rule: "Extra-rule candidate: is it right that this provision of existing national law corresponds to nothing in the directive?"
+  };
+
+  // review article filter: art1 < art2 < art10 < art10a < annexes (anx_i, anx_ii, ...) in numeric order
+  var ROMAN = { i: 1, v: 5, x: 10, l: 50, c: 100 };
+  function romanVal(r) {
+    var t = 0, s = String(r).toLowerCase();
+    for (var i = 0; i < s.length; i++) {
+      var v = ROMAN[s[i]] || 0, nx = ROMAN[s[i + 1]] || 0;
+      t += v < nx ? -v : v;
+    }
+    return t;
+  }
+  function artSortKey(k) {
+    var m = /^art(\d+)(.*)$/.exec(k);
+    if (m) return [0, Number(m[1]), m[2]];
+    m = /^anx_([a-z]+)(.*)$/.exec(k);
+    if (m) return [1, romanVal(m[1]) || 0, m[2]];
+    return [2, 0, k];
+  }
+  function sortArts(keys) {
+    return keys.slice().sort(function (a, b) {
+      var x = artSortKey(a), y = artSortKey(b);
+      for (var i = 0; i < 3; i++) { if (x[i] < y[i]) return -1; if (x[i] > y[i]) return 1; }
+      return 0;
+    });
+  }
+  function artLabel(k) {
+    if (k.indexOf("art") === 0) return "Art. " + k.slice(3);
+    if (k.indexOf("anx_") === 0) return "Annex " + k.slice(4).toUpperCase();
+    return k;
+  }
 
   function store(key, value) {
     try {
@@ -1043,6 +1208,15 @@
     siblingLinks($("r-notes"), d.celex, d.id, function (x) { return "review.html?id=" + x; }, "Review another country: ");
     $("r-back").href = "alignment.html?id=" + encodeURIComponent(d.id);
     $("r-back").textContent = "← " + d.short + " × " + d.country_name + ", provision by provision";
+    var reg = d.registry || {};
+    var baseline = reg.status === "baseline";
+    if (baseline) {
+      $("r-notes").appendChild(el("div", { className: "note", role: "note" }, [
+        el("strong", { text: "Existing law, not a notified transposition. " }),
+        "The national act here was not notified by " + d.country_name + " for " + d.short + "; it is compared as existing law. " +
+        "Judge whether a provision covers the EU provision, not whether it transposes it." + (reg.note ? " Note: " + reg.note + "." : "")
+      ]));
+    }
     var eu = d.eu_texts || {}, nat = d.national_texts || {};
     var natLang = d.national_language || CC_LANG[d.country_code] || null;
     function euLangFor(sg) {
@@ -1064,8 +1238,8 @@
       s._art = key;
       if (key && arts.indexOf(key) < 0) arts.push(key);
     });
-    arts.forEach(function (k) {
-      art.appendChild(el("option", { value: k, text: k.indexOf("art") === 0 ? "Art. " + k.slice(3) : k.replace("anx_", "Annex ").toUpperCase() }));
+    sortArts(arts).forEach(function (k) {
+      art.appendChild(el("option", { value: k, text: artLabel(k) }));
     });
     art.value = state.art; if (art.value !== state.art) state.art = "";
 
@@ -1137,7 +1311,7 @@
         el("code", { text: sg.id }),
         st ? el("span", { className: "pill reviewed", text: "already " + st.status + " by " + st.reviewers.join(", ") }) : null
       ]));
-      host.appendChild(el("h2", { className: "rq", tabindex: "-1", text: KIND_TEXT[sg.kind] }));
+      host.appendChild(el("h2", { className: "rq", tabindex: "-1", text: (baseline ? KIND_TEXT_BASELINE : KIND_TEXT)[sg.kind] }));
       if (sg.score != null) host.appendChild(el("p", { className: "small muted" }, ["Machine score " + Number(sg.score).toFixed(3) + " (",
         el("code", { className: "method", text: d.method }), "; threshold " + d.threshold + "). Scores are similarity, not probability."]));
       var panels = [];
@@ -1215,9 +1389,66 @@
     rebuild();
   }
 
+  // ------------------------------------------------------------ data & API page
+
+  // links to api/v1/ files become plain text when the API is not part of this build
+  function pruneApiLinks() {
+    Array.prototype.forEach.call(document.querySelectorAll("a[href^='api/']"), function (a) {
+      a.parentNode.replaceChild(el("span", { className: "muted", title: "Not part of this build", text: a.textContent }), a);
+    });
+  }
+
+  function renderData() {
+    var names = {}; // "32019L1937_cz" -> { short, country, href }
+    var idxP = getJSON("data/index.json").then(function (idx) {
+      pruneLinks(idx);
+      $("x-built").textContent = setBuilt(idx);
+      (idx.directives || []).forEach(function (d) {
+        (d.alignments || []).forEach(function (a) {
+          names[d.celex + "_" + a.country_code] = { short: d.short, country: a.country_name, href: a.href };
+        });
+      });
+    }).catch(function () { $("x-built").textContent = ""; });
+    // dataset counts per pair from the API index (optional: a build without the API just shows the links)
+    Promise.all([getJSON("api/v1/index.json"), idxP]).then(function (res) {
+      var api = res[0];
+      var d = api.data || {}, c = d.counts || {};
+      var kpis = $("x-kpis");
+      function kpi(v, l) { kpis.appendChild(el("div", { className: "kpi" }, [el("div", { className: "v", text: v }), el("div", { className: "l", text: l })])); }
+      if (c.links != null) kpi(fmtInt(c.links), "links (official tables + reviews)");
+      if (c.reviews != null) kpi(fmtInt(c.reviews), "human review records");
+      if (c.alignment_pairs != null) kpi(fmtInt(c.alignment_pairs), "directive × country alignments");
+      if (c.directives != null) kpi(fmtInt(c.directives), "directives");
+      var tb = $("x-pairs");
+      tb.textContent = "";
+      (d.pairs || []).forEach(function (p) {
+        var n = names[p.directive + "_" + p.country] || {};
+        var label = (n.short || p.directive) + " × " + (n.country || String(p.country).toUpperCase());
+        var links = typeof p.links === "string" ? "api/v1/" + p.links : null;
+        tb.appendChild(el("tr", {}, [
+          el("td", {}, [n.href ? el("a", { href: n.href, text: label }) : label]),
+          el("td", {}, [links ? el("a", { href: links, title: "links.json of " + label, text: fmtInt(p.links_count) }) : fmtInt(p.links_count)])
+        ]));
+      });
+      if (!tb.firstChild) tb.appendChild(el("tr", {}, [el("td", { colspan: "2", className: "muted", text: "No links in this build." })]));
+      var meta = $("x-api");
+      [["API version", d.api_version || api.api_version], ["Dataset version", api.dataset_version], ["Built", api.built_at ? fmtBuilt(api.built_at) : null],
+        ["Mode", api.mode]].forEach(function (kv) {
+        if (kv[1]) meta.appendChild(el("div", {}, [el("dt", { text: kv[0] }), el("dd", { text: String(kv[1]) })]));
+      });
+    }).catch(function (err) {
+      var tb = $("x-pairs");
+      tb.textContent = "";
+      if (notBuilt(err)) pruneApiLinks();
+      tb.appendChild(el("tr", {}, [el("td", { colspan: "2", className: "muted", text: notBuilt(err)
+        ? "The API is not part of this build (run python scripts/build_api.py)." : "Counts unavailable." })]));
+    });
+  }
+
   window.OpenAcquis = {
+    renderData: renderData,
     renderIndex: renderIndex, renderDirective: renderDirective, renderAlignment: renderAlignment,
     renderMatrix: renderMatrix, renderReview: renderReview, _binOf: binOf, _checkRecord: checkRecord,
-    _issueURL: issueURL, _issueLink: issueLink
+    _issueURL: issueURL, _issueLink: issueLink, _baselineText: baselineText, _sortArts: sortArts, _artLabel: artLabel
   };
 })();

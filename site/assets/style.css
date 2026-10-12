@@ -352,3 +352,25 @@ code { overflow-wrap: anywhere; }
   .site-header nav, .filters, .skip { display: none; }
   .tile { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
+
+/* v0.5: country chips on cards, code blocks on the data page */
+.chips { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; }
+.chip { display: inline-block; font-size: .78rem; font-weight: 650; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--border); text-decoration: none; white-space: nowrap; }
+a.chip:hover { border-color: var(--accent); }
+.chip.official { border-color: var(--official); color: var(--official); background: var(--official-bg); }
+.chip.baseline { border-style: dashed; }
+.chip.none { color: var(--ink-3); background: var(--surface-2); }
+.chip.matrix { border-color: transparent; padding-left: 2px; }
+pre.code { background: var(--surface-2); padding: 10px 12px; border-radius: 6px; overflow-x: auto; font-size: .8rem; max-width: 100%; }
+
+/* v0.5: baseline pairs (the act aligned was not notified for the directive; compared as existing law) */
+.pill.baseline { color: var(--ink-2); background: var(--surface-2); border: 1px dashed var(--ink-3); }
+td.mcell.baseline { background-image: repeating-linear-gradient(135deg, transparent 0 6px, var(--surface-2) 6px 8px); }
+/* the directive page's "provision by provision" table: stacked rows on phones, every link visible */
+@media (max-width: 600px) {
+  table.prov thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  table.prov, table.prov tbody, table.prov tr, table.prov th, table.prov td { display: block; width: auto; }
+  table.prov tr { border-bottom: 1px solid var(--border); padding: 6px 0; }
+  table.prov th, table.prov td { border-bottom: 0; padding: 3px 10px; }
+  table.prov td[data-label]::before { content: attr(data-label) ": "; font-size: .78rem; font-weight: 650; color: var(--ink-3); }
+}

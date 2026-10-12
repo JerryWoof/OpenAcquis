@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Data and API · OpenAcquis</title>
+<meta name="description" content="Download the OpenAcquis dataset (CC-BY-4.0), use the static JSON API, or follow the change feed.">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231c5cab'/%3E%3Cg fill='%23fff'%3E%3Crect x='6' y='6' width='9' height='9' rx='2'/%3E%3Crect x='17' y='6' width='9' height='9' rx='2' opacity='.6'/%3E%3Crect x='6' y='17' width='9' height='9' rx='2' opacity='.6'/%3E%3Crect x='17' y='17' width='9' height='9' rx='2' opacity='.3'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/style.css">
+<link rel="alternate" type="application/atom+xml" title="OpenAcquis change alerts" href="feed.xml">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="./" aria-label="OpenAcquis home">
+      <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#1c5cab"/><g fill="#fff"><rect x="6" y="6" width="9" height="9" rx="2"/><rect x="17" y="6" width="9" height="9" rx="2" opacity=".6"/><rect x="6" y="17" width="9" height="9" rx="2" opacity=".6"/><rect x="17" y="17" width="9" height="9" rx="2" opacity=".3"/></g></svg>
+      OpenAcquis
+    </a>
+    <nav aria-label="Main">
+      <a href="./#directives">Directives</a>
+      <a href="./#how">How it works</a>
+      <a href="data.html">Data &amp; API</a>
+      <a href="https://github.com/JerryWoof/OpenAcquis">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main" class="wrap">
+  <p class="crumbs"><a href="./#directives">← All directives</a></p>
+  <h1>Data and API</h1>
+  <p class="lede">Everything on this site is plain files you can download or fetch: no key, no server, no rate limit beyond GitHub's.
+    The data is CC-BY-4.0; please cite OpenAcquis and the sources below.</p>
+  <p class="muted small" id="x-built">Loading counts…</p>
+  <div id="x-notes"></div>
+
+  <h2 id="dataset">Dataset: provision-level links</h2>
+  <p style="max-width:70ch">Links between EU directive provisions and national provisions that come from <strong>official correlation tables</strong>
+    (attached by the Czech and Slovak governments to their bills) or from <strong>human review</strong>. Unreviewed machine suggestions are not in it.
+    A link says what a government listed or a reviewer confirmed; it does not say a provision is transposed correctly.</p>
+  <div class="kpis" id="x-kpis"></div>
+  <ul>
+    <li><a href="data/dataset/links.csv">links.csv</a>: one row per link (spreadsheet-safe)</li>
+    <li><a href="data/dataset/links.jsonl">links.jsonl</a>: the same as JSON lines</li>
+    <li><a href="data/dataset/reviews.jsonl">reviews.jsonl</a>: every human review record, including rejections</li>
+    <li><a href="data/dataset/datapackage.json">datapackage.json</a>: Frictionless Data Package with field descriptions, licence and sources</li>
+    <li><a href="data/dataset/README.md">README.md</a>: counts, citation and attribution</li>
+  </ul>
+  <div class="table-wrap"><table>
+    <caption class="sr-only">Links per directive and country</caption>
+    <thead><tr><th scope="col">Directive × country</th><th scope="col">Links</th></tr></thead>
+    <tbody id="x-pairs"><tr><td colspan="2" class="muted">Loading…</td></tr></tbody>
+  </table></div>
+  <p class="small muted">Snapshots of every release (dataset and API zip, checksums) are attached to the
+    <a href="https://github.com/JerryWoof/OpenAcquis/releases">GitHub releases</a>. Field reference:
+    <a href="https://github.com/JerryWoof/OpenAcquis/blob/main/docs/dataset.md">docs/dataset.md</a>.</p>
+
+  <h2 id="api">Static JSON API</h2>
+  <p style="max-width:70ch">Versioned JSON files under <code>api/v1/</code>: directives, notified measures, article × country matrices,
+    alignments (machine candidates, without texts), dataset links, review records, and the EU and national provision texts each stored once.
+    Start from <a href="api/v1/index.json">api/v1/index.json</a>; it lists every file. Described by
+    <a href="api/v1/openapi.yaml">OpenAPI 3.1</a> and JSON Schemas (<a href="api/v1/schemas/index.json">list of schemas</a>).
+    Documentation: <a href="https://github.com/JerryWoof/OpenAcquis/blob/main/docs/api.md">docs/api.md</a>.</p>
+  <pre class="code"><code>curl -s https://jerrywoof.github.io/OpenAcquis/api/v1/index.json | jq '.data.counts'
+curl -s https://jerrywoof.github.io/OpenAcquis/api/v1/directives/32022L2557/sk/links.json | jq '.data.links[0]'</code></pre>
+  <dl class="meta" id="x-api"></dl>
+
+  <h2 id="feed">Change feed</h2>
+  <p style="max-width:70ch">A weekly job checks the directives (amendments, corrigenda, consolidated versions), the national measures
+    notified for them, and the main national acts on e-Sbírka, Slov-Lex, RIS and gesetze-im-internet.de. Changes are published as an
+    <a href="feed.xml">Atom feed</a> and as GitHub issues labelled <code>change-alert</code>.</p>
+
+  <h2 id="cli">Command line</h2>
+  <pre class="code"><code>git clone https://github.com/JerryWoof/OpenAcquis &amp;&amp; cd OpenAcquis &amp;&amp; pip install -e .
+openacquis directives          # the registry: main act per directive and country
+openacquis eval cer-sk         # score matching against an official correlation table
+openacquis dataset build       # rebuild the dataset locally</code></pre>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p><strong>Not legal advice.</strong> Official correlation tables describe government bills; machine suggestions are unreviewed.
+      None of the data says whether a member state transposed a directive correctly.</p>
+    <p>Directive texts and measures: EUR-Lex / CELLAR, © European Union, <a href="https://eur-lex.europa.eu">https://eur-lex.europa.eu</a>
+      (reuse under Commission Decision 2011/833/EU). National law: e-Sbírka (CZ), Slov-Lex (SK), RIS (AT), gesetze-im-internet.de (DE).
+      Correlation tables: psp.cz, nrsr.sk. Code: MIT; data: CC-BY-4.0. <span id="footer-built"></span></p>
+  </div>
+</footer>
+<script src="assets/app.js"></script>
+<script>OpenAcquis.renderData();</script>
+</body>
+</html>

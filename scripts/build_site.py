@@ -76,20 +76,14 @@ class Entry:
     celex: str
     short: str
     topic: str
+    rank: int | None = None  # registry order; None = act-level only (not in the registry)
 
 
-# Curated list. All CELEX numbers verified against CELLAR (2026-10).
-DIRECTIVES: list[Entry] = [
-    Entry("32022L2555", "NIS2", "Cybersecurity"),
-    Entry("32019L0882", "European Accessibility Act", "Accessibility"),
-    Entry("32023L0970", "Pay Transparency Directive", "Employment"),
+#: Shown act-level only (notified measures): directives on the site before the registry that it
+#: does not cover. CELEX numbers verified against CELLAR (2026-10).
+ACT_LEVEL_ONLY: list[Entry] = [
     Entry("32022L2464", "CSRD", "Corporate sustainability reporting"),
-    Entry("32019L1937", "Whistleblower Directive", "Whistleblower protection"),
-    Entry("32022L2557", "Critical Entities Resilience (CER)", "Critical infrastructure"),
-    Entry("32019L0790", "Copyright in the Digital Single Market", "Copyright"),
     Entry("32019L1158", "Work-Life Balance Directive", "Employment"),
-    Entry("32022L2041", "Adequate Minimum Wages Directive", "Employment"),
-    Entry("32018L1972", "European Electronic Communications Code", "Telecommunications"),
 ]
 
 
@@ -107,6 +101,11 @@ class AlignmentEntry:
     gold_label: str = ""
     gold_url: str = ""
     gold_history_url: str = ""
+    status: str = "ok"  # registry status: ok (notified transposition) | baseline (not notified; existing law)
+    note: str = ""  # registry note shown on the page (public wording, see public_note)
+    override: bool = False  # acts set by hand in the registry
+    extra_rules: bool = True  # registry: extra-rule candidates are meaningful (not a general code, not a baseline)
+    act_labels: tuple[tuple[str, str], ...] = ()  # registry: how secondary acts are cited (ref -> label)
 
     @property
     def slug(self) -> str:
@@ -117,17 +116,77 @@ class AlignmentEntry:
         return f"alignment.html?id={self.slug}"
 
 
-ALIGNMENTS: list[AlignmentEntry] = [
-    AlignmentEntry(
-        "32022L2555", "NIS2", "CZE", "cz", "Czechia", "264/2025 Sb.", "data/eval/nis2_cz.jsonl",
-        "Rozdílová tabulka, government bill of the Cybersecurity Act (sněmovní tisk 759/0, 2024)",
-        "https://www.psp.cz/sqw/text/orig2.sqw?idd=244067",
-        "https://www.psp.cz/sqw/historie.sqw?o=9&t=759",
-    ),
-    AlignmentEntry("32022L2555", "NIS2", "SVK", "sk", "Slovakia", "69/2018 Z. z."),
-    AlignmentEntry("32022L2555", "NIS2", "AUT", "at", "Austria", "NISG 2026"),
-    AlignmentEntry("32022L2555", "NIS2", "DEU", "de", "Germany", "BSIG"),
-]
+@dataclass(frozen=True)
+class CountryState:
+    """A registry country with nothing to align (status ``none``): shown as such, not as missing data."""
+
+    celex: str
+    country: str  # ISO alpha-3
+    country_code: str
+    country_name: str
+    note: str = ""
+
+
+#: Clauses of a registry note that are developer notes (mapper statuses, code identifiers), not for the public.
+_INTERNAL_NOTE = re.compile(
+    r"not_found|no_reference|\bmaps? (?:as|to)\b|\bmapped\b|\b[a-z]+_\d{4}\b|'[^']*' /")
+#: Said instead when every clause of the note of a hand-set act was internal.
+HAND_SET_NOTE = "act chosen by hand: CELLAR's records do not link the notified measures to it"
+
+
+#: ``extra_note`` of a baseline pair (status ``baseline``: the act was not notified for the directive).
+EXTRA_NOTE_BASELINE = ("no extra-rule list: the act aligned is the existing national law, not a notified "
+                       "transposition, so provisions that match nothing in the directive say nothing about going beyond it")
+
+
+def public_note(note: str, *, override: bool = False) -> str:
+    """The public part of a registry note: ``;``-separated clauses that read as developer notes
+    (``not_found``, ``maps to``, slugs such as ``bgrembg_2015``) are dropped. A registry entry may give
+    ``public_note`` instead (used as is)."""
+    clauses = [c.strip() for c in (note or "").split(";") if c.strip()]
+    kept = [c for c in clauses if not _INTERNAL_NOTE.search(c)]
+    if not kept and clauses and override:
+        return HAND_SET_NOTE
+    return "; ".join(kept)
+
+
+def _note_of(c) -> str:
+    pub = getattr(c, "public_note", None)
+    return pub if isinstance(pub, str) and pub else public_note(c.note, override=bool(getattr(c, "override", False)))
+
+
+def _from_registry() -> tuple[list[Entry], list[AlignmentEntry], list[CountryState]]:
+    """Directives, alignment pages and "nothing to align" states from ``data/directives.json``
+    (:mod:`openacquis.directives`), with the official correlation tables of :mod:`openacquis.goldsets`."""
+    from openacquis.adapters import get_adapter
+    from openacquis.directives import COUNTRIES, load_registry
+    from openacquis.goldsets import BY_PAIR
+
+    reg = load_registry()
+    entries, aligns, states = [], [], []
+    for d in sorted(reg, key=lambda x: (x.rank is None, x.rank or 0)):
+        entries.append(Entry(d.celex, d.short, d.topic, d.rank))
+        for cc in COUNTRIES:
+            c = d.country(cc)
+            a = get_adapter(cc)
+            if not c.alignable:
+                states.append(CountryState(d.celex, a.alpha3, cc, a.name, _note_of(c)))
+                continue
+            gs = BY_PAIR.get((d.celex, cc))
+            aligns.append(AlignmentEntry(
+                d.celex, d.short, a.alpha3, cc, a.name, c.label or f"{c.acts[0]}{a.act_suffix}",
+                gs.path if gs else "", gs.title if gs else "", gs.url if gs else "", gs.history_url if gs else "",
+                status=c.status, note=_note_of(c), override=bool(c.override),
+                extra_rules=c.reports_extra_rules, act_labels=c.act_labels))
+    return entries, aligns, states
+
+
+_REG_ENTRIES, ALIGNMENTS, COUNTRY_STATES = _from_registry()
+#: The directives shown on the site: the registry (data/directives.json), then the act-level-only ones.
+DIRECTIVES: list[Entry] = _REG_ENTRIES + [e for e in ACT_LEVEL_ONLY if e.celex not in {x.celex for x in _REG_ENTRIES}]
+#: Directives whose alignment pages are computed live by default (the others use site/static-data/,
+#: refreshed by scripts/build_alignments.py): NIS2, the seed.
+SEED = {"32022L2555"}
 
 #: Directives with an article x country matrix page.
 MATRICES = sorted({a.celex for a in ALIGNMENTS})
@@ -219,8 +278,11 @@ def _measure_row(m) -> dict:
     }
 
 
-def build_directive(client: CellarClient, entry: Entry) -> dict:
-    """Fetch one directive. Never raises: errors are returned in ``"error"``."""
+def build_directive(client: CellarClient, entry: Entry, fetch_measures: bool = True) -> dict:
+    """Fetch one directive. Never raises: errors are returned in ``"error"``.
+
+    ``fetch_measures=False`` (an offline build without a bundled sample for it): the record has no
+    CELLAR data and ``measures_available`` is false; the page says so instead of showing zeros."""
     record: dict = {
         "celex": entry.celex,
         "short": entry.short,
@@ -235,13 +297,23 @@ def build_directive(client: CellarClient, entry: Entry) -> dict:
         "counts": {code: 0 for code in MEMBER_STATES},
         "measures": [],
         "alignments": [
-            {"country": a.country, "country_name": a.country_name, "href": a.href,
-             "official": bool(a.gold), "review_href": f"review.html?id={a.slug}"}
+            {"country": a.country, "country_name": a.country_name, "country_code": a.country_code, "href": a.href,
+             "official": bool(a.gold), "review_href": f"review.html?id={a.slug}", "act": a.act_label,
+             "status": a.status, "note": a.note}
             for a in ALIGNMENTS if a.celex == entry.celex
         ],
+        # registry countries with nothing to align (e.g. no statutory minimum wage): shown as such
+        "not_aligned": [
+            {"country": c.country, "country_name": c.country_name, "country_code": c.country_code, "note": c.note}
+            for c in COUNTRY_STATES if c.celex == entry.celex
+        ],
+        "provision_level": entry.rank is not None,
         "matrix_href": f"matrix.html?celex={entry.celex}" if entry.celex in MATRICES else None,
+        "measures_available": fetch_measures,
         "error": None,
     }
+    if not fetch_measures:
+        return record
     try:
         d = client.directive(entry.celex)
         measures = client.national_measures(entry.celex)
@@ -283,18 +355,20 @@ def build_site_data(
     log: Callable[[str], None] = lambda msg: None,
     pause: float = 0.0,
     sleep: Callable[[float], None] = time.sleep,
+    skip: set[str] | None = None,
 ) -> tuple[dict, list[dict]]:
-    """Return ``(index, records)`` for ``entries``."""
+    """Return ``(index, records)`` for ``entries`` (CELLAR is not asked about the CELEX numbers in ``skip``)."""
     records = []
     for i, entry in enumerate(entries):
         if i and pause:
             sleep(pause)  # be gentle with the public endpoint
         log(f"  {entry.celex} {entry.short} ...")
-        rec = build_directive(client, entry)
+        rec = build_directive(client, entry, fetch_measures=entry.celex not in (skip or set()))
         log(
             f"    error: {rec['error']}"
             if rec["error"]
             else f"    {rec['total_measures']} measures from {rec['countries_with_measures']} member states"
+            if rec["measures_available"] else "    measures not in this build (no offline sample)"
         )
         records.append(rec)
 
@@ -342,6 +416,13 @@ def _on_path(a: str, b: str) -> bool:
 def _local(eu_id: str) -> str:
     """``eu:32022L2555:cs:art23.par4`` -> ``art23.par4`` (the same in every language)."""
     return eu_id.split(":", 3)[3] if eu_id.count(":") >= 3 else eu_id
+
+
+def _secondary_label(entry: AlignmentEntry, act_id: str) -> str:
+    """The registry's ``act_labels`` entry for a secondary act (``urhg`` -> ``UrhG``), else ``""``."""
+    from openacquis.directives import base_ref
+
+    return next((lab for ref, lab in entry.act_labels if base_ref(ref) == base_ref(act_id)), "")
 
 
 def alignment_page_data(
@@ -430,19 +511,29 @@ def alignment_page_data(
     def section(nid: str) -> str:
         return level_id(nat_doc[nid], nid, "article") if nid in nat_doc else nid
 
+    searched = {d.act_id for d in result.national_docs}
+
+    def in_searched(nid: str) -> bool:
+        return nid.count(":") >= 2 and nid.split(":")[1] in searched
+
     # "article_level": the table cites only the whole article (e.g. "Čl. 35"), which covers this
     # paragraph too, but names no provision for it alone, so there is nothing to compare row by row.
-    counts = {"match": 0, "same_section": 0, "differs": 0, "article_level": 0, "no_table_entry": 0}
+    # "other_act": every provision the table names is in an act that was not searched, so the machine
+    # suggestion cannot match it; such rows count neither as matches nor as differences.
+    counts = {"match": 0, "same_section": 0, "differs": 0, "other_act": 0, "article_level": 0, "no_table_entry": 0}
     for rid, r in rows.items():
+        offs = [o for o in r["official"] if in_searched(o)]
         if not r["official"]:
             r["agreement"] = "article_level" if art_of_row[rid]["official"] else "no_table_entry"
+        elif not offs:
+            r["agreement"] = "other_act"
         elif not r["machine"]:
             r["agreement"] = "differs"
         else:
             m = r["machine"][0]["id"]
-            if any(_on_path(m, o) for o in r["official"]):
+            if any(_on_path(m, o) for o in offs):
                 r["agreement"] = "match"
-            elif section(m) in {section(o) for o in r["official"]}:
+            elif section(m) in {section(o) for o in offs}:
                 r["agreement"] = "same_section"
             else:
                 r["agreement"] = "differs"
@@ -478,8 +569,9 @@ def alignment_page_data(
     national = {}
     for nid in sorted(used):
         d = nat_doc.get(nid)
-        if d is None:
-            national[nid] = {"label": nid.split(":", 2)[-1], "act": nid.split(":")[1], "text": "", "url": None}
+        if d is None:  # cited by the official table in an act that was not searched: no text here
+            national[nid] = {"label": nid.split(":", 2)[-1], "act": nid.split(":")[1], "text": "", "url": None,
+                             "not_searched": not in_searched(nid)}
             continue
         national[nid] = {"label": path_label(d, nid), "act": d.act_id, "url": d.by_id(nid).url,
                          "text": _clip(d.full_text(nid), text_limit),
@@ -501,6 +593,7 @@ def alignment_page_data(
         "eu_units_linked_out_of_scope": len(lo.eu_linked_out_of_scope) if lo else 0,
         "extra_rule_candidates": len(result.extra_rule_candidates),
         "extra_rule_sections": len(extra_sections),
+        "extra_rule_candidates_suppressed": lo.extra_suppressed if lo else 0,
         "main_act_units": sum(1 for u in mr.national_units if u.id.split(":")[1] in result.transposing_acts),
     }
     if gold:
@@ -524,13 +617,15 @@ def alignment_page_data(
                "language_name": LANGUAGE_NAMES.get(eu.language, eu.language)},
         "national_language": adapter.language,
         "national": [{"act_id": d.act_id, "title": d.title, "url": d.url, "date": d.date,
-                      "label": entry.act_label if i == 0 else f"{d.act_id}{adapter.act_suffix}"}
+                      "label": entry.act_label if i == 0 else
+                      (_secondary_label(entry, d.act_id) or f"{d.act_id}{adapter.act_suffix}")}
                      for i, d in enumerate(result.national_docs)],
         "portal": adapter.portal,
         "method": result.method,
         "threshold": result.threshold,
         "gap_threshold": lo.gap_threshold if lo else None,
         "gap_note": lo.gap_note if lo else None,  # set when the method gives no gap list (hybrid-rrf)
+        "extra_note": lo.extra_note if lo else None,  # set when no extra-rule list is reported (general code, baseline)
         "has_official": bool(gold),
         "official_source": ({"label": entry.gold_label, "url": entry.gold_url, "history_url": entry.gold_history_url,
                              "links": len(gold)} if gold else None),
@@ -630,7 +725,7 @@ def directive_headings(celex: str, eurlex=None, lang: str = "en") -> dict[str, s
 
 
 def matrix_data(celex: str, pages: list[dict], *, headings: dict[str, str] | None = None,
-                now: datetime | None = None) -> dict:
+                now: datetime | None = None, not_aligned: list[dict] | None = None) -> dict:
     """Article x country matrix from the alignment pages of one directive (no recomputation).
 
     A cell: the machine's most frequent top § for the article's paragraphs (with the best
@@ -644,7 +739,8 @@ def matrix_data(celex: str, pages: list[dict], *, headings: dict[str, str] | Non
         countries.append({"code": d["country_code"], "name": d["country_name"], "id": d["id"],
                           "method": d["method"], "built_at": d["built_at"], "mode": d["mode"],
                           "has_official": d.get("has_official", False),
-                          "act": (d.get("national") or [{}])[0].get("label", "")})
+                          "act": (d.get("national") or [{}])[0].get("label", ""),
+                          "status": (d.get("registry") or {}).get("status", "ok")})
 
         def sec_label(nid: str) -> str:
             n = nat.get(nid) or {}
@@ -691,6 +787,7 @@ def matrix_data(celex: str, pages: list[dict], *, headings: dict[str, str] | Non
         "celex": celex,
         "short": short,
         "countries": countries,
+        "not_aligned": not_aligned or [],
         "articles": list(rows.values()),
     }
 
@@ -708,13 +805,16 @@ def build_alignment(
     Returns ``{"alignment": page data, "review": review queue data}``.
     """
     from openacquis.adapters import get_adapter
-    from openacquis.align import align, choose_embedder, load_documents
+    from openacquis.align import DEFAULT_ACTS, align, choose_embedder, load_documents, registry_acts
     from openacquis.evaluate import load_gold
 
     lang = get_adapter(entry.country_code).language
-    eu, docs = load_documents(entry.celex, entry.country_code, eurlex=eurlex, national_client=national_client,
-                              log=log)
-    result = align(eu, docs, embedder=choose_embedder(SITE_EMBEDDER, lang), log=log, now=now)
+    # the main act(s) only: not every act an official table cites (load_documents' default adds those)
+    acts = DEFAULT_ACTS.get((entry.celex, entry.country_code)) or registry_acts(entry.celex, entry.country_code)
+    eu, docs = load_documents(entry.celex, entry.country_code, acts or None, eurlex=eurlex,
+                              national_client=national_client, log=log)
+    result = align(eu, docs, embedder=choose_embedder(SITE_EMBEDDER, lang), log=log, now=now,
+                   extra_rules=entry.extra_rules, extra_note=None if entry.status == "ok" else EXTRA_NOTE_BASELINE)
     gold = load_gold(ROOT / entry.gold) if entry.gold else []
     return {"alignment": alignment_page_data(entry, result, gold, now=now, mode="live"),
             "review": review_page_data(entry, result, reviews=_reviews_for(entry), now=now, mode="live")}
@@ -751,10 +851,15 @@ def write_alignments(
     reviews_dir: Path | None = None,
     log: Callable[[str], None] = lambda msg: None,
     build: Callable[..., dict] = build_alignment,
+    live: set[str] | None = None,
+    states: list[CountryState] | None = None,
 ) -> list[str]:
     """Write ``out_dir/align/<slug>.json`` and ``out_dir/review/<slug>.json`` for each entry, then
     ``out_dir/matrix/<CELEX>.json``. Live first, then the committed static copy. Returns the
-    slugs that have no data at all (neither worked)."""
+    slugs that have no data at all (neither worked).
+
+    ``live``: the directives computed live (``None`` = all); the others use the static copy
+    directly. ``states``: registry countries with nothing to align, listed on the matrix."""
     align_dir = out_dir / "align"
     review_dir = out_dir / "review"
     matrix_dir = out_dir / "matrix"
@@ -764,7 +869,7 @@ def write_alignments(
     pages: dict[str, list[dict]] = {}
     for e in entries:
         data = review = None
-        if not offline:
+        if not offline and (live is None or e.celex in live):
             log(f"  alignment {e.slug} ...")
             try:
                 built = build(e, log=lambda m: log("    " + m))
@@ -788,16 +893,23 @@ def write_alignments(
                 missing.append(e.slug)
                 continue
             data = json.loads(path.read_text(encoding="utf-8"))
+            if data.get("format", 1) != 1:  # format 2 (texts dropped): the pages cannot fetch texts yet
+                log(f"    {path.name}: format {data.get('format')} is not supported by the pages; skipped")
+                missing.append(e.slug)
+                continue
             data["mode"] = "static"
             rpath = static_dir / f"{e.slug}.review.json"
             review = json.loads(rpath.read_text(encoding="utf-8")) if rpath.exists() else None
             if review is not None:
                 review["mode"] = "static"
         _add_languages(data, review, e)
+        _add_registry(data, e)
         (align_dir / f"{e.slug}.json").write_text(
             json.dumps(data, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
         if review is not None:
             review = _mark_reviewed(review, e, reviews_dir)
+            # baseline pairs: the review page says the act was not notified and words its question for that
+            review["registry"] = {"status": data["registry"]["status"], "note": data["registry"]["note"]}
             (review_dir / f"{e.slug}.json").write_text(
                 json.dumps(review, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
         pages.setdefault(e.celex, []).append(data)
@@ -806,9 +918,13 @@ def write_alignments(
             f"{s.get('gap_candidates', 0)} gap and {s.get('extra_rule_candidates', 0)} extra-rule candidates "
             f"({data['mode']})")
     for celex, ps in pages.items():
-        headings = _headings(celex, offline=offline, write_static=write_static, static_dir=static_dir, log=log)
+        headings = _headings(celex, offline=offline or (live is not None and celex not in live),
+                             write_static=write_static, static_dir=static_dir, log=log)
+        na = [{"code": c.country_code, "name": c.country_name, "note": c.note}
+              for c in (states or []) if c.celex == celex]
         (matrix_dir / f"{celex}.json").write_text(
-            json.dumps(matrix_data(celex, ps, headings=headings), ensure_ascii=False, separators=(",", ":")),
+            json.dumps(matrix_data(celex, ps, headings=headings, not_aligned=na), ensure_ascii=False,
+                       separators=(",", ":")),
             encoding="utf-8")
         log(f"  matrix {celex}: {len(ps)} countries")
     return missing
@@ -824,6 +940,19 @@ def _add_languages(data: dict, review: dict | None, entry: AlignmentEntry) -> No
     if review is not None:
         review.setdefault("eu_language", eu_lang)
         review.setdefault("national_language", nat_lang)
+
+
+def _add_registry(data: dict, entry: AlignmentEntry) -> None:
+    """Registry status and note on the page (``baseline``: aligned against law not notified for the
+    directive); the official table's citation from :mod:`openacquis.goldsets` (also on older copies)."""
+    reg = dict(data.get("registry") or {})
+    reg.setdefault("status", entry.status)
+    # only the public wording of the note (static copies carry the registry's raw note)
+    reg["note"] = entry.note or public_note(reg.get("note") or "", override=entry.override)
+    data["registry"] = reg
+    src = data.get("official_source")
+    if src and entry.gold_label:
+        src.update(label=entry.gold_label, url=entry.gold_url, history_url=entry.gold_history_url)
 
 
 def _headings(celex: str, *, offline: bool, write_static: bool, static_dir: Path,
@@ -854,6 +983,20 @@ def write_dataset(out_dir: Path, log: Callable[[str], None] = lambda msg: None) 
         log(f"  dataset: not built ({type(exc).__name__}: {exc})")
         return False
     log(f"  dataset: {s.rows} links ({s.official} official, {s.reviewed} reviewed), {s.review_records} reviews")
+    return True
+
+
+def write_feed(path: Path, log: Callable[[str], None] = lambda msg: None,
+               state: Path = ROOT / "data" / "alerts" / "state.json") -> bool:
+    """The Atom feed of change alerts (``openacquis.alerts``) from the committed state file."""
+    from openacquis.alerts import write_feed as _write
+
+    try:
+        n = _write(state, path)
+    except Exception as exc:  # a bad state file must not stop the site
+        log(f"  feed: not written ({type(exc).__name__}: {exc})")
+        return False
+    log(f"  feed: {n} entries -> {path}")
     return True
 
 
@@ -901,6 +1044,10 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--write-static", action="store_true",
                    help="after a live alignment build, refresh site/static-data/ (commit the result)")
     p.add_argument("--no-dataset", action="store_true", help="skip the dataset downloads")
+    p.add_argument("--live-alignments", choices=["seed", "all", "none"], default="seed",
+                   help="which alignment pages to compute live: seed (default: NIS2; the other directives use "
+                        "site/static-data/, refreshed by scripts/build_alignments.py), all, or none")
+    p.add_argument("--no-feed", action="store_true", help="skip site/feed.xml (change alerts)")
     args = p.parse_args(argv)
 
     def log(msg: str) -> None:
@@ -910,9 +1057,10 @@ def main(argv: list[str] | None = None) -> int:
     if args.only:
         wanted = {c.upper() for c in args.only}
         entries = [e for e in DIRECTIVES if e.celex in wanted]
+    skip: set[str] = set()
     if args.offline:
-        have = sample_celexes()
-        entries = [e for e in entries if e.celex in have]
+        # every directive is listed; those without a bundled sample have no measures in this build
+        skip = {e.celex for e in entries} - sample_celexes()
         fetch: Fetcher = sample_fetcher()
         pause = 0.0
     else:
@@ -927,23 +1075,26 @@ def main(argv: list[str] | None = None) -> int:
     mode = "offline-sample" if args.offline else "live"
     log(f"Building {len(entries)} directives ({mode}) -> {args.out}")
     index, records = build_site_data(
-        CellarClient(fetch), entries, mode=mode, log=log, pause=pause
+        CellarClient(fetch), entries, mode=mode, log=log, pause=pause, skip=skip
     )
     if not args.no_alignment:
         wanted_align = [a for a in ALIGNMENTS if not args.only or a.celex in {c.upper() for c in args.only}]
         if args.countries:
             wanted_align = [a for a in wanted_align if a.country_code in {c.lower() for c in args.countries}]
+        live = {"seed": SEED, "all": None, "none": set()}[args.live_alignments]
         missing = write_alignments(args.out, wanted_align, offline=args.offline, write_static=args.write_static,
-                                   log=log)
+                                   log=log, live=live, states=COUNTRY_STATES)
         if missing:
             log(f"Alignment pages without data: {missing}")
     if not args.no_dataset:
         write_dataset(args.out, log)
     link_built_pages(args.out, index, records)
     write_site_data(args.out, index, records)
+    if not args.no_feed:
+        write_feed(args.out.parent / "feed.xml", log)
     failed = [r["celex"] for r in records if r["error"]]
     log(f"Done: {len(records) - len(failed)} ok, {len(failed)} failed {failed or ''}")
-    return 1 if len(failed) == len(records) else 0
+    return 1 if failed and len(failed) == sum(1 for r in records if r["measures_available"]) else 0
 
 
 if __name__ == "__main__":

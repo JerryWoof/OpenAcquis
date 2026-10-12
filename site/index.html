@@ -4,10 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>OpenAcquis</title>
-<meta name="description" content="Open map of how EU directives are transposed into national law: which national measures each member state notified, directive by directive.">
+<meta name="description" content="Open map of how EU directives are transposed into national law: notified national measures per member state, and provision-by-provision suggestions for Czechia, Slovakia, Austria and Germany.">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231c5cab'/%3E%3Cg fill='%23fff'%3E%3Crect x='6' y='6' width='9' height='9' rx='2'/%3E%3Crect x='17' y='6' width='9' height='9' rx='2' opacity='.6'/%3E%3Crect x='6' y='17' width='9' height='9' rx='2' opacity='.6'/%3E%3Crect x='17' y='17' width='9' height='9' rx='2' opacity='.3'/%3E%3C/g%3E%3C/svg%3E">
 <link rel="stylesheet" href="assets/style.css">
+<link rel="alternate" type="application/atom+xml" title="OpenAcquis change alerts" href="feed.xml">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -20,7 +21,7 @@
     <nav aria-label="Main">
       <a href="#directives">Directives</a>
       <a href="#how">How it works</a>
-      <a href="matrix.html?celex=32022L2555">NIS2 matrix</a>
+      <a href="data.html">Data &amp; API</a>
       <a href="https://github.com/JerryWoof/OpenAcquis">GitHub</a>
     </nav>
   </div>
@@ -33,21 +34,22 @@
     implements which EU article, where a country left something out, and where it added extra rules.</p>
 
   <div class="note" role="note">
-    <strong>Status: early prototype (v0.4).</strong> For ten directives this site shows <strong>act-level</strong> data: the national
-    measures each member state has <em>notified</em> to the European Commission as transposing a directive, taken from the EU
-    Publications Office (CELLAR). For <strong>NIS2</strong> it goes down to the provision in four countries. Everything at provision
-    level is a machine suggestion until a person reviews it; see the <a href="https://github.com/JerryWoof/OpenAcquis/blob/main/ROADMAP.md">roadmap</a>.
+    <strong>Status: v1.0 preview (v0.5).</strong> For every directive below, the site lists the national measures each member state
+    has <em>notified</em> to the European Commission (EU Publications Office, CELLAR). For the twelve directives of the registry it
+    also goes down to the provision in <strong>Czechia, Slovakia, Austria and Germany</strong>. Everything at provision level is an
+    unreviewed machine suggestion, shown next to the government's official correlation table where one exists (seven tables in
+    Czechia and Slovakia so far). Nothing on this site says whether a country transposed a directive correctly; see the
+    <a href="https://github.com/JerryWoof/OpenAcquis/blob/main/ROADMAP.md">roadmap</a>.
   </div>
 
   <div class="note info" role="note" id="v04-note">
-    <strong>New: NIS2 in four countries.</strong>
-    <a href="matrix.html?celex=32022L2555">Article × country matrix</a> for Czechia, Slovakia, Austria and Germany, and provision-by-provision
-    pages: <a href="alignment.html?id=32022L2555_cz">Czechia</a> (next to the government's official correlation table),
-    <a href="alignment.html?id=32022L2555_sk">Slovakia</a>, <a href="alignment.html?id=32022L2555_at">Austria</a>,
-    <a href="alignment.html?id=32022L2555_de">Germany</a>, each with gap and extra-rule candidates.
+    <strong>Provision by provision:</strong> open a directive, or use the country links on each card
+    (✓ = official correlation table shown alongside, * = compared with existing law: the act aligned was not notified for
+    the directive, – = no act to align). Start with the <a href="matrix.html?celex=32022L2555">NIS2 article × country matrix</a>.
     You can help: <a href="review.html?id=32022L2555_cz">review suggestions</a>.
-    Download the open dataset: <a href="data/dataset/links.csv">links.csv</a> · <a href="data/dataset/links.jsonl">links.jsonl</a> ·
-    <a href="data/dataset/datapackage.json">datapackage.json</a> (CC-BY-4.0).
+    Open data: <a href="data/dataset/links.csv">links.csv</a> · <a href="data/dataset/links.jsonl">links.jsonl</a> ·
+    <a href="data/dataset/datapackage.json">datapackage.json</a> (CC-BY-4.0), the <a href="data.html">static API</a>, and an
+    <a href="feed.xml">Atom feed of changes</a> to the directives and national acts watched.
   </div>
 
   <h2 id="directives">Directives</h2>
@@ -58,13 +60,13 @@
   <h2 id="how">How it works</h2>
   <ol class="steps">
     <li><h3>Which national acts <span class="tag now">live</span></h3>
-      <p class="small muted">Member states notify the Commission of the measures they adopt for each directive. We read these records from CELLAR, the database behind EUR-Lex.</p></li>
-    <li><h3>Texts <span class="tag now">v0.2–0.4 · CZ, SK, AT, DE</span></h3>
-      <p class="small muted">The directive in each official language, and consolidated national laws from national portals (e-Sbírka, Slov-Lex, RIS, gesetze-im-internet.de), split into articles, paragraphs and points. In the <a href="https://github.com/JerryWoof/OpenAcquis#quickstart">command-line tool</a> and side by side on the NIS2 pages.</p></li>
-    <li><h3>Matching <span class="tag now">v0.4 · NIS2 × 4 countries</span></h3>
-      <p class="small muted">Text similarity (lexical + BM25 fusion, optionally with a multilingual model) proposes which national provision implements which EU provision, scored against the official Czech correlation table. Leftovers become gap and extra-rule candidates. See the <a href="matrix.html?celex=32022L2555">NIS2 matrix</a>.</p></li>
-    <li><h3>Human review <span class="tag now">v0.4</span></h3>
-      <p class="small muted">Suggestions stay labelled as suggestions until a person checks them on the <a href="review.html?id=32022L2555_cz">review page</a>. Reviewed links and official correlation tables form an open CC-BY dataset (<a href="data/dataset/datapackage.json">download</a>).</p></li>
+      <p class="small muted">Member states notify the Commission of the measures they adopt for each directive. We read these records from CELLAR, the database behind EUR-Lex, and keep a registry of the main act per country.</p></li>
+    <li><h3>Texts <span class="tag now">CZ, SK, AT, DE</span></h3>
+      <p class="small muted">The directive in each official language, and consolidated national laws from national portals (e-Sbírka, Slov-Lex, RIS, gesetze-im-internet.de), split into articles, paragraphs and points. In the <a href="https://github.com/JerryWoof/OpenAcquis#quickstart">command-line tool</a> and side by side on the alignment pages.</p></li>
+    <li><h3>Matching <span class="tag now">12 directives × 4 countries</span></h3>
+      <p class="small muted">Text similarity (lexical + BM25 fusion, optionally with a multilingual model) proposes which national provision implements which EU provision. It is scored against seven official correlation tables from Czechia and Slovakia; six of them were not used for tuning. Leftovers become gap and extra-rule candidates.</p></li>
+    <li><h3>Human review <span class="tag now">open</span></h3>
+      <p class="small muted">Suggestions stay labelled as suggestions until a person checks them on a review page. Official correlation tables and reviewed links form an open CC-BY dataset and a static API (<a href="data.html">data &amp; API</a>).</p></li>
   </ol>
 
   <h2>Why</h2>
@@ -81,7 +83,7 @@
     <p><strong>Not legal advice.</strong> OpenAcquis is a research and transparency tool. Notified measures are what member states report;
       they can be incomplete or include broadly related acts. Always check the official texts.</p>
     <p>Data: EU Publications Office CELLAR. © European Union, <a href="https://eur-lex.europa.eu">https://eur-lex.europa.eu</a>
-      (reuse under Commission Decision 2011/833/EU). Code: MIT. <span id="footer-built"></span></p>
+      (reuse under Commission Decision 2011/833/EU). Code: MIT. <a href="data.html">Data &amp; API</a> · <a href="feed.xml">Change feed</a>. <span id="footer-built"></span></p>
   </div>
 </footer>
 <script src="assets/app.js"></script>
