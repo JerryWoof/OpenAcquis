@@ -1,4 +1,8 @@
-# Evaluation: NIS2 × Czechia
+# Evaluation: NIS2 × Czechia, and six held-out tables
+
+> **New in 0.5:** [held-out generalisation](#v05-held-out-generalisation-six-more-official-tables) on six more
+> official correlation tables (Czechia: CER, Accessibility Act, Whistleblower; Slovakia: NIS2, CER, Pay
+> Transparency), scored with the thresholds tuned on NIS2 × Czechia and not retuned.
 
 *Sections up to "Take-aways" were run on 2026-10-12 with OpenAcquis 0.3.0; the v0.4 sections at the end with
 0.4.0. Since 0.4.0 the default embedder of `align` and `eval` is `auto` (`hybrid` with the embeddings extra,
@@ -538,3 +542,78 @@ These are the numbers on the website's alignment pages (`site/static-data/`).*
   - EU provisions are labelled in the language version used.
   - NIS2 IDs differ only by language code, so a future Slovak, Austrian or German correlation table
     plugs into `GOLD_FILES` unchanged.
+
+## v0.5 held-out generalisation: six more official tables
+
+*Run on 2026-10-12 with OpenAcquis 0.5.0, `hybrid-lex` (the stdlib default), texts from the cache the gold sets
+were built with.*
+
+Every threshold, weight and filter above was chosen on **NIS2 × Czechia**. Version 0.5 adds six more official
+correlation tables ([data/eval/README.md](../data/eval/README.md), [data/eval/README_sk.md](../data/eval/README_sk.md)).
+They are used **only as held-out tests**: the matcher, the link threshold (0.17) and the gap margin (0.01) were
+not changed after looking at them, and nothing below was tuned on them.
+
+```bash
+openacquis eval --list                     # the seven sets
+openacquis eval cer-cz                     # = openacquis eval 32022L2557 cz
+openacquis eval 32023L0970 sk -e hybrid-lex -o pay_sk.json
+```
+
+What is scored. The matcher searches the act(s) each table was checked against (the main act) in that version;
+gold links into other acts are left out (the Slovak tables also list amendments to other acts: NIS2 × SK keeps
+443 of 470 links, CER × SK 326 of 414, Pay × SK 109 of 232). Slovak *negative* records ("nothing transposes
+this", `n.a.`) are never gold links. `--all-acts` searches and scores every act a table cites.
+
+| Set | Act searched | Gold EU provisions / pairs | R@1 | R@5 | R@10 | MRR | § R@5 | Link P (in scope) | EU recall | Gap candidates (not in table) |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| NIS2 × CZ (**tuning set**, for reference) | 264/2025 | 197 / 568 | 0.431 | 0.609 | 0.685 | 0.505 | 0.807 | 0.329 (0.437) | 0.457 | 16 (13) |
+| CER × CZ | 266/2025 | 94 / 229 | 0.468 | 0.638 | 0.734 | 0.539 | 0.787 | 0.420 (0.567) | 0.489 | 10 (7) |
+| Accessibility Act × CZ | 424/2023 | 114 / 146 | 0.781 | 0.895 | 0.912 | 0.829 | 0.921 | 0.541 (0.787) | 0.781 | 2 (1) |
+| Whistleblower × CZ | 171/2023 | 97 / 683 | 0.361 | 0.639 | 0.753 | 0.468 | 0.804 | 0.314 (0.396) | 0.361 | 22 (9) |
+| NIS2 × SK | 69/2018 | 195 / 442 | 0.385 | 0.600 | 0.662 | 0.473 | 0.785 | 0.349 (0.482) | 0.405 | 7 (4) |
+| CER × SK | 367/2024 | 122 / 321 | 0.656 | 0.836 | 0.861 | 0.738 | 0.918 | 0.506 (0.657) | 0.680 | 2 (2) |
+| Pay Transparency × SK | 76/2026 | 92 / 109 | 0.793 | 0.902 | 0.913 | 0.837 | 0.957 | 0.625 (0.806) | 0.793 | 14 (10) |
+
+*Re-run after a code change (2026-10-12, same day, still 0.5.0):* national units that only cite the
+directive or announce its transposition ("Mit diesem Bundesgesetz wird die Richtlinie … umgesetzt", the Slovak
+annex "Zoznam preberaných právne záväzných aktov", a list item that is mostly the directive's full title) are no
+longer candidates of any EU provision, except that a transposition clause stays a candidate of the directive's
+"Transposition" article, which the official tables pair it with. This changes the candidate pool, not a threshold
+or weight. It was prompted by the static pages of pairs without a table (one such unit was the top link of 30 of
+73 rows of Representative Actions × DE), not by these scores. The rows above are the re-run; Whistleblower × CZ,
+NIS2 × SK and CER × SK also reflect revised gold files (683, 442 and 321 pairs). On the same gold files, with
+and without the change: the Czech sets and Pay × SK are identical (1–2 units leave the pool: § 1 transposition
+clauses, the Slovak transposition § and annex); NIS2 × SK R@1 0.379 → 0.385, R@5 0.595 → 0.600, § R@5
+0.769 → 0.785, with 2 more gap candidates (5 → 7, both not in the table: rows of Annexes I and II whose only
+link was the annex listing the directive); CER × SK R@1 0.648 → 0.656, link precision 0.497 → 0.506. `openacquis
+eval` prints the excluded units next to the unit counts. All seven rows were re-run on the final gold files (the Pay × SK revision only moved
+links into other acts, such as the Constitution, so its 109 scored pairs are unchanged); on the rebuilt page of
+Representative Actions × DE the unit (VDuG § 2 Abs. 1 Nr. 2) is the top link of no row.
+
+R@k, MRR: EU provision → national provision, as in the tables above (hit = gold provision, inside it or
+containing it). § R@5: the right § in the top 5. Link P: precision of the best candidate per EU unit at the
+threshold 0.17, over all predictions and (in brackets) over EU units the table covers. EU recall: share of gold
+EU provisions with a correct predicted link. Gap candidates: how many, and how many of them the table does not
+list (a listed one is a false alarm against the table).
+
+**What it shows.**
+
+- **No collapse outside the tuning set.** On every held-out set R@5 is at least the tuning set's 0.609 except
+  NIS2 × SK (0.600), and § R@5 is 0.78–0.96. The pipeline was not overfitted to NIS2 × CZ in a way that shows up
+  here.
+- **Slovak works without Slovak tuning.** NIS2 × SK (same directive, other language and law) is a little below
+  NIS2 × CZ; CER × SK and Pay × SK are well above it.
+- **New, single-purpose acts are easy; amended or broad acts are hard.** The Accessibility Act, the Slovak CER
+  and equal-pay acts were written for their directive and follow its wording (R@1 0.66–0.79). Whistleblower × CZ
+  is hardest at provision level (R@1 0.361): its table pairs whole EU articles with ranges of Czech §§ (685 links
+  from 49 rows), so per-provision pairs are noisy and the § level (0.804) is the fairer number.
+- **Gap candidates stay a reading list.** Pooled over the six held-out sets, 33 of 57 gap candidates (58 %) are
+  provisions the table does not list. That is a reading list for reviewers, not a finding; on
+  Whistleblower × CZ 13 of 22 are listed in the table.
+- **The thresholds travel.** The best in-sample link threshold per set ranges from 0.16 to 0.24
+  (`best_threshold` in the JSON reports), around the default 0.17; we did not change it.
+
+**Caveats.** These tables describe government **bills**; their numbering was mapped to the acts as published
+by text comparison (renumbered and unresolved IDs are listed in each `_summary.json`). The Czech tables have no
+compatibility column; the Slovak ones mark almost everything as fully compatible and never flag gold-plating, so
+they cannot test the extra-rule candidates. Agreement with a table is not legal correctness.

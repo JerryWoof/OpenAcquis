@@ -5,7 +5,7 @@ Thanks for your interest! The project needs programmers, lawyers and people who 
 ## Ways to help
 - **Country adapter**: write a module that downloads consolidated national laws for one member state and splits them into provisions. Open an issue titled `adapter: <country>` first so work isn't duplicated.
 - **Legal review**: check AI-suggested matches on the website's review page. No coding needed; see *How to review* below.
-- **Evaluation data**: convert official correlation tables (for example Czech *rozdílové tabulky*) into the test format.
+- **Evaluation data**: convert official correlation tables (Czech *rozdílové tabulky*, Slovak *tabuľky zhody*, or another country's) into the test format. Seven exist (see *Adding an evaluation set* below).
 - **Docs and translations**.
 
 ## Development
@@ -60,13 +60,25 @@ Then:
 - If the language is new, add its keywords to `openacquis.leftovers` (final-provision headings, the Commission and ENISA (`EU_BODIES`) and the joint bodies (`JOINT_BODIES`),
   national boilerplate headings) and its citation words to `openacquis.align.path_label`; check that the
   provision kinds are covered by `ARTICLE_KINDS` / `PARAGRAPH_KINDS` / `SKIP_KINDS` in `openacquis.match`.
-- For a directive you want on the website, add the main transposing act to `align.DEFAULT_ACTS`, an
-  `AlignmentEntry` to `scripts/build_site.py`, and commit `site/static-data/` from `build_site.py --write-static`.
+- For a directive you want on the website, add it (or the country's main act) to the registry
+  `data/directives.json` (`openacquis directives` prints it), run
+  `python scripts/build_alignments.py --only <CELEX> --countries <cc>` and commit the new `site/static-data/`
+  files. The site, the matrix, the API and the change alerts all read the registry.
 - **Tests**: save a few small, real API responses under `tests/fixtures/<cc>_*` (trim them; a few tens of KB
   each), and write offline tests that cover reference parsing, IDs, the hierarchy, headings, annexes, paging and
   error responses. Add one end-to-end test marked `@pytest.mark.live`.
 - **Docs**: add the endpoints you actually use to [docs/data-sources.md](docs/data-sources.md), and include the
   live counts you checked (provisions per kind for one real act) in your pull request.
+
+## Adding an evaluation set
+
+1. Build the gold links with the stdlib importers: `python scripts/build_evalset.py --celex <CELEX> --tisk 9/<print>`
+   (Czech bills on psp.cz) or a new entry in `scripts/build_evalset_sk.py` (Slovak NR SR prints). Check the
+   `_summary.json`: unresolved IDs, renumbered provisions.
+2. Register it once in `src/openacquis/goldsets.py` (name, file, table URL, act and version). `openacquis eval`,
+   the dataset, the website's official column and the API pick it up from there.
+3. New sets are **held-out tests**: report `openacquis eval <name>` in `docs/evaluation.md`, and do not change
+   thresholds or filters to fit them.
 
 ## How to review
 
@@ -77,8 +89,9 @@ Reviewing needs no code and no setup beyond a GitHub account. Details: [docs/rev
    [SK](https://jerrywoof.github.io/OpenAcquis/review.html?id=32022L2555_sk),
    [AT](https://jerrywoof.github.io/OpenAcquis/review.html?id=32022L2555_at),
    [DE](https://jerrywoof.github.io/OpenAcquis/review.html?id=32022L2555_de).
-   Suggestions for Slovakia, Austria and Germany are the most useful to check: no official correlation
-   table exists for them.
+   Every directive of the registry has review pages for each country it aligns (open a directive on the
+   website). Suggestions without an official correlation table (all of Austria and Germany, most of
+   Slovakia) are the most useful to check.
 2. **Read both texts.** Follow the links to the official sources when the excerpt is not enough.
 3. **Give a verdict.**
    - **Confirm**: the pairing is right, even if only partly (say so in the note).

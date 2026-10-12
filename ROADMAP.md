@@ -68,13 +68,33 @@ Results: [docs/evaluation.md](docs/evaluation.md) ("v0.4" sections).
   - `openacquis dataset build` writes `links.csv` / `links.jsonl` / `datapackage.json` (CC-BY-4.0), also published on the website ([docs/dataset.md](docs/dataset.md)).
   - Today: 568 official-table links (NIS2 × CZ); no reviews yet. Release attachments come with the first tagged release.
 
-## v1.0: public observatory
-- [ ] Website: article × country matrix with side-by-side source texts
-  - [x] Seed: [NIS2 × CZ, SK, AT, DE](https://jerrywoof.github.io/OpenAcquis/matrix.html?celex=32022L2555) (v0.4), machine suggestions with the Czech official table; cells link to side-by-side texts
-  - [ ] More directives and countries; reviewed cells shown as such
-- [ ] Public API and dataset releases (dataset files exist since v0.4; attach them to tagged releases)
-- [ ] 10–20 high-profile directives (NIS2, Accessibility Act, Pay Transparency, CSRD, Whistleblower) at provision level (10 already listed act-level on the website)
-- [ ] Alerts when a national law or directive changes
+## v0.5: v1.0 preview (done; judge run and reviews pending)
+See [CHANGELOG](CHANGELOG.md#050-2026-10-12-v10-preview). Registry of 12 directives, 46 alignment pages, six held-out
+official tables (CZ: CER, Accessibility Act, Whistleblower; SK: NIS2, CER, Pay Transparency), `openacquis eval <CELEX> <cc>`,
+static API, change alerts, batch judge.
+
+## v1.0: public observatory (v0.5 = preview; what is done and what is not)
+- [x] Website: article × country matrix with side-by-side source texts
+  - [x] Seed: [NIS2 × CZ, SK, AT, DE](https://jerrywoof.github.io/OpenAcquis/matrix.html?celex=32022L2555) (v0.4)
+  - [x] More directives and countries (v0.5): all 12 registry directives × CZ, SK, AT, DE (46 alignment pages, 12 matrices),
+    "not notified" (baseline) and "nothing to align" states, official columns for 7 pairs (CZ and SK)
+  - [ ] Reviewed cells shown as such: the review pages mark reviewed suggestions, but there are **0 reviews** so far, so no
+    cell is reviewed yet
+  - [ ] Alignments other than NIS2 are precomputed (`scripts/build_alignments.py`), not refreshed by the weekly build
+- [x] Public API and dataset releases (v0.5): static JSON API with OpenAPI and JSON Schemas ([docs/api.md](docs/api.md)),
+  `data.html`, release workflow attaching dataset and API snapshots, `CITATION.cff` / `.zenodo.json`
+  - [ ] First tagged release and Zenodo DOI (needs the owner to switch the repository on at Zenodo)
+  - Dataset: 2,736 links from 7 official tables; 0 reviewed links
+- [x] 10–20 high-profile directives at provision level: 12 (v0.5), registry `data/directives.json`
+  - Quality checked against official tables for 7 pairs only; [held-out results](docs/evaluation.md#v05-held-out-generalisation-six-more-official-tables):
+    R@5 0.600–0.902 with thresholds tuned on NIS2 × CZ only. Austria and Germany have no table to check against.
+  - [ ] CSRD (consolidated EU references, auditors act) and Work-Life Balance stay act level only
+- [x] Alerts when a national law or directive changes (v0.5): weekly workflow, GitHub issues, [Atom feed](https://jerrywoof.github.io/OpenAcquis/feed.xml) ([docs/alerts.md](docs/alerts.md))
+  - Seeded with 365 watched items; first live weeks still to come. National acts not yet on the list are only caught once CELLAR lists them
+- [ ] LLM judge run: batch runner and dispatch-only workflow are ready (v0.5, about $53 for all 12 directives × 4 countries with
+  Sonnet 5.5 batches, estimate; `--max-cost` caps the worst case, no cache hits and every answer at `--max-tokens`,
+  about 8 times the typical estimate: $13.90 for NIS2 × CZ); **not run**, it needs an API key in the repository's `llm` environment
+- [ ] Human review at scale: review pages exist for every pair; 0 reviews so far
 
 ## Later
 - Legislative footprint: trace wording from public consultation responses and EP amendments into final law

@@ -52,8 +52,15 @@ from typing import Any
 
 from . import __version__
 from .judge import Judge, Judgment, Passage, provision_status
-from .leftovers import Leftovers, find_leftovers
+from .leftovers import (
+    Leftovers,
+    directive_number,
+    find_leftovers,
+    is_transposition_article,
+    transposition_notice,
+)
 from .match import Candidate, Embedder, LexicalEmbedder, Matcher, MatchResult, level_id
+from .goldsets import GOLD_SETS
 from .provisions import Document
 
 STATUS = "candidate"  # every output of this module is an unreviewed suggestion
@@ -97,14 +104,19 @@ DEFAULT_THRESHOLDS: dict[str, float] = {
 #: scores are squeezed into a narrow band, so their margin is smaller.
 DEFAULT_GAP_MARGINS: dict[str, float] = {"lexical": 0.01, "hybrid": 0.01, "embed": 0.005, "hybrid-rrf": 0.001}
 
+#: No extra-rule list when more than this share of the main act's units would be candidates
+#: (:func:`openacquis.leftovers.find_leftovers`): the act is broader than the directive. The v0.4
+#: pages of single-purpose acts stay at or below a third; general codes (Labour Code, AktG,
+#: AWG 2002) reach 50-84 %.
+DEFAULT_EXTRA_MAX_SHARE = 0.5
+
 #: Why rank-fusion results get no gap list (see :func:`rank_only`).
 RANK_ONLY_NOTE = ("no gap list: reciprocal rank fusion scores only ranks, so every EU unit's best "
                   "candidate scores about the same and a low score does not mean 'nothing similar'")
 
-#: Default evaluation sets per (CELEX, country), relative to the repository root.
-GOLD_FILES: dict[tuple[str, str], str] = {
-    ("32022L2555", "cz"): "data/eval/nis2_cz.jsonl",
-}
+#: Default evaluation sets per (CELEX, country), relative to the repository root
+#: (from :data:`openacquis.goldsets.GOLD_SETS`).
+GOLD_FILES: dict[tuple[str, str], str] = {s.key: s.path for s in GOLD_SETS.values()}
 
 #: Embedder names accepted by :func:`choose_embedder` / the command line.
 EMBEDDERS = ["auto", "lexical", "e5", "e5-sym", "bge-m3", "bm25", "hybrid-lex", "hybrid", "hybrid-rrf"]
@@ -159,10 +171,43 @@ def _act_of(provision_id: str) -> str:
     return parts[1] if len(parts) > 2 else ""
 
 
+def _registry_entry(celex: str, country: str):
+    """The directive registry's entry (``data/directives.json``) or None (missing file, unknown directive)."""
+    try:
+        from .directives import load_registry
+
+        return load_registry().get(celex).country(country)
+    except (OSError, KeyError, ValueError):
+        return None
+
+
+def registry_acts(celex: str, country: str) -> list[str]:
+    """Main transposing act(s) recorded in the directive registry (``[]`` for ``none`` or unknown)."""
+    e = _registry_entry(celex, country)
+    return list(e.acts) if e is not None and e.alignable else []
+
+
+def default_version(celex: str, country: str) -> str | None:
+    """:data:`DEFAULT_VERSIONS`, else the registry's ``version``, else the version the pair's evaluation
+    set follows (:data:`openacquis.goldsets.BY_PAIR`, so the page and ``openacquis eval`` compare the
+    official table with the same text), else ``None`` (current text)."""
+    from .goldsets import BY_PAIR
+
+    key = (celex.upper(), country.lower())
+    if key in DEFAULT_VERSIONS:
+        return DEFAULT_VERSIONS[key]
+    e = _registry_entry(*key)
+    if e is not None and e.version:
+        return e.version
+    gs = BY_PAIR.get(key)
+    return gs.version if gs is not None else None
+
+
 def default_acts(celex: str, country: str, gold: str | Path | None = None) -> list[str]:
-    """National acts to search: :data:`DEFAULT_ACTS` plus every act the evaluation set references."""
+    """National acts to search: :data:`DEFAULT_ACTS` (else the directive registry's acts) plus every
+    act the evaluation set references."""
     celex, country = celex.upper(), country.lower()
-    acts = list(DEFAULT_ACTS.get((celex, country), []))
+    acts = list(DEFAULT_ACTS.get((celex, country)) or registry_acts(celex, country))
     path = Path(gold) if gold else gold_path(celex, country)
     if path is not None and path.exists():
         with open(path, encoding="utf-8") as f:
@@ -227,7 +272,7 @@ def load_documents(
     celex = celex.upper()
     lang = language or adapter.language
     if version == "default":
-        version = DEFAULT_VERSIONS.get((celex, code))
+        version = default_version(celex, code)
     acts = list(acts) if acts else default_acts(celex, code)
     if not acts and not measures:
         raise LookupError(f"no default transposing acts for {celex} in {code.upper()}; pass acts explicitly "
@@ -382,6 +427,10 @@ class AlignmentResult:
             if lo.gap_note:
                 out["gap_note"] = lo.gap_note
             out["national_units_boilerplate"] = len(lo.national_boilerplate)
+            out["national_units_excluded"] = len(lo.national_excluded)
+            if lo.extra_note:
+                out["extra_note"] = lo.extra_note
+                out["extra_rule_candidates_suppressed"] = lo.extra_suppressed
         if self.judge:
             labels: dict[str, int] = {}
             for a in self.provisions:
@@ -462,6 +511,9 @@ class AlignmentResult:
                 "gap_note": lo.gap_note,
                 "eu_unlinked_not_gap": lo.eu_unlinked_not_gap,
                 "national_boilerplate": lo.national_boilerplate,
+                "national_excluded": lo.national_excluded,
+                "extra_note": lo.extra_note,
+                "extra_suppressed": lo.extra_suppressed,
             }
         out["national_texts"] = {nid: nat(nid) for nid in sorted(linked) if nid in nat_doc}
         return out
@@ -566,6 +618,10 @@ def align(
     transposing_acts: Sequence[str] | None = None,
     matcher: Matcher | None = None,
     gap_margin: float | None = None,
+    exclude_notices: bool = True,
+    extra_rules: bool = True,
+    extra_note: str | None = None,
+    extra_max_share: float | None = DEFAULT_EXTRA_MAX_SHARE,
     log: Callable[[str], None] = lambda msg: None,
     now: datetime | None = None,
 ) -> AlignmentResult:
@@ -577,6 +633,15 @@ def align(
     national document (the main transposing act). With a ``judge``, the top ``judge_k`` candidates of
     each EU unit scoring at least ``judge_min_score`` (default: no minimum) are judged,
     and the related ones become the predicted links.
+
+    ``exclude_notices`` keeps national units that only cite the directive or say that the act
+    transposes it (:func:`openacquis.leftovers.transposition_notice`) out of the candidates; a
+    transposition clause stays a candidate of the directive's "Transposition" article only
+    (:func:`openacquis.leftovers.is_transposition_article`), which it answers. They are listed
+    in ``leftovers.national_excluded``. ``extra_rules=False`` (registry
+    ``"extra_rules": false``) and ``extra_max_share`` (default :data:`DEFAULT_EXTRA_MAX_SHARE`,
+    ``None`` = no cap) suppress the extra-rule list for acts broader than the directive;
+    ``extra_note`` replaces the default reason given with ``extra_rules=False``.
     """
     if isinstance(national_docs, Document):
         national_docs = [national_docs]
@@ -584,6 +649,21 @@ def align(
     m = matcher or Matcher(embedder if embedder is not None else LexicalEmbedder(), k=k)
     log(f"matching {eu_doc.act_id} against {', '.join(d.act_id for d in national_docs)} ({m.embedder.name})")
     mr = m.match(eu_doc, national_docs)
+    excluded: dict[str, str] = {}
+    if exclude_notices:
+        num = directive_number(eu_doc.act_id)
+        for u in mr.national_units:
+            why = transposition_notice(mr._nat_doc[u.id], u.id, num)
+            if why:
+                excluded[u.id] = why
+        if excluded:
+            # a transposition clause stays a candidate of the directive's "Transposition" article (the
+            # official tables pair the two), and only of it; a unit citing the directive is no candidate
+            final = [u.id for u in mr.eu_units if is_transposition_article(eu_doc, u.id)]
+            notes = [n for n, why in excluded.items() if why == "transposition_note"]
+            log(f"{len(excluded)} national units only cite the directive or announce its transposition: "
+                "not candidates (transposition clauses: of the Transposition article only)")
+            mr = mr.masked([n for n in excluded if n not in notes]).masked(notes, keep_rows=final)
     t = default_threshold(mr.method) if threshold is None else threshold
     by_eu: dict[str, list[Candidate]] = {}
     for c in mr.candidates(k):
@@ -624,7 +704,9 @@ def align(
         log(f"warning: {RANK_ONLY_NOTE}")
     lo = find_leftovers(mr, {a.eu_id: a.links for a in provisions}, threshold=t, acts=acts,
                         gap_margin=default_gap_margin(mr.method) if gap_margin is None else gap_margin,
-                        gaps=gaps, gap_note=None if gaps else RANK_ONLY_NOTE)
+                        gaps=gaps, gap_note=None if gaps else RANK_ONLY_NOTE,
+                        extra_rules=extra_rules, extra_note=extra_note, extra_max_share=extra_max_share,
+                        national_excluded=excluded)
     extra = [x.to_dict() for x in lo.extra_rule_candidates]
     created = (now or datetime.now(timezone.utc)).replace(microsecond=0).isoformat().replace("+00:00", "Z")
     return AlignmentResult(eu_doc, national_docs, acts, mr, provisions, t, k,
@@ -685,8 +767,8 @@ def make_embedder(name: str) -> Embedder:
     return SentenceTransformerEmbedder(name)
 
 
-def make_judge(name: str) -> Judge | None:
-    """``none`` | ``rule`` | ``anthropic``."""
+def make_judge(name: str, country: str = "cz") -> Judge | None:
+    """``none`` | ``rule`` | ``anthropic`` (with the prompt for ``country``: cz, sk, at, de)."""
     from .judge import AnthropicJudge, RuleJudge
 
     if name in ("none", "", None):
@@ -694,7 +776,7 @@ def make_judge(name: str) -> Judge | None:
     if name == "rule":
         return RuleJudge()
     if name == "anthropic":
-        return AnthropicJudge()
+        return AnthropicJudge(country=country)
     raise ValueError(f"unknown judge {name!r}; expected none, rule or anthropic")
 
 

@@ -91,6 +91,9 @@ KINDS = {
     "oddiel": "oddiel",
     "pododdiel": "pododdiel",
 }
+#: HTML unit kinds read as another kind: the articles of the Constitution (460/1992 Zb.) are
+#: ``ustavnyclanok`` units (``#ustavnyclanok-127.odsek-1``), cited as ``Čl. 127 ods. 1``.
+ALIASES = {"ustavnyclanok": "clanok"}
 STRUCTURAL = {"cast", "hlava", "diel", "oddiel", "pododdiel"}
 GROUPS = {"skupinaParagrafov", "skupinaElementov"}  # unnumbered headings over several §§
 SUBUNITS = {"odsek", "pismeno", "bod"}
@@ -740,6 +743,9 @@ class _Parser:
                 self.walk_children(c, ctx)
 
     def unit(self, node: Node, kind: str, ctx: _Ctx) -> None:
+        html_kind = kind
+        if kind in ALIASES:  # the Constitution's "ustavnyclanok" is a článok like any other
+            kind = ALIASES[kind]
         label = " ".join(node_text(_part(node, "Oznacenie")).split())
         heading = " ".join(node_text(_part(node, "Nadpis")).split()) or None
 
@@ -794,7 +800,7 @@ class _Parser:
             return
 
         if kind in ("paragraf", "clanok", "poznamka"):
-            num = _id_number(node.id, kind)
+            num = _id_number(node.id, html_kind)
             if not num or not re.fullmatch(r"\w+", num):
                 num = label
             try:

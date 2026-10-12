@@ -31,8 +31,17 @@ Releases will attach the same files.
 
 | `source` | `status` | What it means | Today |
 |---|---|---|---|
-| `official_correlation_table` | `listed` | A government listed the pair in the correlation table attached to its bill. The Czech template has no compatibility column, so no compatibility is claimed | NIS2 × CZ: 568 links (569 in the table, one pair listed twice), from sněmovní tisk 759/0 ([data/eval/README.md](../data/eval/README.md)) |
+| `official_correlation_table` | `listed` | A government listed the pair in the correlation table attached to its bill. The Czech template has no compatibility column, so no compatibility is claimed | Czechia, 4 tables: NIS2 568 links (569 in the table, one pair listed twice), CER 229, Accessibility Act 146, Whistleblower 683 (685 in the table; [data/eval/README.md](../data/eval/README.md)) |
+| `official_correlation_table` | `fully_compatible` / `partially_compatible` / `incompatible` | The same, from a Slovak *tabuľka zhody*, which has a compatibility column (*zhoda* Ú / Č / Ž); the value is what the government stated about its bill. Rows where the government says nothing transposes the EU provision (`n.a.`) are not links and are left out | Slovakia, 3 tables: NIS2 469 (470 in the table), CER 409 (414), Pay Transparency 232 (232; [data/eval/README_sk.md](../data/eval/README_sk.md)) |
 | `human_review` | `confirmed` / `corrected` | A reviewer confirmed a machine suggestion, or corrected it with other provisions (merged as in [review.md](review.md)) | None yet |
+
+In all, 2,736 links from the 7 tables (each distinct pair once).
+
+`relation` says what kind of pairing a row is. `transposition` (every official-table row, and reviews of
+notified acts): the national provision is cited as transposing the EU provision. `existing_law`: a human
+review on a *baseline* pair (registry status `baseline`: the act aligned was not notified for the directive,
+e.g. Pay Transparency × AT and DE). The reviewer confirmed that existing national law covers the EU
+provision, which is not a notified transposition.
 
 Unreviewed machine suggestions are **not** part of the dataset; they are on the website and in
 `openacquis align` output, labelled as candidates.
@@ -49,6 +58,7 @@ Unreviewed machine suggestions are **not** part of the dataset; they are on the 
 | `national_act` | `264/2025` | Act as the adapter names it (Gesetzesnummer for Austria, portal slug for Germany) |
 | `national_id` | `cz:264/2025:par16.odst1` | National provision ([provisions.md](provisions.md)) |
 | `source`, `status` | see above | |
+| `relation` | `transposition` | `transposition`, or `existing_law` for reviews of an act not notified for the directive (see above) |
 | `source_title`, `source_url` | table title and psp.cz link; or "OpenAcquis review" and the review file | Where to check it |
 | `reviewers`, `review_date` | `octocat;alice`, `2026-10-12` | Human review only |
 | `machine_score`, `machine_method` | `0.58`, `hybrid:…` | The suggestion that was reviewed |
@@ -58,7 +68,7 @@ Unreviewed machine suggestions are **not** part of the dataset; they are on the 
 ## Licence and attribution
 
 - **Dataset:** CC-BY-4.0. Cite as *OpenAcquis contributors, OpenAcquis transposition links, version
-  0.4.0, https://github.com/JerryWoof/OpenAcquis*.
+  0.5.0, https://github.com/JerryWoof/OpenAcquis*.
 - **EU texts and IDs:** © European Union, https://eur-lex.europa.eu. Reused under Commission
   Decision 2011/833/EU.
 - **National texts:**
@@ -69,7 +79,8 @@ Unreviewed machine suggestions are **not** part of the dataset; they are on the 
 
 ## Limits
 
-- One official table so far, and it describes the 2024 bill, renumbered to the act as published
-  ([data/eval/README.md](../data/eval/README.md)).
+- Seven official tables so far (four Czech, three Slovak), none for Austria or Germany. They describe
+  government bills, renumbered to the acts as published ([data/eval/README.md](../data/eval/README.md),
+  [data/eval/README_sk.md](../data/eval/README_sk.md)).
 - Links point to whole provisions. Sentence and subparagraph qualifiers are in `note`.
 - Reviews are individual readings. Disagreements are kept as `disputed` and left out of the links.

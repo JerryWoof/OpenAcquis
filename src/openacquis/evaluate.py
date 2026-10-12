@@ -57,6 +57,7 @@ from typing import Any
 from .align import RANK_ONLY_NOTE, AlignedProvision, AlignmentResult, align, default_gap_margin, rank_only
 from .leftovers import Leftovers, find_leftovers
 from .evalset import GoldLink, load_jsonl
+from .goldsets import BY_PAIR, GOLD_SETS, GoldSet
 from .match import MatchResult, level_id
 from .provisions import Document
 
@@ -82,8 +83,15 @@ def within(e: str, E: str) -> bool:
     return e == E or e.startswith(E + ".")
 
 
-def load_gold(path: str | Path) -> list[GoldLink]:
-    return load_jsonl(path)
+def load_gold(path: str | Path, acts: Iterable[str] | None = None) -> list[GoldLink]:
+    """Gold links from a JSONL file. Records with no national provision (the Slovak sets'
+    negative records: "nothing transposes this") are left out; with ``acts``, so are links
+    into other national acts (``cz:264/2025:par1`` belongs to ``264/2025``)."""
+    links = [g for g in load_jsonl(path) if g.national_id]
+    if acts is not None:
+        keep = set(acts)
+        links = [g for g in links if g.national_id.split(":")[1] in keep]
+    return links
 
 
 # --- retrieval ------------------------------------------------------------------------
@@ -268,7 +276,8 @@ def threshold_view(result: AlignmentResult, threshold: float, per_eu: int = 1) -
     gaps = not rank_only(result.method)
     lo = find_leftovers(result.match, {a.eu_id: a.links for a in provs}, threshold=threshold,
                         acts=result.transposing_acts, gap_margin=default_gap_margin(result.method),
-                        gaps=gaps, gap_note=None if gaps else RANK_ONLY_NOTE)
+                        gaps=gaps, gap_note=None if gaps else RANK_ONLY_NOTE,
+                        national_excluded=result.leftovers.national_excluded if result.leftovers else None)
     return replace(result, provisions=provs, judge=None, threshold=threshold, leftovers=lo,
                    extra_rule_candidates=[x.to_dict() for x in lo.extra_rule_candidates])
 
@@ -545,8 +554,11 @@ def leftover_ablation(
     eu_units = [u.id for u in mr.eu_units]
     nat_units = [u.id for u in mr.national_units if u.id.split(":")[1] in acts]
     rows = []
+    excluded = result.leftovers.national_excluded if result.leftovers else {}
 
     def run(name: str, **kw) -> Leftovers:
+        if kw.get("boilerplate_filter", True):
+            kw["national_excluded"] = excluded  # set aside with the boilerplate
         lo = find_leftovers(mr, links, threshold=t, acts=acts, **kw)
         rows.append({"step": name, **_leftover_scores(lo, gold_eu, gold_nat)})
         return lo
@@ -557,7 +569,7 @@ def leftover_ablation(
     for m in margins:
         if m:
             run(f"+ gap margin {m:g}", gap_margin=m)
-    lo_default = find_leftovers(mr, links, threshold=t, acts=acts, gap_margin=default_m)
+    lo_default = find_leftovers(mr, links, threshold=t, acts=acts, gap_margin=default_m, national_excluded=excluded)
     return {
         "threshold": t,
         "default_margin": default_m,
@@ -644,6 +656,8 @@ def evaluate(
         "gold_pairs": len({(g.eu_id, g.national_id) for g in gold}),
         "eu_units": len(mr.eu_units),
         "national_units": len(mr.national_units),
+        # units kept out of the candidates (they only cite the directive, see leftovers.transposition_notice)
+        "national_excluded": dict(result.leftovers.national_excluded) if result.leftovers else {},
         "ks": list(sorted(set(ks))),
         "retrieval": {lv: {k2: v for k2, v in r.items() if not k2.startswith("_")} for lv, r in ret.items()},
         "threshold": t,
@@ -689,7 +703,9 @@ def format_report(report: dict) -> str:
     lines = [
         f"{report['eu']} x {', '.join(report['national'])}  method={report['method']}",
         f"gold: {report['gold_links']} links ({report['gold_pairs']} pairs); units: {report['eu_units']} EU, "
-        f"{report['national_units']} national",
+        f"{report['national_units']} national"
+        + (f" ({len(report['national_excluded'])} more only cite the directive: not candidates)"
+           if report.get("national_excluded") else ""),
         "",
         "Retrieval (share of gold EU items with a gold national provision in the top k)",
         f"  {'level':<34}" + "".join(f"{'R@' + str(k):>8}" for k in ks) + f"{'MRR':>8}{'items':>7}",

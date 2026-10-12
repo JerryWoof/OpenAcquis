@@ -39,6 +39,12 @@ en; other languages skip the keyword filters):
 4. **Grouping.** Candidates are also reported per EU article (``gap_articles``) and
    per national § (``extra_rule_sections``), which is the level a reviewer reads.
 
+v0.5 adds two guards. National units that only cite the directive or announce that the
+act transposes it (:func:`transposition_notice`) are kept out of the link candidates by
+:func:`openacquis.align.align`. And no extra-rule list is reported when the main act is a
+general code (registry ``"extra_rules": false``) or when most of its units would be
+candidates (``extra_max_share``): ``extra_note`` says why.
+
 Everything stays a ``status: "candidate"`` with its evidence (best match and score).
 A gap candidate never means "not transposed", and an extra-rule candidate never means
 "gold-plating"; see docs/evaluation.md for how often they agree with an official table.
@@ -55,6 +61,13 @@ from .match import MatchResult, level_id
 from .provisions import Document, Provision
 
 STATUS = "candidate"
+
+#: ``Leftovers.extra_note`` when the registry marks the main act as a general code.
+EXTRA_NOTE_BROAD = ("no extra-rule list: the main act is a general code of which the directive concerns only a part, "
+                    "so most of its provisions match nothing in the directive and that is no sign of going beyond it")
+#: ``Leftovers.extra_note`` when most of the main act matches nothing in the directive.
+EXTRA_NOTE_SHARE = ("no extra-rule list: {n} of {total} units of the main act ({share:.0%}) match nothing in the "
+                    "directive; the act is broader than the directive, so these are not meaningful candidates")
 
 
 def _fold(text: str | None) -> str:
@@ -118,6 +131,26 @@ NATIONAL_ACTORS: dict[str, re.Pattern] = {
               r"anbieter"),
     "en": _rx(r"member state", r"competent authorit", r"entities", r"entity", r"single point", r"provider"),
 }
+
+
+#: Article headings of the "Transposition" article (folded), the one final provision a national act answers
+#: with its transposition clause (see :func:`transposition_notice`).
+EU_TRANSPOSITION_HEADINGS: dict[str, re.Pattern] = {
+    "cs": _rx(r"provedeni ve vnitrostatnim"),
+    "sk": _rx(r"transpozicia"),
+    "de": _rx(r"umsetzung$"),
+    "en": _rx(r"transposition$"),
+}
+
+
+def is_transposition_article(doc: Document, provision_id: str) -> bool:
+    """Whether an EU unit belongs to the directive's "Transposition" article (by heading; ``False`` for
+    languages without a keyword list)."""
+    rx = EU_TRANSPOSITION_HEADINGS.get(doc.language or "")
+    if rx is None:
+        return False
+    art = doc.get(level_id(doc, provision_id, "article"))
+    return bool(art is not None and art.heading and rx.search(_fold(art.heading)))
 
 
 def eu_scope(doc: Document, provision_id: str, context: str = "") -> str | None:
@@ -213,6 +246,79 @@ NATIONAL_BOILERPLATE_TEXT: dict[str, dict[str, re.Pattern]] = {
         "en": _rx(r"this act transposes"),
     },
 }
+
+#: Sentences saying that the act transposes EU law ("Mit diesem Bundesgesetz wird die Richtlinie ...
+#: umgesetzt", Slovak "Zoznam preberaných právne záväzných aktov"), over folded text. Used by
+#: :func:`transposition_notice` to keep such units out of the link candidates (v0.5).
+NOTICE_TEXT: dict[str, re.Pattern] = {
+    "cs": _rx(r"tento zakon zapracovava", r"timto zakonem se zapracovav", r"seznam zapracovanych"),
+    "sk": _rx(r"tymto zakonom sa preberaj", r"zoznam preberanych", r"preberane pravne zavazne akty"),
+    "de": _rx(r"dient der umsetzung", r"(diesem|dieser|dieses|vorliegenden?) \w*(gesetz|verordnung)\w* (wird|werden)"
+              r" .{0,500}?umgesetzt", r"umsetzung von rechtsakten"),
+    "en": _rx(r"this act transposes", r"this act implements directive"),
+}
+
+#: A full citation of an EU act, folded: "richtlinie (eu) 2020/1828 des ... (abl. l 409 vom 4.12.2020, s. 1)",
+#: "smernica europskeho parlamentu a rady (eu) 2022/2555 zo ... (u. v. eu l 333, 27. 12. 2022)",
+#: "smernice ... (ur. vest. l 333, ...)"; the Austrian form ends "abl. nr. l 315 vom 7.12.2022 s. 44".
+EU_CITATION = re.compile(
+    r"(?:smernic\w*|richtlini\w*|directive|narizeni\w*|nariadeni\w*|verordnung|regulation)\b.{0,80}?"
+    r"(?P<num>\d{2,4}/\d+).{0,600}?"
+    r"(?:abl\.|u\. ?v\. ?eu|ur\. ?vest\.|oj)\s*(?:nr\.\s*)?[lc]\s*\d+[^)]{0,40}?(?:\)|s\. ?\d+)"
+)
+
+#: A unit whose text is at least this share citations of the directive aligned is a citation, not a rule.
+NOTICE_CITATION_SHARE = 0.5
+#: A unit matching :data:`NOTICE_TEXT` is a notice when at most this many words remain outside citations.
+NOTICE_MAX_WORDS = 30
+
+
+def directive_number(celex: str | None) -> str | None:
+    """``32020L1828`` -> ``2020/1828`` (how acts cite the directive); ``None`` if not a directive CELEX."""
+    m = re.match(r"^3(\d{4})L0*(\d+)$", (celex or "").strip().upper())
+    return f"{m.group(1)}/{m.group(2)}" if m else None
+
+
+def transposition_notice(doc: Document, provision_id: str, directive: str | None = None) -> str | None:
+    """Why a national unit only *cites* EU law and should not be a link candidate, or ``None``.
+
+    ``"transposition_note"``: a sentence saying the act transposes EU acts (:data:`NOTICE_TEXT`)
+    with little else in the unit (at most :data:`NOTICE_MAX_WORDS` words outside full EU-act
+    citations), or any unit of an annex that lists the transposed acts (Slovak "Zoznam
+    preberaných ..."). ``"directive_citation"``: at least :data:`NOTICE_CITATION_SHARE` of the
+    unit's text is full citations of the directive ``directive`` (``"2020/1828"``, see
+    :func:`directive_number`; ``None`` = any EU act), e.g. a list item naming entities "registered
+    under Article 5 of Directive (EU) 2020/1828 of the European Parliament ... (OJ L 409 ...)".
+
+    Such units share the directive's title words with many EU provisions and so tended to be the
+    best candidate of unrelated rows (the v0.4 pages: one VDuG list item was the top link of 30
+    rows of Representative Actions x DE). Unlike :func:`national_boilerplate`, this looks only at
+    the unit itself (and the headings of an enclosing annex): definitions or penalty lists stay
+    link candidates.
+    """
+    p = doc.by_id(provision_id)
+    lang = doc.language or ""
+    text = _fold(" ".join(x for x in (p.heading, p.text) if x))
+    if not text:
+        return None
+    rx = NOTICE_TEXT.get(lang)
+    chain = _ancestry(doc, p)
+    if rx is not None:
+        for a in chain:
+            if a.kind in ANNEX_KINDS and rx.search(_fold(" ".join(x for x in (a.heading, a.text) if x))[:300]):
+                return "transposition_note"
+    every = list(EU_CITATION.finditer(text))
+    cites = [m for m in every if directive is None or m.group("num") == directive]
+    if rx is not None and rx.search(text):
+        rest = text
+        for m in reversed(every):
+            rest = rest[: m.start()] + " " + rest[m.end():]
+        if len(rest.split()) <= NOTICE_MAX_WORDS:
+            return "transposition_note"
+    if cites and sum(m.end() - m.start() for m in cites) >= NOTICE_CITATION_SHARE * len(text):
+        return "directive_citation"
+    return None
+
 
 #: Kinds that are never extra rules (footnotes, annexes listing transposed acts are caught by text).
 FOOTNOTE_KINDS = {"ppc", "pozn"}
@@ -315,6 +421,13 @@ class Leftovers:
     extra_threshold: float = 0.0
     #: why no gap list was produced (``find_leftovers(..., gaps=False)``), else ``None``
     gap_note: str | None = None
+    #: why no extra-rule list is reported (the main act is a broad code, see ``find_leftovers``), else ``None``
+    extra_note: str | None = None
+    #: extra-rule candidates found but not reported because of ``extra_note``
+    extra_suppressed: int = 0
+    #: national units kept out of the link candidates (except of the final provisions)
+    #: (:func:`transposition_notice`): {national_id: reason}; filled by :func:`openacquis.align.align`
+    national_excluded: dict[str, str] = field(default_factory=dict)
 
     def gap_articles(self) -> list[dict]:
         """EU articles with gap candidates: ``{article_id, units, whole_article}``, document order."""
@@ -355,6 +468,10 @@ def find_leftovers(
     structure: bool = True,
     gaps: bool = True,
     gap_note: str | None = None,
+    extra_rules: bool = True,
+    extra_note: str | None = None,
+    extra_max_share: float | None = None,
+    national_excluded: dict[str, str] | None = None,
 ) -> Leftovers:
     """Gap and extra-rule candidates from a match result and the predicted links.
 
@@ -369,12 +486,23 @@ def find_leftovers(
     reciprocal rank fusion, cannot tell an unmatched unit from a matched one); unlinked
     units that pass the scope filter are then listed in ``eu_unlinked_not_gap`` as
     ``"no_gap_list"`` and ``gap_note`` (default: a generic reason) says why.
+
+    ``extra_rules=False`` (registry ``"extra_rules": false``: the main act is a general code
+    such as a Labour Code, of which the directive touches a small part) reports no extra-rule
+    candidates (``extra_note`` says why; default :data:`EXTRA_NOTE_BROAD`); neither does a list longer than ``extra_max_share`` of the main act's units
+    (``None`` = no cap). Then ``extra_note`` says why and ``extra_suppressed`` how many were
+    found: when most of an act matches nothing in the directive, the act is broader than the
+    directive and "matches nothing" says nothing about going beyond it.
+
+    ``national_excluded`` ({national_id: reason}, see :func:`transposition_notice`) are units the
+    caller kept out of the link candidates; they are recorded and never extra-rule candidates.
     """
     eu = mr.eu_doc
     acts = set(acts)
     gap_t = threshold - gap_margin
     extra_t = threshold - extra_margin
-    out = Leftovers(gap_threshold=round(gap_t, 6), extra_threshold=round(extra_t, 6))
+    out = Leftovers(gap_threshold=round(gap_t, 6), extra_threshold=round(extra_t, 6),
+                    national_excluded=dict(national_excluded or {}))
     if not gaps:
         out.gap_note = gap_note or "no gap list: the scores have no absolute level"
     linked_eu = {e for e, ns in links.items() if ns}
@@ -440,6 +568,9 @@ def find_leftovers(
         d = nat_docs.get(u.id)
         if d is None or d.act_id not in acts or u.id in linked_nat:
             continue
+        if u.id in out.national_excluded:
+            out.national_boilerplate[u.id] = out.national_excluded[u.id]
+            continue
         if boilerplate_filter:
             cat = national_boilerplate(d, u.id)
             if cat:
@@ -456,4 +587,12 @@ def find_leftovers(
             best_score=round(best_s[j], 6) if best_i[j] >= 0 else None,
             margin=round(extra_t - best_s[j], 6) if best_i[j] >= 0 else extra_t,
         ))
+    main_units = sum(1 for u in mr.national_units if (d := nat_docs.get(u.id)) is not None and d.act_id in acts)
+    n_extra = len(out.extra_rule_candidates)
+    if not extra_rules:
+        out.extra_note = extra_note or EXTRA_NOTE_BROAD
+    elif extra_max_share is not None and main_units and n_extra > extra_max_share * main_units:
+        out.extra_note = EXTRA_NOTE_SHARE.format(n=n_extra, total=main_units, share=n_extra / main_units)
+    if out.extra_note:
+        out.extra_suppressed, out.extra_rule_candidates = n_extra, []
     return out

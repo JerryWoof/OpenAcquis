@@ -292,20 +292,22 @@ def test_dataset_build(tmp_path):
                    reviews)
     out = tmp_path / "dataset"
     s = build_dataset(out, reviews_dir=reviews, now=NOW)
-    assert s.official == 568 and s.reviewed == 2 and s.review_records == 3  # 569 gold links, 568 distinct pairs
+    assert s.by_pair["32022L2555 × CZ"] == 568 + 2  # 569 gold links (568 distinct pairs) + 2 reviewed
+    assert s.reviewed == 2 and s.review_records == 3
     rows = list(csv.DictReader((out / "links.csv").open(encoding="utf-8")))
-    assert len(rows) == s.rows == 570
+    assert len(rows) == s.rows == s.official + 2
     off = next(r for r in rows if r["source"] == "official_correlation_table")
     assert off["status"] == "listed" and off["source_url"].startswith("https://www.psp.cz/")
     assert off["eu_provision"] and ":" not in off["eu_provision"]
     revd = [r for r in rows if r["source"] == "human_review"]
     assert {r["status"] for r in revd} == {"confirmed", "corrected"}
+    assert {r["relation"] for r in rows} == {"transposition"}
     assert all(r["reviewers"] == "octocat" for r in revd)
     pkg = json.loads((out / "datapackage.json").read_text(encoding="utf-8"))
     assert pkg["licenses"][0]["name"] == "CC-BY-4.0"
     assert any("eur-lex" in src["path"] for src in pkg["sources"])
     assert [f["name"] for f in pkg["resources"][0]["schema"]["fields"]][:3] == ["link_id", "directive", "country"]
-    assert len((out / "links.jsonl").read_text(encoding="utf-8").splitlines()) == 570
+    assert len((out / "links.jsonl").read_text(encoding="utf-8").splitlines()) == s.rows
     assert len((out / "reviews.jsonl").read_text(encoding="utf-8").splitlines()) == 3
     assert "CC-BY-4.0" in (out / "README.md").read_text(encoding="utf-8")
 
@@ -315,11 +317,26 @@ def test_reviewed_rows_skip_rejected_and_disputed():
     assert rows == []
 
 
+def test_reviewed_rows_of_baseline_pairs_are_existing_law():
+    # Pay Transparency x AT is a baseline pair (the act was not notified): a confirmed review says the
+    # existing law covers the EU provision, not that it transposes it
+    r = rec(directive="32023L0970", country="at", eu_id="eu:32023L0970:de:art7.par1",
+            national_id="at:10008858:par1")
+    rows = reviewed_rows([r], baseline={("32023L0970", "at")})
+    assert [x["relation"] for x in rows] == ["existing_law"]
+    assert reviewed_rows([r], baseline=set())[0]["relation"] == "transposition"
+    assert reviewed_rows([rec()])[0]["relation"] == "transposition"  # NIS2 x CZ is no baseline
+    from openacquis.dataset import _baseline_pairs
+
+    assert ("32023L0970", "at") in _baseline_pairs() and ("32022L2555", "cz") not in _baseline_pairs()
+
+
 def test_cli_dataset_build(tmp_path, capsys):
     reviews = tmp_path / "r"
     reviews.mkdir()
     assert main(["dataset", "build", "-o", str(tmp_path / "ds"), "--reviews", str(reviews)]) == 0
-    assert "568 links (568 from official correlation tables, 0 from human review)" in capsys.readouterr().out
+    out = capsys.readouterr().out
+    assert "from official correlation tables, 0 from human review" in out and "32022L2555 × CZ: 568" in out
     shutil.rmtree(tmp_path / "ds")
 
 

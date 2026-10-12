@@ -1024,14 +1024,14 @@ class _Section:
         for child in e:
             tag = _local(child.tag)
             if tag in _ITEM_LISTS:
-                level = int(child.get("ebene") or 1)
+                level = int(float(child.get("ebene") or 1))  # RIS sometimes writes ebene="0.5"
                 for item in child:
                     if _local(item.tag) == "listelem":
                         self.item(item, level)
                     elif _local(item.tag) == "liste":
                         self.liste(item)
             elif tag == "schlussteil":
-                level = int(child.get("ebene") or 0)
+                level = int(float(child.get("ebene") or 0))
                 while self.stack and self.stack[-1][0] > level:
                     self.stack.pop()
                 target = self.stack[-1][1] if (self.stack and level > 0) else self.owner()

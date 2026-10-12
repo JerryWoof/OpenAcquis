@@ -213,8 +213,9 @@ def test_align_slovakia_skips_duplicate_measure_and_labels():
     logs = []
     measures = [MeasureMapping("u", "t", "69/2018", "mapped", "69/2018"),
                 MeasureMapping("u2", "t", "MF/1", "no_reference")]
+    # version=None: the fixture has the current text only (the default is the gold set's 2025-01-01)
     eu, docs = load_documents("32022L2555", "sk", eurlex=eurlex, national_client=sk_client(), measures=measures,
-                              log=logs.append)
+                              version=None, log=logs.append)
     assert eurlex.calls == [("32022L2555", "sk")]
     assert [d.act_id for d in docs] == ["69/2018"]
     assert any("already fetched" in m for m in logs)

@@ -4,15 +4,20 @@
 ``openacquis text <CELEX> --lang cs``: a directive's text split into provisions (CELLAR/EUR-Lex).
 ``openacquis law cz 264/2025``: a national act split into provisions (adapters: cz, sk, at, de).
 ``openacquis align 32022L2555 sk``: candidate links, gap and extra-rule candidates (v0.3, v0.4).
-``openacquis eval nis2-cz``: score the alignment against the official correlation table (v0.3).
+``openacquis eval 32022L2557 cz`` (or ``eval cer-cz``, ``eval nis2-cz``): score the alignment against an
+official correlation table (v0.3; every gold set since v0.5, ``eval --list``).
 ``openacquis review validate FILE``: check human review records (v0.4).
 ``openacquis dataset build``: export the open dataset (CSV, JSON lines, Data Package; v0.4).
+``openacquis directives``: the directive registry (``data/directives.json``) and its gold sets (v0.5).
+``openacquis alerts check|feed``: change alerts for the watched sources (v0.5).
+``openacquis judge-batch run|status FILE``: LLM judge over an alignment with Message Batches (v0.5).
 """
 
 from __future__ import annotations
 
 import argparse
 import csv
+import importlib.util
 import json
 import os
 import sys
@@ -25,14 +30,15 @@ from .align import EMBEDDERS
 from .cellar import CellarClient, count_by_country
 from .countries import MEMBER_STATES, normalize_country
 from .eurlex import EurLexClient, counts, validate_celex
+from .goldsets import GOLD_SETS
 from .provisions import Document, make_id, roman_to_int
 
 #: Countries with a national-law adapter (ISO alpha-3 -> adapter code).
 LAW_ADAPTERS = {a.alpha3: a.code for a in ADAPTERS.values()}
 _HAVE = ", ".join(a.code for a in ADAPTERS.values())
 
-#: Evaluation sets: name -> (CELEX, country).
-EVALSETS = {"nis2-cz": ("32022L2555", "cz")}
+#: Evaluation sets: name -> (CELEX, country) (from :data:`openacquis.goldsets.GOLD_SETS`).
+EVALSETS = {name: gs.key for name, gs in GOLD_SETS.items()}
 JUDGES = ["none", "rule", "anthropic"]
 
 
@@ -185,13 +191,19 @@ def _log(msg: str) -> None:
     print(msg, file=sys.stderr, flush=True)
 
 
-def _judge(name: str):
+#: Environment variables the Anthropic SDK reads credentials from.
+_ANTHROPIC_ENV = ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN")
+
+
+def _judge(name: str, country: str = "cz"):
     from .align import make_judge
 
-    if name == "anthropic" and not os.environ.get("ANTHROPIC_API_KEY"):
-        raise ValueError("--judge anthropic needs ANTHROPIC_API_KEY and pip install 'openacquis[llm]'; "
-                         "use --judge rule for the keyless heuristic baseline")
-    return make_judge(name)
+    if name == "anthropic" and importlib.util.find_spec("anthropic") is None:
+        raise ValueError("--judge anthropic needs pip install 'openacquis[llm]' and Anthropic credentials "
+                         "(e.g. ANTHROPIC_API_KEY); use --judge rule for the keyless heuristic baseline")
+    if name == "anthropic" and not any(os.environ.get(k) for k in _ANTHROPIC_ENV):
+        _log("no ANTHROPIC_API_KEY / ANTHROPIC_AUTH_TOKEN set; relying on the SDK's own credentials")
+    return make_judge(name, country)
 
 
 def _embedder(name: str, language: str = "cs"):
@@ -219,7 +231,7 @@ def cmd_align(args: argparse.Namespace, clients: dict) -> int:
 
     a = get_adapter(normalize_country(args.country))
     embedder = _embedder(args.embedder, a.language)
-    judge = _judge(args.judge)
+    judge = _judge(args.judge, a.code)
     eu, national = _documents(args, clients, args.celex, args.country)
     result = align(eu, national, embedder=embedder, judge=judge, k=args.k, threshold=args.threshold,
                    judge_k=args.judge_k, gap_margin=args.gap_margin, log=_log)
@@ -250,20 +262,58 @@ def _ks(text: str) -> list[int]:
     return ks
 
 
+def _goldset(args: argparse.Namespace):
+    from .goldsets import find
+
+    if len(args.dataset) == 1:
+        return find(args.dataset[0])
+    if len(args.dataset) == 2:
+        return find(validate_celex(args.dataset[0]), get_adapter(normalize_country(args.dataset[1])).code)
+    raise ValueError("eval takes a set name (e.g. nis2-cz) or a CELEX number and a country (e.g. 32022L2557 cz)")
+
+
+def _list_goldsets() -> int:
+    from .align import REPO_ROOT
+
+    print(f"{'name':<18} {'CELEX':<11} cc  {'act(s)':<12} {'links':>6}  file")
+    for gs in GOLD_SETS.values():
+        path = REPO_ROOT / gs.path
+        n = sum(1 for line in open(path, encoding="utf-8") if line.strip() and '"national_id": ""' not in line) \
+            if path.exists() else 0
+        print(f"{gs.name:<18} {gs.celex:<11} {gs.country}  {', '.join(gs.acts):<12} {n:>6}  {gs.path}"
+              + ("" if path.exists() else " (missing)") + ("  [thresholds tuned here]" if gs.tuned else ""))
+    return 0
+
+
 def cmd_eval(args: argparse.Namespace, clients: dict) -> int:
-    from .align import gold_path
+    from .align import REPO_ROOT, default_acts
     from .evaluate import errors, evaluate, format_report, load_gold, public
 
-    celex, country = EVALSETS[args.dataset]
-    path = args.gold or gold_path(celex, country)
-    if path is None:
-        raise LookupError(f"evaluation set for {args.dataset} not found; pass --gold data/eval/nis2_cz.jsonl")
-    gold = load_gold(path)
+    if args.list or not args.dataset:
+        return _list_goldsets()
+    gs = _goldset(args)
+    celex, country = gs.key
+    path = args.gold or REPO_ROOT / gs.path
+    if not os.path.exists(path):
+        raise LookupError(f"evaluation set {gs.name} not found at {path}; pass --gold FILE "
+                          f"(build it with scripts/build_evalset{'_sk' if country == 'sk' else ''}.py)")
+    # By default only the act(s) the set was checked against are searched and scored; --all-acts also
+    # searches every other act the table cites (the Slovak tables cite amended acts too).
+    if not args.acts:
+        args.acts = default_acts(celex, country, gold=path) if args.all_acts else list(gs.acts)
+    acts = None if args.all_acts else [a.split("-")[0] for a in args.acts]  # SK "69/2018-366/2024" is 69/2018
+    gold = load_gold(path, acts=acts)
+    if not gold:
+        raise LookupError(f"{path}: no gold links into {', '.join(acts or [])}; pass --all-acts or other --acts")
+    if not args.version_date and gs.version:
+        args.version_date = gs.version
     embedder = _embedder(args.embedder, get_adapter(country).language)
-    judge = _judge(args.judge)
+    judge = _judge(args.judge, country)
     eu, national = _documents(args, clients, celex, country)
     report = evaluate(eu, national, gold, embedder=embedder, judge=judge,
                       ks=_ks(args.k), threshold=args.threshold, judge_k=args.judge_k, log=_log)
+    report["gold_set"] = {"name": gs.name, "path": str(gs.path), "held_out": not gs.tuned,
+                          "acts": acts or "all"}
     if args.output:
         with open(args.output, "w", encoding="utf-8") as f:
             json.dump(public(report), f, ensure_ascii=False, indent=1)
@@ -271,6 +321,7 @@ def cmd_eval(args: argparse.Namespace, clients: dict) -> int:
     if args.format == "json":
         print(json.dumps(public(report), ensure_ascii=False, indent=1))
         return 0
+    print(f"evaluation set {gs.name}" + ("" if gs.tuned else " (held out: thresholds were tuned on nis2-cz only)"))
     print(format_report(report))
     if args.errors:
         print(f"\nGold EU provisions with no gold national provision in the top 5 (first {args.errors}):")
@@ -281,6 +332,59 @@ def cmd_eval(args: argparse.Namespace, clients: dict) -> int:
             print(f"  {e['eu_id'].split(':')[-1]:<18} gold {', '.join(gold_ids[:4])}{more}")
             print(f"  {'':<18} top  {', '.join(short)}")
     return 0
+
+
+# --- registry, alerts, batch judge (v0.5) ----------------------------------------------
+def cmd_directives(args: argparse.Namespace, _client: Any = None) -> int:
+    from .directives import COUNTRIES, load_registry
+    from .goldsets import BY_PAIR
+
+    reg = load_registry(args.registry)
+    if args.format == "json":
+        out = []
+        for d in reg:
+            row = d.to_dict()
+            row["gold_sets"] = {cc: BY_PAIR[(d.celex, cc)].name for cc in COUNTRIES if (d.celex, cc) in BY_PAIR}
+            out.append(row)
+        print(json.dumps(out, ensure_ascii=False, indent=1))
+        return 0
+    for d in reg:
+        print(f"{d.celex}  {d.short}  ({d.topic}; deadline {d.deadline or '—'})")
+        for cc in COUNTRIES:
+            e = d.country(cc)
+            gold = BY_PAIR.get((d.celex, cc))
+            acts = ", ".join(e.acts) if e.acts else "—"
+            print(f"    {cc}  {e.status:<9} {(e.label or acts):<22} {acts if e.label else '':<22}"
+                  + (f" gold: {gold.name}" if gold else "") + (f"  ({e.note})" if e.note and args.notes else ""))
+    print(f"\n{len(reg)} directives; {sum(d.country(c).alignable for d in reg for c in COUNTRIES)} alignable "
+          f"directive x country pairs; {len(GOLD_SETS)} gold sets")
+    return 0
+
+
+def _alerts(rest: list[str]) -> int:
+    """``openacquis alerts [--root DIR] check|feed ...`` -> :func:`openacquis.alerts.main` (root: the repository)."""
+    from pathlib import Path
+
+    from .alerts import main as alerts_main
+
+    root = Path.cwd()
+    if rest[:1] == ["--root"] and len(rest) > 1:
+        root, rest = Path(rest[1]), rest[2:]
+    return alerts_main(rest, root=root)
+
+
+def _judge_batch(rest: list[str]) -> int:
+    from .judge_batch import main as judge_batch_main
+
+    return judge_batch_main(rest)
+
+
+#: Commands whose arguments (including -h) belong to another module's own parser.
+PASSTHROUGH = {"alerts": _alerts, "judge-batch": _judge_batch}
+
+
+def cmd_passthrough(args: argparse.Namespace, _client: Any = None) -> int:
+    return PASSTHROUGH[args.command](args.rest)
 
 
 # --- review and dataset (v0.4) -------------------------------------------------------
@@ -347,7 +451,7 @@ def _add_alignment_options(a: argparse.ArgumentParser) -> None:
                         "lexical, bm25, hybrid-lex (no dependencies); e5, e5-sym, bge-m3, hybrid, hybrid-rrf "
                         "(need openacquis[embeddings]; hybrid-rrf gives links only, no gap list)")
     a.add_argument("-j", "--judge", choices=JUDGES, default="none",
-                   help="none (default), rule (keyless heuristics) or anthropic (needs ANTHROPIC_API_KEY)")
+                   help="none (default), rule (keyless heuristics) or anthropic (needs openacquis[llm] and credentials)")
     a.add_argument("--threshold", type=float, help="minimum score for a predicted link (default per embedder)")
     a.add_argument("--judge-k", type=int, default=3, help="candidates per EU provision sent to the judge")
     a.add_argument("--acts", nargs="+", metavar="REF",
@@ -414,10 +518,15 @@ def build_parser() -> argparse.ArgumentParser:
     a.set_defaults(func=cmd_align, client="align")
 
     e = sub.add_parser("eval", help="Score the alignment against an official correlation table")
-    e.add_argument("dataset", choices=sorted(EVALSETS), help="evaluation set")
+    e.add_argument("dataset", nargs="*", metavar="SET | CELEX CC",
+                   help=f"evaluation set ({', '.join(EVALSETS)}) or CELEX and country, e.g. 32022L2557 cz; "
+                        "none or --list: list the sets")
+    e.add_argument("--list", action="store_true", help="list the evaluation sets")
     _add_alignment_options(e)
     e.add_argument("--k", default="1,5,10", help="cut-offs for recall@k (default 1,5,10)")
-    e.add_argument("--gold", help="gold links JSONL (default: data/eval/nis2_cz.jsonl)")
+    e.add_argument("--gold", help="gold links JSONL (default: the set's file under data/eval/)")
+    e.add_argument("--all-acts", action="store_true",
+                   help="search and score every act the table cites (default: only the act(s) the set was checked against)")
     e.add_argument("--errors", type=int, default=0, metavar="N", help="also list N retrieval misses")
     e.add_argument("-f", "--format", choices=["text", "json"], default="text")
     e.add_argument("-o", "--output", help="also write the JSON report here")
@@ -439,6 +548,21 @@ def build_parser() -> argparse.ArgumentParser:
     d.add_argument("-o", "--out", default="dataset", help="output directory (default: dataset/)")
     d.add_argument("--reviews", default=None, help="reviews directory (default: data/reviews)")
     d.set_defaults(func=cmd_dataset, client="none")
+
+    g = sub.add_parser("directives", help="The directive registry: acts per country and gold sets")
+    g.add_argument("--registry", help="registry file (default: data/directives.json)")
+    g.add_argument("--notes", action="store_true", help="also print each entry's note")
+    g.add_argument("-f", "--format", choices=["text", "json"], default="text")
+    g.set_defaults(func=cmd_directives, client="none")
+
+    al = sub.add_parser("alerts", add_help=False, help="Change alerts: check the watched sources, render the Atom feed (docs/alerts.md)")
+    al.add_argument("rest", nargs=argparse.REMAINDER,
+                    help="[--root DIR] check [--dry-run --out-dir DIR --sources ...] | feed [--out FILE]")
+    al.set_defaults(func=cmd_passthrough, client="none")
+
+    jb = sub.add_parser("judge-batch", add_help=False, help="LLM judge over an alignment file with Message Batches (docs/judge.md)")
+    jb.add_argument("rest", nargs=argparse.REMAINDER, help="run|status ALIGNMENT.json [options]; run --dry-run needs no key")
+    jb.set_defaults(func=cmd_passthrough, client="none")
     return p
 
 
@@ -467,6 +591,13 @@ def main(
 ) -> int:
     """Run the CLI. The client arguments replace the network in tests (``esbirka`` = Czech,
     ``slovlex`` = Slovak, ``ris`` = Austrian, ``gii`` = German adapter client)."""
+    argv = list(sys.argv[1:] if argv is None else argv)
+    if argv and argv[0] in PASSTHROUGH:  # their own parsers handle every option, -h included
+        try:
+            return PASSTHROUGH[argv[0]](argv[1:])
+        except (ValueError, LookupError, ImportError, OSError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
     args = build_parser().parse_args(argv)
     national = {k: v for k, v in {"cz": esbirka, "sk": slovlex, "at": ris, "de": gii}.items() if v is not None}
     if getattr(args, "dir", "unset") is None:

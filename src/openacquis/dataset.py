@@ -14,7 +14,9 @@ Rows come from two kinds of sources, kept apart by ``source``:
   NIS2 x Czechia, the *rozdílová tabulka* of sněmovní tisk 759/0; ``data/eval/``);
 * ``human_review``: machine suggestions a reviewer confirmed or corrected (``data/reviews/``,
   :mod:`openacquis.review`). Rejected and disputed suggestions are not links; they stay in
-  ``reviews.jsonl``.
+  ``reviews.jsonl``. A review of a *baseline* pair (registry status ``baseline``: the act aligned
+  was not notified for the directive) confirms that existing national law covers the EU
+  provision, not that it transposes it: such rows have ``relation = existing_law``.
 
 Unreviewed machine suggestions are **not** part of the dataset. Nothing in it says whether a
 provision is correctly transposed.
@@ -32,23 +34,19 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from . import __version__
+from .directives import RegistryError, load_registry
+from .goldsets import GOLD_SETS
 from .review import REVIEWS_DIR, load_reviews, merge
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 LICENSE = {"name": "CC-BY-4.0", "path": "https://creativecommons.org/licenses/by/4.0/",
            "title": "Creative Commons Attribution 4.0 International"}
 
-#: Official correlation tables included: (CELEX, country) -> metadata.
+#: Official correlation tables included: (CELEX, country) -> metadata (from :mod:`openacquis.goldsets`).
 OFFICIAL_TABLES: dict[tuple[str, str], dict] = {
-    ("32022L2555", "cz"): {
-        "path": "data/eval/nis2_cz.jsonl",
-        "title": "Rozdílová tabulka, government bill of the Cybersecurity Act (sněmovní tisk 759/0, 2024)",
-        "url": "https://www.psp.cz/sqw/text/orig2.sqw?idd=244067",
-        "history_url": "https://www.psp.cz/sqw/historie.sqw?o=9&t=759",
-        "publisher": "Government of the Czech Republic / Chamber of Deputies (psp.cz)",
-        "licence_note": "Official work (úřední dílo), not protected by copyright (§ 3 of Czech Act No. 121/2000 Sb.).",
-        "national_version": "2025-11-01",
-    },
+    gs.key: {"name": gs.name, "path": gs.path, "title": gs.title, "url": gs.url, "history_url": gs.history_url,
+             "publisher": gs.publisher, "licence_note": gs.licence_note, "national_version": gs.version}
+    for gs in GOLD_SETS.values()
 }
 
 #: Where the provision texts and IDs come from, by ID prefix.
@@ -75,7 +73,12 @@ FIELDS: list[tuple[str, str, str]] = [
     ("national_act", "string", "National act as the adapter names it (264/2025, 69/2018, 20013065, bsig_2025)"),
     ("national_id", "string", "OpenAcquis ID of the national provision (cc:act:...)"),
     ("source", "string", "official_correlation_table | human_review"),
-    ("status", "string", "listed (official table, no compatibility stated) | confirmed | corrected (human review)"),
+    ("relation", "string", "transposition (the national provision is cited as transposing the EU provision) | "
+                           "existing_law (human review of an act not notified for the directive: existing law that "
+                           "covers the EU provision, not a notified transposition)"),
+    ("status", "string", "listed (official table, no compatibility stated) | fully_compatible | partially_compatible | "
+                         "incompatible (official table with a compatibility column, as the government stated it) | "
+                         "confirmed | corrected (human review)"),
     ("source_title", "string", "Correlation table or 'OpenAcquis review'"),
     ("source_url", "string", "Where the source can be checked"),
     ("reviewers", "string", "GitHub handles of the reviewers, ';'-separated (human_review only)"),
@@ -111,6 +114,14 @@ def _link_id(*parts: str) -> str:
     return hashlib.sha1("|".join(parts).encode()).hexdigest()[:16]
 
 
+def _baseline_pairs() -> set[tuple[str, str]]:
+    """(CELEX, country) pairs whose registry status is ``baseline`` (empty if the registry is unreadable)."""
+    try:
+        return {(d.celex, cc) for d in load_registry() for cc, c in d.countries.items() if c.status == "baseline"}
+    except (RegistryError, OSError):
+        return set()
+
+
 def official_rows(root: Path = REPO_ROOT) -> list[dict]:
     """Rows from every correlation table in :data:`OFFICIAL_TABLES`."""
     out = []
@@ -122,12 +133,15 @@ def official_rows(root: Path = REPO_ROOT) -> list[dict]:
             if not line.strip():
                 continue
             g = json.loads(line)
+            if not g.get("national_id"):
+                continue  # a negative record (Slovak tables: "nothing transposes this"), not a link
             out.append({
                 "link_id": _link_id(celex, _eu_local(g["eu_id"]), g["national_id"], "official"),
                 "directive": celex, "country": cc,
                 "eu_provision": _eu_local(g["eu_id"]), "eu_id": g["eu_id"],
                 "national_act": _act(g["national_id"]), "national_id": g["national_id"],
-                "source": "official_correlation_table", "status": g.get("status") or "listed",
+                "source": "official_correlation_table", "relation": "transposition",
+                "status": g.get("status") or "listed",
                 "source_title": meta["title"], "source_url": g.get("source_url") or meta["url"],
                 "reviewers": "", "review_date": "", "machine_score": None, "machine_method": "",
                 "raw_eu_ref": g.get("raw_eu_ref", ""), "raw_national_ref": g.get("raw_national_ref", ""),
@@ -136,8 +150,12 @@ def official_rows(root: Path = REPO_ROOT) -> list[dict]:
     return out
 
 
-def reviewed_rows(records: Sequence[dict]) -> list[dict]:
-    """Links supported by merged reviews (confirmed or corrected; not rejected or disputed)."""
+def reviewed_rows(records: Sequence[dict], baseline: set[tuple[str, str]] | None = None) -> list[dict]:
+    """Links supported by merged reviews (confirmed or corrected; not rejected or disputed).
+
+    ``baseline``: (CELEX, country) pairs aligned against existing law not notified for the directive
+    (default: the registry's ``baseline`` entries); their rows get ``relation = existing_law``."""
+    baseline = _baseline_pairs() if baseline is None else baseline
     out = []
     for d in merge(records):
         for eu_id, nid in d.links():
@@ -146,7 +164,9 @@ def reviewed_rows(records: Sequence[dict]) -> list[dict]:
                 "directive": d.directive, "country": d.country,
                 "eu_provision": _eu_local(eu_id), "eu_id": eu_id,
                 "national_act": _act(nid), "national_id": nid,
-                "source": "human_review", "status": d.status,
+                "source": "human_review",
+                "relation": "existing_law" if (d.directive, d.country) in baseline else "transposition",
+                "status": d.status,
                 "source_title": "OpenAcquis review",
                 "source_url": f"https://github.com/JerryWoof/OpenAcquis/blob/main/data/reviews/{d.directive}_{d.country}.jsonl",
                 "reviewers": ";".join(d.reviewers), "review_date": d.last_date,
@@ -247,8 +267,10 @@ links, version {__version__}, https://github.com/JerryWoof/OpenAcquis*.
 
 **What a row means.** `source = official_correlation_table`: a government listed the pair in the correlation
 table attached to its bill (`status = listed`; the table states no compatibility). `source = human_review`: an
-OpenAcquis reviewer confirmed a machine suggestion or corrected it. Neither says whether a provision is
-correctly transposed. Unreviewed machine suggestions are not included.
+OpenAcquis reviewer confirmed a machine suggestion or corrected it. `relation = existing_law` marks reviews of
+an act that was not notified for the directive (registry status `baseline`): existing law that covers the EU
+provision, not a notified transposition. Neither source says whether a provision is correctly transposed.
+Unreviewed machine suggestions are not included.
 
 **Sources and attribution.** EU texts: © European Union, https://eur-lex.europa.eu (reuse under Commission
 Decision 2011/833/EU). National texts: e-Sbírka (CZ), Slov-Lex (SK), RIS (AT, open government data),

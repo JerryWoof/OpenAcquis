@@ -10,7 +10,11 @@ OpenAcquis proposes three kinds of suggestions for each directive × country:
 
 All three are **candidates** until a person checks them. Reviews are what turn them into data: a
 reviewed link goes into the open dataset ([dataset.md](dataset.md)), and reviews are the only way to
-check the countries that have no official correlation table (Slovakia, Austria and Germany so far).
+check the countries that have no official correlation table (Austria and Germany so far).
+
+On a *baseline* pair (registry status `baseline`: the act aligned was not notified for the directive, such as
+Pay Transparency × AT and DE) the review page says so and asks whether the national provision **covers** the EU
+provision, not whether it implements it. Such reviews enter the dataset with `relation = existing_law`.
 
 There is no server and no account system. The website prepares a review record and you send it
 through GitHub.

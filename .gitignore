@@ -16,3 +16,8 @@ site/data/
 
 # Built by `openacquis dataset build` (published on the website and attached to releases)
 dataset/
+
+# Built by scripts/build_api.py and scripts/build_site.py (Pages workflow)
+site/api/
+site/feed.xml
+_site/

@@ -454,6 +454,35 @@ def test_alignment_page_article_level_gold_covers_paragraph_rows():
     assert d["summary"]["rows_with_official"] == 4 and d["summary"]["article_level"] == 1
 
 
+def test_alignment_page_rows_citing_only_acts_not_searched():
+    # the table cites only another act for Art. 3(1): the suggestion cannot match it, so the row is
+    # "other_act", counted neither as a match nor as a difference
+    res = align(eu_doc(), cz_doc(), threshold=0.25, now=NOW)
+    gold = GOLD + [GoldLink(f"eu:{EU}:cs:art3.par1", "cz:999/2020:par4.odst2")]
+    d = build_site.alignment_page_data(ENTRY, res, gold, now=NOW)
+    rows = {r["id"].split(":")[-1]: r for a in d["articles"] for r in a["rows"]}
+    assert rows["art3.par1"]["agreement"] == "other_act"
+    t = d["national_texts"]["cz:999/2020:par4.odst2"]
+    assert t["not_searched"] is True and t["url"] is None and t["act"] == "999/2020"
+    s = d["summary"]
+    assert s["other_act"] == 1 and s["rows_with_official"] == 4
+    assert s["match"] + s["same_section"] + s["differs"] + s["other_act"] + s["no_table_entry"] == 4
+
+
+def test_alignment_page_extra_note_and_secondary_labels():
+    from dataclasses import replace
+
+    res = align(eu_doc(), cz_doc(), threshold=0.25, now=NOW, extra_rules=False)
+    d = build_site.alignment_page_data(ENTRY, res, GOLD, now=NOW)
+    assert d["extra_note"] and d["extra_note"].startswith("no extra-rule list")
+    assert d["extra_rule_sections"] == [] and d["summary"]["extra_rule_candidates"] == 0
+    assert d["summary"]["extra_rule_candidates_suppressed"] == res.leftovers.extra_suppressed
+    plain = build_site.alignment_page_data(ENTRY, align(eu_doc(), cz_doc(), threshold=0.25, now=NOW), GOLD, now=NOW)
+    assert plain["extra_note"] is None and plain["summary"]["extra_rule_candidates_suppressed"] == 0
+    e = replace(ENTRY, act_labels=(("urhg", "UrhG"),))
+    assert build_site._secondary_label(e, "urhg") == "UrhG" and build_site._secondary_label(e, "urhdag") == ""
+
+
 def test_write_alignments_live_static_and_fallback(tmp_path):
     res = align(eu_doc(), cz_doc(), threshold=0.25, now=NOW)
     data = build_site.alignment_page_data(ENTRY, res, GOLD, now=NOW)
@@ -498,10 +527,11 @@ def test_committed_static_alignment_is_valid():
         assert p.exists(), f"run python scripts/build_site.py --write-static to create {p}"
         d = json.loads(p.read_text(encoding="utf-8"))
         assert d["schema"] == build_site.ALIGNMENT_SCHEMA and d["celex"] == e.celex
-        assert d["summary"]["rows"] > 100
+        assert d["summary"]["rows"] > (100 if e.celex == "32022L2555" else 10)
         assert d["has_official"] == bool(e.gold)
         if e.gold:
-            assert d["summary"]["rows_with_official"] > 50
+            assert d["summary"]["rows_with_official"] > 30
+            assert d["official_source"]["url"].startswith(("https://www.psp.cz/", "https://www.nrsr.sk/"))
         assert d["method"].startswith("hybrid:") and "embed:" not in d["method"]  # stdlib only
         assert d["eu"]["language"] == {"cz": "cs", "sk": "sk", "at": "de", "de": "de"}[e.country_code]
         for a in d["articles"]:
@@ -509,11 +539,12 @@ def test_committed_static_alignment_is_valid():
                 assert r["url"].startswith("https://eur-lex.europa.eu/")
                 for nid in r["official"] + [m["id"] for m in r["machine"]]:
                     assert nid.startswith(e.country_code + ":")
-                    url = d["national_texts"][nid]["url"]
+                    url = d["national_texts"][nid]["url"]  # an official ID in an act not searched: no URL
                     assert url is None or url.startswith(PORTALS[e.country_code])
         rv = json.loads((build_site.STATIC_DIR / f"{e.slug}.review.json").read_text(encoding="utf-8"))
         kinds = {s["kind"] for s in rv["suggestions"]}
-        assert "link" in kinds and "extra_rule" in kinds
+        assert "link" in kinds
+        assert "extra_rule" in kinds or d["summary"]["extra_rule_candidates"] == 0
         for s in rv["suggestions"]:
             assert (s["eu_id"] is None or s["eu_id"] in rv["eu_texts"])
             assert (s["national_id"] is None or s["national_id"] in rv["national_texts"])
@@ -532,7 +563,8 @@ def test_offline_site_build_includes_alignment(tmp_path):
     assert [c["code"] for c in m["countries"]] == ["cz", "sk", "at", "de"]
     art23 = next(a for a in m["articles"] if a["key"] == "art23")
     assert art23["heading"] == "Reporting obligations"
-    assert art23["cells"]["cz"]["official"] and art23["cells"]["sk"]["official"] is None
+    assert art23["cells"]["cz"]["official"] and art23["cells"]["sk"]["official"]  # CZ and SK tables
+    assert art23["cells"]["at"]["official"] is None  # no Austrian table
     assert (tmp_path / "review" / "32022L2555_sk.json").exists()
     assert (tmp_path / "dataset" / "links.csv").exists() and (tmp_path / "dataset" / "datapackage.json").exists()
 
@@ -578,3 +610,81 @@ def test_live_eval_nis2_cz_lexical():
     # numbers reported in docs/evaluation.md (2026-10-12); allow small drift if texts change
     assert r["provision"]["recall@5"] > 0.45
     assert r["article"]["recall@5"] > 0.8
+
+
+# --- v0.5: gold-set registry, generalised eval, registry-driven site lists ---------------------------
+
+
+def test_gold_set_registry_files_and_lookup():
+    from openacquis.align import GOLD_FILES, REPO_ROOT
+    from openacquis.dataset import OFFICIAL_TABLES
+    from openacquis.goldsets import GOLD_SETS, find
+
+    assert set(GOLD_SETS) == {"nis2-cz", "cer-cz", "eaa-cz", "whistleblower-cz", "nis2-sk", "cer-sk", "pay-sk"}
+    assert [n for n, s in GOLD_SETS.items() if s.tuned] == ["nis2-cz"]  # every other set is held out
+    for s in GOLD_SETS.values():
+        assert (REPO_ROOT / s.path).is_file()
+        assert GOLD_FILES[s.key] == s.path and OFFICIAL_TABLES[s.key]["url"] == s.url
+        assert s.url.startswith(("https://www.psp.cz/", "https://www.nrsr.sk/"))
+    assert find("32022L2557", "SK").name == "cer-sk" and find("32019L1937_cz").name == "whistleblower-cz"
+    with pytest.raises(LookupError):
+        find("32022L2557", "at")
+
+
+def test_load_gold_drops_negatives_and_filters_acts(tmp_path):
+    from openacquis.evaluate import load_gold
+
+    rows = [GoldLink("eu:X:sk:art1", "sk:69/2018:par1"), GoldLink("eu:X:sk:art2", ""),
+            GoldLink("eu:X:sk:art3", "sk:455/1991:par2")]
+    path = tmp_path / "g.jsonl"
+    save_jsonl(rows, path)
+    assert [g.eu_id for g in load_gold(path)] == ["eu:X:sk:art1", "eu:X:sk:art3"]
+    assert [g.national_id for g in load_gold(path, acts=["69/2018"])] == ["sk:69/2018:par1"]
+
+
+def test_cli_eval_by_celex_and_list(tmp_path, capsys, monkeypatch):
+    from openacquis import goldsets
+
+    gold = tmp_path / "gold.jsonl"
+    save_jsonl(GOLD, gold)
+    gs = goldsets.GoldSet("demo-cz", EU, "cz", str(gold), "Demo table", "https://www.psp.cz/x", "https://www.psp.cz/y",
+                          (ACT,))
+    monkeypatch.setitem(goldsets.BY_PAIR, gs.key, gs)
+    rc = main(["eval", EU, "cz", "-e", "lexical", "--k", "1", "-f", "json"], eurlex=FakeEurLex(), esbirka=FakeESbirka())
+    rep = json.loads(capsys.readouterr().out)
+    assert rc == 0 and rep["gold_set"]["name"] == "demo-cz" and rep["gold_set"]["held_out"] is True
+    assert rep["national"] == [ACT] and rep["gold_links"] == len(GOLD)
+    assert main(["eval", "--list"]) == 0
+    out = capsys.readouterr().out
+    assert "cer-sk" in out and "thresholds tuned here" in out
+    assert main(["eval", "32022L2557", "at"]) == 2 and "no evaluation set" in capsys.readouterr().err
+
+
+def test_cli_directives(capsys):
+    assert main(["directives"]) == 0
+    out = capsys.readouterr().out
+    assert "32022L2557" in out and "gold: cer-sk" in out and "baseline" in out
+    assert main(["directives", "-f", "json"]) == 0
+    reg = json.loads(capsys.readouterr().out)
+    nis2 = next(d for d in reg if d["celex"] == "32022L2555")
+    assert nis2["gold_sets"] == {"cz": "nis2-cz", "sk": "nis2-sk"}
+
+
+def test_registry_drives_site_lists():
+    from openacquis.directives import load_registry
+
+    reg = load_registry()
+    celexes = [e.celex for e in build_site.DIRECTIVES]
+    assert celexes[: len(reg)] == [d.celex for d in sorted(reg, key=lambda d: d.rank)]
+    assert {"32022L2464", "32019L1158"} <= set(celexes)  # act-level only
+    pairs = {e.slug for e in build_site.ALIGNMENTS}
+    none = {f"{s.celex}_{s.country_code}" for s in build_site.COUNTRY_STATES}
+    assert len(pairs) + len(none) == 4 * len(reg) and not pairs & none
+    assert "32022L2041_at" in none and "32022L2381_cz" in none
+    gold = {e.slug for e in build_site.ALIGNMENTS if e.gold}
+    assert gold == {"32022L2555_cz", "32022L2555_sk", "32022L2557_cz", "32022L2557_sk", "32019L0882_cz",
+                    "32019L1937_cz", "32023L0970_sk"}
+    assert {e.slug for e in build_site.ALIGNMENTS if e.status == "baseline"} == {"32023L0970_at", "32023L0970_de"}
+    assert build_site.MATRICES == sorted(d.celex for d in reg)
+    for c in build_site.MATRICES:
+        assert (build_site.STATIC_DIR / f"{c}.headings.json").is_file()

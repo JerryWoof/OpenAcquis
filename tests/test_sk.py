@@ -247,6 +247,23 @@ def test_group_heading_applies_to_every_par_without_own_heading():
     }
 
 
+def test_constitution_articles_are_clanky():
+    # the Constitution (460/1992 Zb.) marks its articles "ustavnyclanok", inside hlava / oddiel units
+    art = ('<div class="ustavnyclanok Skupina " id="ustavnyclanok-127"><div class="ustavnyclanokOznacenie">Čl. 127</div>'
+           '<div class="odsek Skupina " id="ustavnyclanok-127.odsek-1"><div class="odsekOznacenie">(1)</div>'
+           '<div class="text">Ústavný súd rozhoduje o sťažnostiach.</div></div>'
+           '<div class="odsek Skupina " id="ustavnyclanok-127.odsek-2"><div class="odsekOznacenie">(2)</div>'
+           '<div class="text">Ak ústavný súd sťažnosti vyhovie ...</div></div></div>')
+    body = ('<div class="hlava Skupina " id="predpis.hlava-siedma"><div class="hlavaOznacenie">SIEDMA HLAVA</div>'
+            f'{art}</div>')
+    doc = parse_act(f'<html><body><h1>460/1992 Zb.</h1><div id="predpis">{body}</div></body></html>')
+    cl = doc.by_id("sk:460/1992:cl127")
+    assert (cl.kind, cl.label, cl.number, cl.parent_id) == ("cl", "Čl. 127", "127", "sk:460/1992:hlava7")
+    assert doc.by_id("sk:460/1992:cl127.ods1").text == "Ústavný súd rozhoduje o sťažnostiach."
+    assert doc.by_id("sk:460/1992:cl127.ods2").parent_id == "sk:460/1992:cl127"
+    assert doc.by_id("sk:460/1992:hlava7").text == ""  # no article text folded into the hlava
+
+
 def test_quoted_text_and_footnotes(kyber):
     bod = kyber.by_id("sk:69/2018:cl2.bod1")
     lines = bod.text.split("\n")

@@ -3,6 +3,109 @@
 All notable changes to OpenAcquis. Versions follow [Semantic Versioning](https://semver.org/); while the
 version is 0.x, the command-line options and data formats can still change.
 
+## 0.5.0 (2026-10-12): v1.0 preview
+
+Twelve directives × four countries at provision level, six held-out official correlation tables, a static API,
+change alerts and a resumable batch judge.
+
+### Added
+- **Directive registry** `data/directives.json` and `openacquis.directives`: 12 directives (NIS2, CER,
+  Accessibility Act, Whistleblower, Pillar Two, Copyright DSM, Representative Actions, Pay Transparency, Minimum
+  Wages, Single-Use Plastics, EECC, Women on Boards) with the main act per country, status `ok` / `baseline`
+  (not notified; aligned against existing law: Pay Transparency in AT and DE) / `none` (nothing to align:
+  Minimum Wages in AT, Women on Boards in CZ), hand overrides and notes. `openacquis directives` prints it.
+  `align.default_acts` / `default_version` fall back to it.
+- **`scripts/build_alignments.py`**: aligns every registry pair (42 new, plus the 4 NIS2 ones) and writes the
+  static copies the site uses; parallel per country, one request at a time per portal, cached and resumable.
+- **Evaluation sets** (`openacquis.goldsets`, one registry used by `eval`, the dataset, the site and the API):
+  - Czech: CER (229 links), Accessibility Act (146), Whistleblower (685) from psp.cz, with a generalised
+    importer (`scripts/build_evalset.py`: multi-CELEX cells, CELEX typos, consolidated references, multi-act
+    tables, `ČÁST` amendment points, `--celex/--tisk` discovery).
+  - Slovak: NIS2 (470), CER (414), Pay Transparency (232) from NR SR *tabuľky zhody*
+    (`openacquis.evalset_sk`, `scripts/build_evalset_sk.py`), keeping method, compliance and gold-plating
+    columns, and negative records ("nothing transposes this"), which are never used as links.
+- **`openacquis eval <CELEX> <cc>`** (or a set name: `nis2-cz`, `cer-cz`, `eaa-cz`, `whistleblower-cz`,
+  `nis2-sk`, `cer-sk`, `pay-sk`; `eval --list`). By default it searches and scores the act each table was
+  checked against, in that version; `--all-acts` uses every act a table cites. Reports say whether a set is
+  held out.
+- **Held-out results** in `docs/evaluation.md`: with the thresholds tuned on NIS2 × CZ and not retuned,
+  `hybrid-lex` R@5 ranges from 0.600 (NIS2 × SK) to 0.902 (Pay × SK), § R@5 from 0.785 to 0.957.
+- **Static public API** (`scripts/build_api.py`, `api/openapi.yaml`, 16 JSON Schemas, `docs/api.md`), built and
+  schema-checked by the Pages workflow; **release workflow** attaching the dataset and API snapshots;
+  `CITATION.cff` and `.zenodo.json`.
+- **Change alerts** (`openacquis.alerts`, `scripts/check_changes.py`, `openacquis alerts check|feed`,
+  weekly `.github/workflows/alerts.yml`): CELLAR amendments and notified measures, e-Sbírka, Slov-Lex, RIS and
+  gesetze-im-internet.de version signals; GitHub issues and an Atom feed (`site/feed.xml`). Seeded state: 365
+  items, 0 false alerts on a repeat run.
+- **Batch judge** (`openacquis.judge_batch`, `openacquis judge-batch run|status`, dispatch-only
+  `.github/workflows/judge.yml`): Message Batches, resumable state, cost estimate and `--max-cost` cap; prompts
+  for cz, sk, at and de. **Not run against the API yet** (needs credentials).
+- **Website (v1.0 preview):** every registry directive on the home page with per-country chips (official table,
+  not notified, nothing to align); a "provision by provision" table on each directive page; alignment, review
+  and matrix pages for all 46 pairs (`matrix.html?celex=…` for all 12 directives) with the official column for
+  the 7 pairs with a table; "not notified" and "no act aligned" states; `data.html` (dataset, API, feed, CLI);
+  a feed link on every page.
+
+### Changed
+- `site` builds list every directive offline too (`measures_available: false` without a bundled sample).
+  Only NIS2 alignments are computed live by default (`--live-alignments seed|all|none`); the rest come from
+  `site/static-data/`. The Pages artifact leaves out `site/static-data/`.
+- The dataset now holds 2,736 official-table links from 7 tables (was 568); `status` can also be
+  `fully_compatible` / `partially_compatible` / `incompatible` (Slovak tables).
+- `make_judge(name, country)` passes the country to `AnthropicJudge` (SK, AT and DE no longer get the Czech
+  prompt). `--judge anthropic` no longer insists on `ANTHROPIC_API_KEY`: it needs the `llm` extra and lets
+  the SDK find credentials (`ANTHROPIC_API_KEY`, `ANTHROPIC_AUTH_TOKEN`, …).
+- `evaluate.load_gold(path, acts=None)` drops records without a national provision and can keep one act's links.
+- Sonnet 5.5 cache-read price corrected ($0.10/MTok); `AnthropicJudge.cost()` no longer takes `batch`.
+
+### Fixed before release
+- **Gold sets.** Czech: a renumbering can no longer land on another ID the same row cites, two IDs of one row
+  are never renumbered onto the same act ID, an ID is kept when one of its sentences appears word for word in the
+  quote, `odst. 1 až odst. 3` keeps the middle paragraph, `písm. a) až e) a 2` reads `2` as a paragraph, and an
+  inserted letter re-aligns the cited letters (Whistleblower: 685 links, 683 distinct pairs). Slovak: `§: 5 P: f
+  O: N` cells read as points of the letter, EU qualifiers go to `note`, `partial_negative` flags negatives whose EU
+  provision also has links, PDF-only annexes are never "confirmed", negatives of methods D and O are
+  `no_national_provision`, and the Constitution's articles resolve (see Slovak adapter). Distinct pairs:
+  NIS2 × SK 469, CER × SK 409, Pay × SK 232. Regression tests for each case.
+- **Slovak adapter.** The articles of the Constitution (460/1992 Zb., Slov-Lex `ustavnyclanok` units) are read as
+  články (`460/1992:cl127.ods1`); before, the whole text fell into 30 heading-level units.
+- **Candidates.** National units that only cite the directive or announce its transposition (`Mit diesem
+  Bundesgesetz wird … umgesetzt`, Slovak "Zoznam preberaných …" annexes) are no longer candidates, except of the
+  directive's Transposition article (`leftovers.transposition_notice`, `MatchResult.masked`; listed in
+  `leftovers.national_excluded`). NIS2 × SK R@5 0.595 → 0.600; the other sets are unchanged or better.
+- **Extra-rule lists.** None for general codes (registry `"extra_rules": false`: Labour Codes, AktG, AWG 2002,
+  copyright acts), for acts of which more than half the units would be candidates (`extra_max_share`), and for
+  baseline pairs. Pages say why (`extra_note`, `summary.extra_rule_candidates_suppressed`); the review queues
+  drop those items (Minimum Wages × CZ: 1,572 → 66).
+- **Pages.** Rows whose official provisions are all in acts that were not searched are `other_act`, no longer
+  "differs" (Pay Transparency × SK: 17 rows). Baseline pairs read "<act> was not notified for this directive"
+  with the country's own measure count, never "no measure notified"; their review questions ask whether the
+  provision *covers* the EU provision. Registry notes are shown in public wording (`public_note`, new registry
+  key), secondary acts by their registry label (`act_labels`, new key: UrhG, BFSGV, EWKFondsG). The provision
+  table stacks on phones; the matrix marks baseline columns; `data.html` lists every pair.
+- **NIS2 × SK** pages use the 2025-01-01 text the evaluation set uses (registry `version`;
+  `default_version` falls back to the set's version). Single-Use Plastics × DE keeps EWKFondsG with
+  `--from-cellar` (`override`).
+- **Dataset and API.** New `relation` field: `existing_law` for reviews of baseline pairs, `transposition` for
+  every other row. The API index links `schemas/index.json` (a listing of the schema files) instead of a folder;
+  alignment files carry `extra_note`.
+- **Alerts.** An empty amendments or measures side of the CELLAR answer for every directive is an outage (old
+  fingerprints kept); a single vanished record is a warning and is reported only after 3 runs; `--sources`
+  subsets keep the other sources' items; the workflow reads alignment pages from `site/static-data`.
+- **Batch judge.** `--max-cost` caps the worst case (no cache hits, every answer at `--max-tokens`), and the
+  workflow default is $15; results with unknown IDs still count as spent; a 4xx rejection clears the
+  submission marker, other interruptions exit 2 with a message; a `force` workflow input; `status` uses the
+  run's saved settings.
+- **Workflows.** `pages.yml` has least-privilege permissions; `release.yml` also checks the `CITATION.cff`
+  version; `--require-live` (`seed` by default, or `all`) fails only on pairs meant to be computed live.
+- All 46 static alignment pages rebuilt with 0.5.0 (`site/static-data/` about 29 MB).
+
+### Known limitations
+- No human reviews yet; the LLM judge has not been run (no key in this environment).
+- Machine coverage on large general codes (labour codes, AktG, EECC laws) is not quality; only 7 pairs have a
+  table to check against, and none in Austria or Germany.
+- `site/static-data/` is about 29 MB; the deployed site about 66 MB.
+
 ## 0.4.0 (2026-10-12)
 
 Four countries: NIS2 × Czechia, Slovakia, Austria and Germany, with filtered gap and extra-rule candidates, a

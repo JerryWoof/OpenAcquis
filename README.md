@@ -3,31 +3,28 @@
 **Open, AI-assisted map of how EU directives are written into national law: provision by provision, country by country.**
 Spot gaps, gold-plating and national choices, with links to the source texts.
 
-> Status: **early prototype (v0.4)**. The tool lists which national laws each member state has notified for a
-> directive and fetches directive texts in 24 languages. It also fetches national law, split into citable
-> provisions with stable IDs, for **Czechia, Slovakia, Austria and Germany**. For **NIS2** it proposes
-> provision-level links in all four countries, with filtered gap and extra-rule candidates.
+> Status: **v1.0 preview (v0.5)**. For **12 high-profile directives** (NIS2, CER, Accessibility Act, Whistleblower,
+> Pillar Two, Copyright DSM, Representative Actions, Pay Transparency, Minimum Wages, Single-Use Plastics, EECC,
+> Women on Boards) the tool lists the national laws each member state notified, fetches the directive and the
+> main national act, splits both into citable provisions with stable IDs, and proposes provision-level links in
+> **Czechia, Slovakia, Austria and Germany**, with gap and extra-rule candidates.
 >
-> Only Czechia has an official correlation table to check against. There:
-> - a provision the table lists is among the top 5 machine candidates for 61–64 % of NIS2 provisions, and
->   the right § for about 81 %;
-> - the top single suggestion is right for about 43 %;
-> - 13 of the 16 gap candidates are provisions the table does not list, but 12 of the 16 sit in one
->   article (Art. 32), and outside it the list does no better than chance.
+> **How good is it?** Seven official correlation tables (4 Czech, 3 Slovak) serve as tests. The matcher was
+> tuned on one of them (NIS2 × CZ) only. On the six held-out tables, a provision the government lists is
+> among the top 5 machine candidates for 60–90 % of EU provisions, and the right § for 77–96 %
+> ([docs/evaluation.md](docs/evaluation.md#v05-held-out-generalisation-six-more-official-tables)). Austria and
+> Germany have no table to check against. The LLM judge is built but **not run** (it needs an API key), and
+> there are **no human reviews yet**: everything at provision level is an unreviewed machine suggestion.
 >
-> Suggestions still need reviewers, and the website now has a review queue (see
-> [docs/evaluation.md](docs/evaluation.md)).
->
-> Website: **https://jerrywoof.github.io/OpenAcquis/**, published by GitHub Actions after the first deploy from
-> `main`. It has:
-> - notified national measures for 10 directives;
-> - the [NIS2 article × country matrix](https://jerrywoof.github.io/OpenAcquis/matrix.html?celex=32022L2555);
-> - NIS2 provision by provision for [CZ](https://jerrywoof.github.io/OpenAcquis/alignment.html?id=32022L2555_cz),
->   [SK](https://jerrywoof.github.io/OpenAcquis/alignment.html?id=32022L2555_sk),
->   [AT](https://jerrywoof.github.io/OpenAcquis/alignment.html?id=32022L2555_at) and
->   [DE](https://jerrywoof.github.io/OpenAcquis/alignment.html?id=32022L2555_de);
-> - a [review page](https://jerrywoof.github.io/OpenAcquis/review.html?id=32022L2555_sk);
-> - the open dataset.
+> Website: **https://jerrywoof.github.io/OpenAcquis/**, rebuilt weekly by GitHub Actions. You can see:
+> - notified national measures for 14 directives, with a map and a searchable table;
+> - for each of the 12 registry directives, a page per country, provision by provision, with the official
+>   correlation table alongside where one exists (e.g. [CER × Slovakia](https://jerrywoof.github.io/OpenAcquis/alignment.html?id=32022L2557_sk)),
+>   an [article × country matrix](https://jerrywoof.github.io/OpenAcquis/matrix.html?celex=32022L2555), and
+>   "not notified" or "nothing to align" where that is the case;
+> - a [review page](https://jerrywoof.github.io/OpenAcquis/review.html?id=32022L2555_sk) for every pair;
+> - [data and API](https://jerrywoof.github.io/OpenAcquis/data.html): the open dataset (2,736 links from official
+>   tables), a static JSON API and an Atom feed of changes to the watched laws.
 
 ---
 
@@ -63,13 +60,13 @@ Leftovers: gap candidates (EU provisions with nothing similar) and extra-rule ca
 (national rules matching nothing), filtered by scope, margin and structure    (v0.4)
         │
         ▼
-Evaluation against official correlation tables (NIS2 × CZ)
+Evaluation against official correlation tables (7: CZ and SK; 6 held out)
         │
         ▼
-Human review (review page → GitHub) ──► open dataset (CC-BY) ──► website matrix (v0.4); API, change alerts later
+Human review (review page → GitHub) ──► open dataset (CC-BY) ──► website, static API, change alerts (v0.5)
 ```
 
-More detail: [docs/how-it-works.md](docs/how-it-works.md) · Evaluation: [docs/evaluation.md](docs/evaluation.md) · Review: [docs/review.md](docs/review.md) · Dataset: [docs/dataset.md](docs/dataset.md) · Judge: [docs/judge.md](docs/judge.md) · Data: [docs/data-sources.md](docs/data-sources.md) · Provision IDs: [docs/provisions.md](docs/provisions.md) · Website: [docs/website.md](docs/website.md) · All docs: [docs/README.md](docs/README.md) · Plan: [ROADMAP.md](ROADMAP.md) · Changes: [CHANGELOG.md](CHANGELOG.md)
+More detail: [docs/how-it-works.md](docs/how-it-works.md) · Evaluation: [docs/evaluation.md](docs/evaluation.md) · Review: [docs/review.md](docs/review.md) · Dataset: [docs/dataset.md](docs/dataset.md) · Judge: [docs/judge.md](docs/judge.md) · API: [docs/api.md](docs/api.md) · Alerts: [docs/alerts.md](docs/alerts.md) · Data: [docs/data-sources.md](docs/data-sources.md) · Provision IDs: [docs/provisions.md](docs/provisions.md) · Website: [docs/website.md](docs/website.md) · All docs: [docs/README.md](docs/README.md) · Plan: [ROADMAP.md](ROADMAP.md) · Changes: [CHANGELOG.md](CHANGELOG.md)
 
 ## Quickstart
 
@@ -77,7 +74,7 @@ Requires Python 3.10+. No API keys; no dependencies. Optional extras:
 
 - `pip install -e '.[embeddings]'`: dense multilingual embeddings (sentence-transformers); `align` then uses
   the `hybrid` matcher.
-- `pip install -e '.[llm]'`: LLM judge (Anthropic SDK; needs `ANTHROPIC_API_KEY`).
+- `pip install -e '.[llm]'`: LLM judge (Anthropic SDK and credentials, e.g. `ANTHROPIC_API_KEY`).
 - `pip install -e '.[tls]'`: certifi, if your Python cannot verify the Austrian RIS certificate.
 
 ```bash
@@ -258,12 +255,36 @@ openacquis dataset build                        # dataset/: links.csv, links.jso
 The dataset (CC-BY-4.0) holds the official correlation-table links (568 for NIS2 × CZ) and reviewed links. It is
 downloadable from the website. See [docs/review.md](docs/review.md) and [docs/dataset.md](docs/dataset.md).
 
+### Twelve directives, seven official tables (v0.5)
+
+```bash
+openacquis directives                      # the registry: main act per directive and country, gold sets
+openacquis align 32022L2557 sk -o cer_sk.json   # any registry directive x country (acts from data/directives.json)
+openacquis eval --list                     # nis2-cz (tuning set), cer-cz, eaa-cz, whistleblower-cz, nis2-sk, cer-sk, pay-sk
+openacquis eval 32023L0970 sk              # held-out test: Pay Transparency x Slovakia
+openacquis alerts check --dry-run          # change alerts for the watched sources (also: alerts feed)
+openacquis judge-batch run site/static-data/32022L2557_cz.json --dry-run   # cost estimate, no key needed
+
+python scripts/build_alignments.py --only 32022L2557   # refresh the site's precomputed alignments (cached, resumable)
+python scripts/build_api.py --check        # static API from the built site, schema-checked
+```
+
+Real output (2026-10-12, `hybrid-lex`, thresholds tuned on NIS2 × CZ, not retuned):
+
+```
+$ openacquis eval 32023L0970 sk
+evaluation set pay-sk (held out: thresholds were tuned on nis2-cz only)
+...
+  EU provision -> national provision   0.793   0.902   0.913   0.837     92
+```
+
 ### Website
 
 The site will be published at https://jerrywoof.github.io/OpenAcquis/ and rebuilt weekly from CELLAR by GitHub Actions (once Pages is enabled, see [docs/website.md](docs/website.md)). To preview it locally:
 
 ```bash
-python scripts/build_site.py --offline     # or without --offline for live data
+python scripts/build_site.py --offline     # or without --offline for live data (NIS2 alignments live, the rest precomputed)
+python scripts/build_api.py                # optional: the static API under site/api/v1/
 python -m http.server 8000 -d site         # then open http://localhost:8000/
 ```
 
@@ -272,8 +293,8 @@ python -m http.server 8000 -d site         # then open http://localhost:8000/
 There is a lot to do, and much of it is welcoming to newcomers:
 
 - **Country adapters**: fetch and split national law for your country (each country is a separate module in `openacquis.adapters`; Czechia is the worked example, Slovakia, Austria and Germany followed in v0.4).
-- **Legal review**: law students and practitioners checking AI suggestions on the [review page](https://jerrywoof.github.io/OpenAcquis/review.html?id=32022L2555_cz), no coding needed (how: [docs/review.md](docs/review.md)).
-- **Evaluation data**: Czech government bills include official correlation tables (*rozdílové tabulky*) that pair Czech sections with EU articles. NIS2 × Czechia is done (`data/eval/`); the companion bill (tisk 760) and other directives are open.
+- **Legal review**: law students and practitioners checking AI suggestions on the review pages (e.g. [NIS2 × Austria](https://jerrywoof.github.io/OpenAcquis/review.html?id=32022L2555_at)), no coding needed (how: [docs/review.md](docs/review.md)).
+- **Evaluation data**: Czech and Slovak government bills include official correlation tables (*rozdílové tabulky*, *tabuľky zhody*) that pair national sections with EU articles. Seven are done (`data/eval/`); other directives, companion bills and other countries' tables are open.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).
 

@@ -65,7 +65,7 @@ import sqlite3
 import unicodedata
 from array import array
 from collections.abc import Callable, Iterable, Sequence
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
 from typing import IO, Any, Protocol, runtime_checkable
 
@@ -1051,13 +1051,20 @@ class MatchResult:
     granularity: str = "leaf"
     k: int = 5
     _nat_doc: dict[str, Document] = field(default_factory=dict, repr=False)
+    #: set by :meth:`masked`: EU unit row -> national unit columns that are not candidates in it
+    _masked: dict[int, frozenset[int]] = field(default_factory=dict, repr=False)
 
     def candidates(self, k: int | None = None, min_score: float | None = None) -> list[Candidate]:
-        """Top-``k`` national units for every EU unit, EU document order."""
+        """Top-``k`` national units for every EU unit, EU document order (masked units left out)."""
         k = self.k if k is None else k
         out = []
-        for u, row in zip(self.eu_units, self.scores):
-            for rank, (j, s) in enumerate(_top_k(row, k, min_score), 1):
+        for i, (u, row) in enumerate(zip(self.eu_units, self.scores)):
+            cols = self._masked.get(i)
+            if cols:
+                top = [(j, s) for j, s in _top_k(row, k + len(cols), min_score) if j not in cols][:k]
+            else:
+                top = _top_k(row, k, min_score)
+            for rank, (j, s) in enumerate(top, 1):
                 out.append(Candidate(u.id, self.national_units[j].id, round(s, 6), rank,
                                      self.method, self.granularity))
         return out
@@ -1116,6 +1123,30 @@ class MatchResult:
                 out.append(Candidate(a, nat_keys[j], round(s, 6), rank,
                                      f"{self.method}+rollup-{agg}", level))
         return out
+
+    def masked(self, national_ids: Iterable[str], keep_rows: Iterable[str] = ()) -> MatchResult:
+        """A copy in which the national units ``national_ids`` score below every other unit, except
+        in the rows of the EU units ``keep_rows``.
+
+        The other scores are kept as computed (with every unit in the pool), so masking a few
+        units changes nothing but where those units rank. A masked score is the row's lowest
+        score minus 1, and :meth:`candidates` leaves masked units out, so they never become
+        candidates of a masked row.
+        """
+        ids = set(national_ids)
+        cols = frozenset(j for j, u in enumerate(self.national_units) if u.id in ids)
+        if not cols:
+            return self
+        keep = set(keep_rows)
+        scores, masked = [], dict(self._masked)
+        for i, (u, row) in enumerate(zip(self.eu_units, self.scores)):
+            if u.id in keep or not row:
+                scores.append(list(row))
+                continue
+            floor = min(row) - 1.0
+            scores.append([floor if j in cols else s for j, s in enumerate(row)])
+            masked[i] = masked.get(i, frozenset()) | cols
+        return replace(self, scores=scores, _masked=masked)
 
     def to_jsonl(self, candidates: Iterable[Candidate] | None = None, text_limit: int = 400) -> str:
         """JSONL with evidence (texts, URLs); defaults to :meth:`candidates`."""
