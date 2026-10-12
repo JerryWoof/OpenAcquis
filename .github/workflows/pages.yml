@@ -29,7 +29,7 @@ jobs:
       - run: pip install -e '.[dev]'
       - name: Offline tests (a broken build never deploys)
         run: pytest -m "not live" -q
-      - name: Build site data from CELLAR
+      - name: Build site data (CELLAR measures; NIS2 x CZ alignment with the stdlib lexical matcher, falling back to site/static-data)
         run: python scripts/build_site.py
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

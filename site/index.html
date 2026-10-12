@@ -38,6 +38,13 @@
     is on the <a href="https://github.com/JerryWoof/OpenAcquis/blob/main/ROADMAP.md">roadmap</a>.
   </div>
 
+  <div class="note info" role="note">
+    <strong>New: first provision-level map.</strong>
+    <a href="alignment.html?id=32022L2555_cz">NIS2 × Czechia, provision by provision</a>: every NIS2 paragraph next to the
+    Czech provisions the government's official correlation table lists for it and the top machine suggestion, with both texts side by side.
+    Machine suggestions are unreviewed.
+  </div>
+
   <h2 id="directives">Directives</h2>
   <p class="muted small" id="built">Loading data…</p>
   <div id="sample-note"></div>
@@ -47,10 +54,10 @@
   <ol class="steps">
     <li><h3>Which national acts <span class="tag now">live</span></h3>
       <p class="small muted">Member states notify the Commission of the measures they adopt for each directive. We read these records from CELLAR, the database behind EUR-Lex.</p></li>
-    <li><h3>Texts <span class="tag now">v0.2 · CLI</span></h3>
-      <p class="small muted">The directive in each official language, and consolidated national laws from national portals, split into articles, paragraphs and points. Available in the <a href="https://github.com/JerryWoof/OpenAcquis#quickstart">command-line tool</a> for EU directives (24 languages) and Czech law (e-Sbírka); not yet shown on this site.</p></li>
-    <li><h3>Matching <span class="tag">v0.3</span></h3>
-      <p class="small muted">Multilingual models propose which national provision implements which EU provision; an AI judge labels each pair (same, partial, different value, stricter, missing, option chosen).</p></li>
+    <li><h3>Texts <span class="tag now">v0.2–0.3 · CLI + NIS2 × CZ</span></h3>
+      <p class="small muted">The directive in each official language, and consolidated national laws from national portals, split into articles, paragraphs and points. Available in the <a href="https://github.com/JerryWoof/OpenAcquis#quickstart">command-line tool</a> for EU directives (24 languages) and Czech law (e-Sbírka); shown on this site side by side for <a href="alignment.html?id=32022L2555_cz">NIS2 × Czechia</a>.</p></li>
+    <li><h3>Matching <span class="tag now">v0.3 · NIS2 × CZ</span></h3>
+      <p class="small muted">Text similarity proposes which national provision implements which EU provision, scored against the official Czech correlation table; an AI judge can label each pair (same, partial, different value, stricter, option chosen). First result: <a href="alignment.html?id=32022L2555_cz">NIS2 × Czechia</a>.</p></li>
     <li><h3>Human review <span class="tag">v0.4</span></h3>
       <p class="small muted">Suggestions stay labelled as suggestions until a person checks them. Reviewed results become an open CC-BY dataset.</p></li>
   </ol>

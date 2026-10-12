@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Provision alignment · OpenAcquis</title>
+<meta name="description" content="A directive and one country's law, provision by provision: the official correlation table next to the top machine suggestion, with both texts side by side.">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231c5cab'/%3E%3Cg fill='%23fff'%3E%3Crect x='6' y='6' width='9' height='9' rx='2'/%3E%3Crect x='17' y='6' width='9' height='9' rx='2' opacity='.6'/%3E%3Crect x='6' y='17' width='9' height='9' rx='2' opacity='.6'/%3E%3Crect x='17' y='17' width='9' height='9' rx='2' opacity='.3'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="./" aria-label="OpenAcquis home">
+      <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#1c5cab"/><g fill="#fff"><rect x="6" y="6" width="9" height="9" rx="2"/><rect x="17" y="6" width="9" height="9" rx="2" opacity=".6"/><rect x="6" y="17" width="9" height="9" rx="2" opacity=".6"/><rect x="17" y="17" width="9" height="9" rx="2" opacity=".3"/></g></svg>
+      OpenAcquis
+    </a>
+    <nav aria-label="Main">
+      <a href="./#directives">Directives</a>
+      <a href="./#how">How it works</a>
+      <a href="https://github.com/JerryWoof/OpenAcquis">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main" class="wrap">
+  <p class="crumbs"><a id="a-back" href="./#directives">← All directives</a></p>
+  <h1 id="a-title">Loading…</h1>
+  <p class="lede" id="a-lede"></p>
+  <div id="a-notes"></div>
+
+  <div id="a-body" hidden>
+    <div class="legend-box" aria-label="What the columns mean">
+      <div><span class="pill official">Official correlation table</span>
+        <p class="small" id="a-official-src"></p></div>
+      <div><span class="pill machine">Machine suggestion</span>
+        <p class="small" id="a-machine-src"></p></div>
+    </div>
+
+    <div class="kpis" id="a-kpis"></div>
+
+    <form class="filters" id="a-filters" role="search" onsubmit="return false">
+      <label>Article
+        <select id="f-art"><option value="">All articles</option></select>
+      </label>
+      <label>Show
+        <select id="f-show">
+          <option value="">All provisions</option>
+          <option value="official">With an official correlation</option>
+          <option value="differs">Machine suggestion differs from the table</option>
+          <option value="none">No official correlation</option>
+        </select>
+      </label>
+      <label>Search texts
+        <input type="search" id="f-q" placeholder="e.g. 24 hodin, incident, § 16" autocomplete="off">
+      </label>
+      <button type="button" class="btn" id="f-reset">Reset</button>
+    </form>
+    <p class="count" id="a-count" aria-live="polite"></p>
+    <div id="a-articles"></div>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p><strong>Not legal advice.</strong> Machine suggestions are unreviewed similarity matches, and the official correlation
+      table describes a government bill, not the act as finally adopted. Neither says whether a provision is correctly transposed.
+      Always check the official texts.</p>
+    <p>Directive text: EUR-Lex / CELLAR, © European Union, <a href="https://eur-lex.europa.eu">https://eur-lex.europa.eu</a>
+      (reuse under Commission Decision 2011/833/EU). Czech law: e-Sbírka. Correlation table: Chamber of Deputies (psp.cz), an
+      official work. Code: MIT. <span id="footer-built"></span></p>
+  </div>
+</footer>
+<script src="assets/app.js"></script>
+<script>OpenAcquis.renderAlignment();</script>
+</body>
+</html>

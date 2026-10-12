@@ -6,6 +6,9 @@ metadata and the national measures each member state has notified, and writes:
 
     site/data/index.json          one entry per directive, with counts per country
     site/data/<CELEX>.json        the same plus the full list of measures
+    site/data/align/<CELEX>_<cc>.json
+                                  provision-level alignment pages (NIS2 x Czechia): the official
+                                  correlation table next to the top machine suggestion
 
 The site itself is static HTML/JS that reads these files; nothing else is needed.
 
@@ -13,6 +16,15 @@ Usage::
 
     python scripts/build_site.py              # live, from the CELLAR SPARQL endpoint
     python scripts/build_site.py --offline    # from bundled samples (scripts/sample_data/)
+    python scripts/build_site.py --write-static
+                                  # also refresh site/static-data/ (commit it): the
+                                  # alignment the builder falls back to when texts
+                                  # cannot be fetched
+
+Alignment pages are computed with the stdlib lexical embedder (no heavy dependencies).
+They need the directive text (CELLAR) and the national act (e-Sbírka); if either
+cannot be fetched, or with ``--offline``, the committed ``site/static-data/`` copy is
+used instead and the page says when it was computed.
 
 A failing directive never stops the build: its error is recorded in the data and
 shown on the site. The exit code is non-zero only if *every* directive failed,
@@ -45,7 +57,9 @@ from openacquis.countries import MEMBER_STATES
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_OUT = ROOT / "site" / "data"
 SAMPLE_DIR = Path(__file__).resolve().parent / "sample_data"
+STATIC_DIR = ROOT / "site" / "static-data"
 SCHEMA_VERSION = 1
+ALIGNMENT_SCHEMA = 1
 
 
 @dataclass(frozen=True)
@@ -69,6 +83,39 @@ DIRECTIVES: list[Entry] = [
     Entry("32019L1158", "Work-Life Balance Directive", "Employment"),
     Entry("32022L2041", "Adequate Minimum Wages Directive", "Employment"),
     Entry("32018L1972", "European Electronic Communications Code", "Telecommunications"),
+]
+
+
+@dataclass(frozen=True)
+class AlignmentEntry:
+    """A provision-level alignment page: one directive x one country."""
+
+    celex: str
+    short: str
+    country: str  # ISO alpha-3, as in the measures data
+    country_code: str  # adapter code: "cz"
+    country_name: str
+    gold: str  # evaluation set (relative to the repository root)
+    gold_label: str
+    gold_url: str
+    gold_history_url: str
+
+    @property
+    def slug(self) -> str:
+        return f"{self.celex}_{self.country_code}"
+
+    @property
+    def href(self) -> str:
+        return f"alignment.html?id={self.slug}"
+
+
+ALIGNMENTS: list[AlignmentEntry] = [
+    AlignmentEntry(
+        "32022L2555", "NIS2", "CZE", "cz", "Czechia", "data/eval/nis2_cz.jsonl",
+        "Rozdílová tabulka, government bill of the Cybersecurity Act (sněmovní tisk 759/0, 2024)",
+        "https://www.psp.cz/sqw/text/orig2.sqw?idd=244067",
+        "https://www.psp.cz/sqw/historie.sqw?o=9&t=759",
+    ),
 ]
 
 
@@ -169,6 +216,10 @@ def build_directive(client: CellarClient, entry: Entry) -> dict:
         "countries_with_measures": 0,
         "counts": {code: 0 for code in MEMBER_STATES},
         "measures": [],
+        "alignments": [
+            {"country": a.country, "country_name": a.country_name, "href": a.href}
+            for a in ALIGNMENTS if a.celex == entry.celex
+        ],
         "error": None,
     }
     try:
@@ -254,6 +305,214 @@ def write_site_data(out_dir: Path, index: dict, records: list[dict]) -> None:
     )
 
 
+# --- alignment pages (provision level) -------------------------------------------
+
+
+def _clip(text: str, limit: int) -> str:
+    text = text.strip()
+    return text if len(text) <= limit else text[: limit - 1].rstrip() + "…"
+
+
+def _on_path(a: str, b: str) -> bool:
+    return a == b or a.startswith(b + ".") or b.startswith(a + ".")
+
+
+def alignment_page_data(
+    entry: AlignmentEntry,
+    result,
+    gold: list,
+    *,
+    now: datetime | None = None,
+    mode: str = "live",
+    text_limit: int = 2500,
+    top: int = 3,
+) -> dict:
+    """Shape an :class:`openacquis.align.AlignmentResult` and gold links into the page's JSON.
+
+    One row per EU paragraph (or per article without paragraphs, or annex). Each row
+    has the national provisions the official correlation table lists for it and the
+    top machine suggestions (best score of any EU unit inside the row, per national
+    unit). Texts are plain strings; the page inserts them with textContent.
+    """
+    from openacquis.align import path_label
+    from openacquis.evaluate import retrieval
+    from openacquis.match import level_id
+
+    eu = result.eu_doc
+    mr = result.match
+    nat_doc = {p.id: d for d in result.national_docs for p in d}
+    # rows: EU paragraphs, or the article / annex itself when it has no paragraphs
+    articles: list[dict] = []
+    row_ids: list[str] = []
+    art_of_row: dict[str, dict] = {}
+    for p in eu.roots():
+        if p.kind not in ("article", "annex"):
+            continue
+        paras = [c for c in eu.children(p.id) if c.kind == "paragraph"]
+        art = {"id": p.id, "label": p.label, "heading": p.heading or "", "url": p.url,
+               "official": [], "rows": []}
+        for r in paras or [p]:
+            row_ids.append(r.id)
+            art_of_row[r.id] = art
+            art["rows"].append({"id": r.id, "label": path_label(eu, r.id), "url": r.url,
+                                "text": _clip(eu.full_text(r.id), text_limit),
+                                "official": [], "official_eu": [], "machine": [], "agreement": None})
+        articles.append(art)
+    rows = {r["id"]: r for a in articles for r in a["rows"]}
+
+    # official correlation table -> rows
+    for g in gold:
+        target = next((rid for rid in row_ids if g.eu_id == rid or g.eu_id.startswith(rid + ".")), None)
+        if target is not None:
+            r = rows[target]
+            if g.national_id not in r["official"]:
+                r["official"].append(g.national_id)
+            sub = path_label(eu, g.eu_id) if eu.get(g.eu_id) else g.eu_id
+            if g.eu_id != target and sub not in r["official_eu"]:
+                r["official_eu"].append(sub)  # the table cites only these parts of the paragraph
+            continue
+        art_id = level_id(eu, g.eu_id, "article") if eu.get(g.eu_id) else None
+        art = next((a for a in articles if a["id"] == art_id), None)
+        if art is not None and g.national_id not in art["official"]:
+            art["official"].append(g.national_id)
+
+    # machine suggestions per row
+    n = len(mr.national_units)
+    for rid, r in rows.items():
+        idx = [i for i, u in enumerate(mr.eu_units) if u.id == rid or u.id.startswith(rid + ".")]
+        if not idx or not n:
+            continue
+        best = [max(mr.scores[i][j] for i in idx) for j in range(n)]
+        order = sorted(range(n), key=lambda j: (-best[j], j))[:top]
+        r["machine"] = [{"id": mr.national_units[j].id, "score": round(best[j], 3),
+                         "above_threshold": best[j] >= result.threshold} for j in order]
+
+    def section(nid: str) -> str:
+        return level_id(nat_doc[nid], nid, "article") if nid in nat_doc else nid
+
+    # "article_level": the table cites only the whole article (e.g. "Čl. 35"), which covers this
+    # paragraph too, but names no provision for it alone, so there is nothing to compare row by row.
+    counts = {"match": 0, "same_section": 0, "differs": 0, "article_level": 0, "no_table_entry": 0}
+    for rid, r in rows.items():
+        if not r["official"]:
+            r["agreement"] = "article_level" if art_of_row[rid]["official"] else "no_table_entry"
+        elif not r["machine"]:
+            r["agreement"] = "differs"
+        else:
+            m = r["machine"][0]["id"]
+            if any(_on_path(m, o) for o in r["official"]):
+                r["agreement"] = "match"
+            elif section(m) in {section(o) for o in r["official"]}:
+                r["agreement"] = "same_section"
+            else:
+                r["agreement"] = "differs"
+        counts[r["agreement"]] += 1
+
+    used = {x for r in rows.values() for x in r["official"]} | {m["id"] for r in rows.values() for m in r["machine"]}
+    used |= {x for a in articles for x in a["official"]}
+    national = {}
+    for nid in sorted(used):
+        d = nat_doc.get(nid)
+        if d is None:
+            national[nid] = {"label": nid.split(":", 2)[-1], "act": nid.split(":")[1], "text": "", "url": None}
+            continue
+        national[nid] = {"label": path_label(d, nid), "act": d.act_id, "url": d.by_id(nid).url,
+                         "text": _clip(d.full_text(nid), text_limit)}
+    ret = retrieval(mr, gold, (1, 5), levels=("provision", "section"))
+    built = (now or datetime.now(timezone.utc)).replace(microsecond=0)
+    return {
+        "schema": ALIGNMENT_SCHEMA,
+        "built_at": built.isoformat().replace("+00:00", "Z"),
+        "mode": mode,
+        "generator": f"openacquis {__version__}",
+        "id": entry.slug,
+        "celex": entry.celex,
+        "short": entry.short,
+        "country": entry.country,
+        "country_name": entry.country_name,
+        "eu": {"title": eu.title, "url": eu.url, "language": eu.language},
+        "national": [{"act_id": d.act_id, "title": d.title, "url": d.url} for d in result.national_docs],
+        "method": result.method,
+        "threshold": result.threshold,
+        "official_source": {"label": entry.gold_label, "url": entry.gold_url, "history_url": entry.gold_history_url,
+                            "links": len(gold)},
+        "summary": {
+            "rows": len(rows),
+            "rows_with_official": len(rows) - counts["no_table_entry"],
+            **counts,
+            "recall_at_1": ret["provision"]["recall@1"],
+            "recall_at_5": ret["provision"]["recall@5"],
+            "section_recall_at_5": ret["section"]["recall@5"],
+        },
+        "articles": articles,
+        "national_texts": national,
+    }
+
+
+def build_alignment(
+    entry: AlignmentEntry,
+    *,
+    log: Callable[[str], None] = lambda msg: None,
+    now: datetime | None = None,
+    eurlex=None,
+    national_client=None,
+) -> dict:
+    """Fetch the texts, align with the lexical embedder and shape the page data (raises on failure)."""
+    from openacquis.align import align, load_documents
+    from openacquis.evaluate import load_gold
+    from openacquis.match import LexicalEmbedder
+
+    eu, docs = load_documents(entry.celex, entry.country_code, eurlex=eurlex, national_client=national_client,
+                              log=log)
+    result = align(eu, docs, embedder=LexicalEmbedder(), log=log, now=now)
+    gold = load_gold(ROOT / entry.gold)
+    return alignment_page_data(entry, result, gold, now=now, mode="live")
+
+
+def write_alignments(
+    out_dir: Path,
+    entries: list[AlignmentEntry],
+    *,
+    offline: bool = False,
+    write_static: bool = False,
+    static_dir: Path = STATIC_DIR,
+    log: Callable[[str], None] = lambda msg: None,
+    build: Callable[..., dict] = build_alignment,
+) -> list[str]:
+    """Write ``out_dir/align/<slug>.json`` for each entry. Live first, then the committed
+    static copy. Returns the slugs that have no data at all (neither worked)."""
+    align_dir = out_dir / "align"
+    align_dir.mkdir(parents=True, exist_ok=True)
+    missing = []
+    for e in entries:
+        data = None
+        if not offline:
+            log(f"  alignment {e.slug} ...")
+            try:
+                data = build(e, log=lambda m: log("    " + m))
+            except Exception as exc:
+                log(f"    could not compute live ({type(exc).__name__}: {exc}); using the static copy")
+        if data is not None and write_static:
+            static_dir.mkdir(parents=True, exist_ok=True)
+            (static_dir / f"{e.slug}.json").write_text(
+                json.dumps({**data, "mode": "static"}, ensure_ascii=False, indent=None, separators=(",", ":")),
+                encoding="utf-8")
+            log(f"    wrote {static_dir / (e.slug + '.json')}")
+        if data is None:
+            path = static_dir / f"{e.slug}.json"
+            if not path.exists():
+                log(f"    no static copy at {path}")
+                missing.append(e.slug)
+                continue
+            data = json.loads(path.read_text(encoding="utf-8"))
+            data["mode"] = "static"
+        (align_dir / f"{e.slug}.json").write_text(
+            json.dumps(data, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+        s = data["summary"]
+        log(f"    {e.slug}: {s['rows']} rows, {s['rows_with_official']} with an official correlation ({data['mode']})")
+    return missing
+
+
 # --- CLI ----------------------------------------------------------------------
 
 
@@ -265,6 +524,9 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--cache", type=Path, metavar="DIR", help="cache SPARQL responses in DIR (24 h)")
     p.add_argument("--retries", type=int, default=3)
     p.add_argument("--pause", type=float, default=2.0, help="seconds between directives (live)")
+    p.add_argument("--no-alignment", action="store_true", help="skip the provision-level alignment pages")
+    p.add_argument("--write-static", action="store_true",
+                   help="after a live alignment build, refresh site/static-data/ (commit the result)")
     args = p.parse_args(argv)
 
     def log(msg: str) -> None:
@@ -294,6 +556,12 @@ def main(argv: list[str] | None = None) -> int:
         CellarClient(fetch), entries, mode=mode, log=log, pause=pause
     )
     write_site_data(args.out, index, records)
+    if not args.no_alignment:
+        wanted_align = [a for a in ALIGNMENTS if not args.only or a.celex in {c.upper() for c in args.only}]
+        missing = write_alignments(args.out, wanted_align, offline=args.offline, write_static=args.write_static,
+                                   log=log)
+        if missing:
+            log(f"Alignment pages without data: {missing}")
     failed = [r["celex"] for r in records if r["error"]]
     log(f"Done: {len(records) - len(failed)} ok, {len(failed)} failed {failed or ''}")
     return 1 if len(failed) == len(records) else 0
