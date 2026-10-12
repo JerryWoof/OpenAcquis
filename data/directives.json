@@ -1,0 +1,144 @@
+{
+ "schema": 1,
+ "updated": "2026-10-12",
+ "source": "CELLAR notified measures mapped by openacquis.adapters.map_measures, checked 2026-10-12 (v1.0 shortlist: research report 'coverage')",
+ "about": "v1.0 directive registry. Per country: 'acts' are the adapter references of the main transposing act(s), first = main act (only its units can be extra-rule candidates). 'override': true marks acts set by hand because the adapter mapping of CELLAR's notified measures does not find them; without it the acts are what the mapping finds. 'act_labels': how secondary acts are cited on the pages (ref -> label). 'public_note': the note as the website shows it, when 'note' is a developer note. 'extra_rules': false when the main act is a general code (Labour Code, AktG, copyright or waste act) of which the directive concerns only a part: no extra-rule candidates are reported for it. 'status': 'ok' (notified transposition), 'baseline' (the act was NOT notified for this directive; aligned as the pre-existing national law), 'none' (nothing to align). Machine alignments built from this registry are suggestions, not findings of (non-)transposition.",
+ "directives": [
+  {
+   "celex": "32022L2555", "short": "NIS2", "topic": "Cybersecurity", "rank": 1,
+   "deadline": "2024-10-17", "deadlines": ["2024-10-17", "2024-10-18"],
+   "countries": {
+    "cz": {"status": "ok", "acts": ["264/2025"], "label": "264/2025 Sb.", "version": "2025-11-01",
+           "note": "Zákon č. 264/2025 Sb., o kybernetické bezpečnosti; official correlation table: data/eval/nis2_cz.jsonl"},
+    "sk": {"status": "ok", "acts": ["69/2018"], "label": "69/2018 Z. z.", "version": "2025-01-01", "note": "CELLAR cites 69/2018 as amended by 366/2024"},
+    "at": {"status": "ok", "acts": ["20013065"], "label": "NISG 2026", "aliases": ["NISG 2026"], "note": "BGBl. I Nr. 94/2025"},
+    "de": {"status": "ok", "acts": ["bsig_2025"], "label": "BSIG", "note": "17 of 20 DE measures are Land law"}
+   }
+  },
+  {
+   "celex": "32022L2557", "short": "Critical Entities Resilience (CER)", "topic": "Critical infrastructure", "rank": 2,
+   "deadline": "2024-10-17", "deadlines": ["2024-10-17", "2024-10-18"],
+   "countries": {
+    "cz": {"status": "ok", "acts": ["266/2025"], "label": "266/2025 Sb."},
+    "sk": {"status": "ok", "acts": ["367/2024"], "label": "367/2024 Z. z."},
+    "at": {"status": "ok", "acts": ["20012981"], "label": "RKEG", "aliases": ["RKEG"]},
+    "de": {"status": "ok", "acts": ["kritisdachg"], "label": "KRITIS-DachG"}
+   }
+  },
+  {
+   "celex": "32019L0882", "short": "European Accessibility Act", "topic": "Accessibility", "rank": 3,
+   "deadline": "2022-06-28", "deadlines": ["2022-06-28", "2025-06-28", "2027-06-28"],
+   "countries": {
+    "cz": {"status": "ok", "acts": ["424/2023"], "label": "424/2023 Sb."},
+    "sk": {"status": "ok", "acts": ["351/2022", "89/2026"], "label": "351/2022 Z. z.", "note": "plus government regulation 89/2026 Z. z."},
+    "at": {"status": "ok", "acts": ["20012316"], "label": "BaFG", "aliases": ["BaFG"]},
+    "de": {"status": "ok", "acts": ["bfsg", "bfsgv"], "label": "BFSG", "act_labels": {"bfsgv": "BFSGV"}, "note": "plus the BFSGV ordinance"}
+   }
+  },
+  {
+   "celex": "32019L1937", "short": "Whistleblower Directive", "topic": "Whistleblower protection", "rank": 4,
+   "deadline": "2021-12-17", "deadlines": ["2021-12-17", "2023-12-17"],
+   "countries": {
+    "cz": {"status": "ok", "acts": ["171/2023"], "label": "171/2023 Sb."},
+    "sk": {"status": "ok", "acts": ["54/2019"], "label": "54/2019 Z. z.", "note": "CELLAR cites 54/2019 as amended by 189/2023"},
+    "at": {"status": "ok", "acts": ["20012184"], "label": "HSchG", "aliases": ["HSchG", "BGBl. I Nr. 6/2023"], "note": "BGBl. I Nr. 6/2023"},
+    "de": {"status": "ok", "acts": ["hinschg"], "label": "HinSchG", "override": true,
+           "note": "CELLAR's HinSchG measures map as not_found (omnibus 'Gesetz für einen besseren Schutz hinweisgebender Personen')", "public_note": "act chosen by hand: the notified measure is the omnibus 'Gesetz für einen besseren Schutz hinweisgebender Personen', which enacted the HinSchG"}
+   }
+  },
+  {
+   "celex": "32022L2523", "short": "Pillar Two minimum tax", "topic": "Corporate taxation", "rank": 5,
+   "deadline": "2023-12-31", "deadlines": ["2023-12-31", "2024-12-31"],
+   "countries": {
+    "cz": {"status": "ok", "acts": ["416/2023"], "label": "416/2023 Sb."},
+    "sk": {"status": "ok", "acts": ["507/2023"], "label": "507/2023 Z. z."},
+    "at": {"status": "ok", "acts": ["20012474"], "label": "MinBestG", "override": true,
+           "note": "CELLAR's measure maps to the abbreviation 'MinBestRefG' (the reform act); the law is MinBestG", "public_note": "the notified measure is the reform act (MinBestRefG); the law it enacted, the MinBestG, is aligned"},
+    "de": {"status": "ok", "acts": ["minstg"], "label": "MinStG"}
+   }
+  },
+  {
+   "celex": "32019L0790", "short": "Copyright in the Digital Single Market", "topic": "Copyright", "rank": 6,
+   "deadline": "2021-06-07", "deadlines": ["2021-06-07"],
+   "countries": {
+    "cz": {"status": "ok", "acts": ["121/2000"], "label": "121/2000 Sb.", "extra_rules": false, "note": "copyright act as amended by 429/2022"},
+    "sk": {"status": "ok", "acts": ["185/2015"], "label": "185/2015 Z. z.", "extra_rules": false, "note": "copyright act as amended by 71/2022"},
+    "at": {"status": "ok", "acts": ["10001848"], "label": "UrhG", "extra_rules": false, "aliases": ["BGBl. Nr. 111/1936"], "note": "CELLAR cites BGBl. Nr. 111/1936; the abbreviation 'UrhG' does not resolve in RIS"},
+    "de": {"status": "ok", "acts": ["urhdag", "urhg"], "label": "UrhDaG", "act_labels": {"urhg": "UrhG"}, "override": true,
+           "note": "the implementation law maps as not_found; UrhDaG plus UrhG", "public_note": "acts chosen by hand: the notified implementation law enacted the UrhDaG and amended the UrhG; both are aligned"}
+   }
+  },
+  {
+   "celex": "32020L1828", "short": "Representative Actions Directive", "topic": "Consumer protection", "rank": 7,
+   "deadline": "2022-12-25", "deadlines": ["2022-12-25", "2023-06-25"],
+   "countries": {
+    "cz": {"status": "ok", "acts": ["179/2024"], "label": "179/2024 Sb."},
+    "sk": {"status": "ok", "acts": ["261/2023"], "label": "261/2023 Z. z."},
+    "at": {"status": "ok", "acts": ["20012650"], "label": "QEG", "override": true,
+           "note": "CELLAR's measure maps to 'VRUN' (the amending Novelle), not to the QEG", "public_note": "act chosen by hand: the notified measure is the amending act (VRUN); the law it enacted, the QEG, is aligned"},
+    "de": {"status": "ok", "acts": ["vdug"], "label": "VDuG", "override": true,
+           "note": "all 13 DE measures map as not_found", "public_note": "act chosen by hand: CELLAR's records of the 13 notified German measures do not link them to the VDuG"}
+   }
+  },
+  {
+   "celex": "32023L0970", "short": "Pay Transparency Directive", "topic": "Employment", "rank": 8,
+   "deadline": "2026-06-07", "deadlines": ["2026-06-07"],
+   "countries": {
+    "cz": {"status": "ok", "acts": ["262/2006"], "label": "262/2006 Sb.", "extra_rules": false, "note": "Labour Code; transposition via amendment 120/2025"},
+    "sk": {"status": "ok", "acts": ["76/2026"], "label": "76/2026 Z. z."},
+    "at": {"status": "baseline", "acts": ["20003395"], "label": "GlBG", "override": true,
+           "note": "AT: no federal measure notified (28 of 30 measures are Land laws); GlBG aligned as the existing federal equal-treatment law"},
+    "de": {"status": "baseline", "acts": ["entgtranspg"], "label": "EntgTranspG", "override": true,
+           "note": "DE: not notified (0 measures in CELLAR); EntgTranspG (2017) aligned as the pre-directive baseline"}
+   }
+  },
+  {
+   "celex": "32022L2041", "short": "Adequate Minimum Wages Directive", "topic": "Employment", "rank": 9,
+   "deadline": "2024-11-15", "deadlines": ["2024-11-15"],
+   "countries": {
+    "cz": {"status": "ok", "acts": ["262/2006"], "label": "262/2006 Sb.", "extra_rules": false, "note": "Labour Code; transposition via amendment 230/2024"},
+    "sk": {"status": "ok", "acts": ["663/2007"], "label": "663/2007 Z. z.", "note": "minimum wage act, amended by 289/2024"},
+    "at": {"status": "none", "acts": [],
+           "note": "AT: no statutory minimum wage (wages set by collective agreements); about 56 of 91 measures are Land or civil-service laws"},
+    "de": {"status": "ok", "acts": ["milog"], "label": "MiLoG"}
+   }
+  },
+  {
+   "celex": "32019L0904", "short": "Single-Use Plastics Directive", "topic": "Environment", "rank": 10,
+   "deadline": "2021-07-03", "deadlines": ["2021-07-03", "2023-01-05", "2024-07-03", "2024-12-31"],
+   "countries": {
+    "cz": {"status": "ok", "acts": ["243/2022"], "label": "243/2022 Sb."},
+    "sk": {"status": "ok", "acts": ["302/2019", "79/2015"], "label": "302/2019 Z. z.", "note": "plus the waste act 79/2015"},
+    "at": {"status": "ok", "acts": ["20002086"], "label": "AWG 2002", "extra_rules": false, "override": true,
+           "note": "both AT measures map as no_reference; AWG 2002 by hand", "public_note": "act chosen by hand: CELLAR's records of the two notified Austrian measures name no act; the AWG 2002 is aligned"},
+    "de": {"status": "ok", "acts": ["ewkverbotsv", "ewkkennzv", "ewkfondsg"], "label": "EWKVerbotsV",
+           "act_labels": {"ewkkennzv": "EWKKennzV", "ewkfondsg": "EWKFondsG"}, "override": true,
+           "note": "EWKFondsG (extended producer responsibility fund) is not among the mapped measures; acts set by hand", "public_note": "acts chosen by hand: the EWKFondsG (extended producer responsibility fund) is aligned too, though CELLAR's records do not link it"}
+   }
+  },
+  {
+   "celex": "32018L1972", "short": "European Electronic Communications Code", "topic": "Telecommunications", "rank": 11,
+   "deadline": "2020-12-21", "deadlines": ["2020-12-21", "2020-12-31"],
+   "countries": {
+    "cz": {"status": "ok", "acts": ["127/2005"], "label": "127/2005 Sb."},
+    "sk": {"status": "ok", "acts": ["452/2021"], "label": "452/2021 Z. z."},
+    "at": {"status": "ok", "acts": ["20011678"], "label": "TKG 2021", "aliases": ["TKG 2021"]},
+    "de": {"status": "ok", "acts": ["tkg_2021"], "label": "TKG", "override": true,
+           "note": "the TKG modernisation law maps as not_found", "public_note": "act chosen by hand: the notified measure is the TKG modernisation law, which enacted the TKG aligned here"}
+   }
+  },
+  {
+   "celex": "32022L2381", "short": "Women on Boards Directive", "topic": "Gender equality", "rank": 12,
+   "deadline": "2024-12-28", "deadlines": ["2024-12-28"],
+   "countries": {
+    "cz": {"status": "none", "acts": [],
+           "note": "CZ: no specific act; notified measures are amendments of 90/2012, 134/2016 and 33/2020"},
+    "sk": {"status": "ok", "acts": ["300/2024"], "label": "300/2024 Z. z."},
+    "at": {"status": "ok", "acts": ["10002070"], "label": "AktG", "extra_rules": false, "override": true,
+           "note": "via the GesLeiPoG amendment; CELLAR's measures map to 'EU' / 'GesLeiPoG' / BVergG", "public_note": "transposed by the GesLeiPoG, which amended the AktG aligned here"},
+    "de": {"status": "ok", "acts": ["aktg"], "label": "AktG", "extra_rules": false, "override": true,
+           "note": "CELLAR maps the DE measure to the 2015 FüPoG (bgrembg_2015); the second measure is not_found", "public_note": "act chosen by hand: CELLAR's records link the German measures to the 2015 FüPoG or to no act; the AktG is aligned"}
+   }
+  }
+ ]
+}
