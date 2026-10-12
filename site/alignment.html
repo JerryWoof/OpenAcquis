@@ -39,6 +39,8 @@
         <p class="small" id="a-official-src"></p></div>
       <div><span class="pill machine">Machine suggestion</span>
         <p class="small" id="a-machine-src"></p></div>
+      <div id="a-judge-legend" hidden><span class="pill judge">AI judge (Claude), unreviewed suggestion</span>
+        <p class="small" id="a-judge-src"></p></div>
     </div>
 
     <div class="kpis" id="a-kpis"></div>
@@ -54,6 +56,7 @@
           <option value="differs">Machine suggestion differs from the table</option>
           <option value="none">No official correlation</option>
           <option value="gaps">With gap candidates</option>
+          <option value="judge">AI judge says related</option>
         </select>
       </label>
       <label>Search texts

@@ -26,6 +26,8 @@
   --off: #a1302b;
   --gap: #8a5a00;
   --gap-bg: #fff6e0;
+  --judge: #0b6575;
+  --judge-bg: #e4f3f5;
 
   /* Sequential (blue) ramp for measure counts; bin 0 = none notified. */
   --bin0: #f0efec; --bin0-ink: #6b6a65;
@@ -67,6 +69,8 @@
     --off: #f08a84;
     --gap: #e7bf63;
     --gap-bg: #2e2714;
+    --judge: #7fd3e0;
+    --judge-bg: #12292d;
 
     --bin0: #2c2c2a; --bin0-ink: #9a9993;
     --bin1: #184f95; --bin1-ink: #ffffff;
@@ -259,6 +263,12 @@ td.t .j { display: block; color: var(--ink-3); font-size: .8rem; margin-top: 2px
 .pill { display: inline-block; font-size: .75rem; font-weight: 650; padding: 1px 9px; border-radius: 999px; white-space: nowrap; }
 .pill.official { color: var(--official); background: var(--official-bg); border: 1px solid var(--official); }
 .pill.machine { color: var(--machine); background: var(--machine-bg); border: 1px dashed var(--machine); }
+/* LLM judge: unreviewed AI labels on machine candidates */
+.pill.judge { color: var(--judge); background: var(--judge-bg); border: 1px dotted var(--judge); white-space: normal; }
+.judge-line { margin-top: 2px; }
+.judge-box { margin-top: 6px; padding: 6px 8px; border-left: 3px dotted var(--judge); background: var(--judge-bg); border-radius: 0 var(--radius) var(--radius) 0; font-size: .85rem; }
+.judge-box p { margin: 4px 0 0; }
+.judge-box blockquote { margin: 4px 0 0; padding: 0 0 0 8px; border-left: 2px solid var(--border); white-space: pre-line; overflow-wrap: anywhere; }
 .legend-box { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); gap: 12px; margin: 16px 0; }
 .legend-box > div { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; }
 .legend-box p { margin: 6px 0 0; color: var(--ink-2); }

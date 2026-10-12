@@ -220,7 +220,10 @@ def _strip_alignment(page: dict, paths: dict) -> dict:
     """The alignment page without texts (they live in the provision files), with API paths added."""
     articles = []
     for a in page["articles"]:
-        rows = [{k: v for k, v in r.items() if k != "text"} for r in a["rows"]]
+        # without texts and without the LLM judge's labels (unreviewed; shown on the website only)
+        rows = [{**{k: v for k, v in r.items() if k != "text"},
+                 "machine": [{k: v for k, v in m.items() if k != "judge"} for m in r.get("machine") or []]}
+                for r in a["rows"]]
         articles.append({**{k: v for k, v in a.items() if k != "rows"}, "rows": rows})
     national = []
     for n in page.get("national") or []:
@@ -253,6 +256,12 @@ def _strip_alignment(page: dict, paths: dict) -> dict:
         notice=NOTICE,
     )
     return data
+
+
+def _strip_judge_cells(articles: list[dict]) -> list[dict]:
+    """Matrix rows without the website-only LLM judge counts."""
+    return [{**a, "cells": {cc: {k: v for k, v in c.items() if k != "judge"} for cc, c in (a.get("cells") or {}).items()}}
+            for a in articles]
 
 
 def _candidates(review: dict | None, decisions: dict[str, Any]) -> list[dict]:
@@ -498,7 +507,7 @@ def build_api(
             dpaths["matrix"] = w.write(f"{base}/matrix.json", "matrix",
                                        {"directive": celex, "short": matrix.get("short"),
                                         "computed_at": matrix.get("built_at"), "countries": matrix["countries"],
-                                        "articles": matrix["articles"], "notice": NOTICE}, mmode)
+                                        "articles": _strip_judge_cells(matrix["articles"]), "notice": NOTICE}, mmode)
         eu_langs = sorted({lang for (c, lang) in eu_paths if c == celex})
         summary_rec = {
             "celex": celex, "short": rec.get("short"), "topic": rec.get("topic"), "title": rec.get("title"),

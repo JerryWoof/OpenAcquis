@@ -580,6 +580,35 @@
   };
   var SLUG = /^3\d{4}L\d{4}_[a-z]{2}$/;
 
+  // LLM judge (data/judgments/): unreviewed AI labels on machine candidates. All its strings are model
+  // output, so they only ever go through textContent (el's "text") and never into attributes that parse.
+  var JUDGE_LABELS = { same: "same", partial: "partial", different_value: "different value", stricter: "stricter",
+    option: "option chosen", unrelated: "unrelated" };
+  var JUDGE_NAME = "AI judge (Claude), unreviewed suggestion";
+  var JUDGE_DOCS = "https://github.com/JerryWoof/OpenAcquis/blob/main/docs/evaluation.md#llm-judge-nis2--cz";
+  function judgeRelated(j) { return !!j && JUDGE_LABELS.hasOwnProperty(j.label) && j.label !== "unrelated"; }
+  function judgeText(j) {
+    var lab = JUDGE_LABELS.hasOwnProperty(j.label) ? JUDGE_LABELS[j.label] : "unknown label";
+    var c = typeof j.confidence === "number" && isFinite(j.confidence) ? ", confidence " + Math.round(100 * j.confidence) + "%" : "";
+    return "AI judge: " + lab + c;
+  }
+  function judgePill(j) { return el("span", { className: "pill judge", title: JUDGE_NAME, text: judgeText(j) }); }
+  function judgeBox(j, euLang, natLang) {
+    var box = el("div", { className: "judge-box" }, [
+      el("div", {}, [judgePill(j), el("span", { className: "small muted", text: " " + JUDGE_NAME })]),
+      j.rationale ? el("p", { text: String(j.rationale) }) : null
+    ]);
+    [["Quote from the directive", j.evidence_eu, euLang], ["Quote from the national provision", j.evidence_national, natLang]]
+      .forEach(function (q) {
+        if (q[1]) box.appendChild(el("div", { className: "small" }, [q[0] + ":", el("blockquote", { lang: q[2], text: String(q[1]) })]));
+      });
+    if (j.evidence_eu || j.evidence_national) {
+      box.appendChild(el("p", { className: "small muted", text: j.evidence_verified
+        ? "Quotes checked: found verbatim in both texts." : "Quotes could not be verified in the texts; treat with extra care." }));
+    }
+    return box;
+  }
+
   function fmtPct(x) { return Math.round(100 * (x || 0)) + "%"; }
 
   function actLabels(d) {
@@ -611,7 +640,8 @@
           it.url ? el("a", { href: it.url, lang: lang, text: it.label }) : el("strong", { lang: lang, text: it.label }),
           it.extra ? el("span", { className: "small muted", text: " " + it.extra }) : null
         ]),
-        it.text ? el("p", { className: "ptext", lang: lang, text: it.text }) : el("p", { className: "ptext", text: "(text not available)" })
+        it.text ? el("p", { className: "ptext", lang: lang, text: it.text }) : el("p", { className: "ptext", text: "(text not available)" }),
+        it.after || null
       ]));
     });
     return box;
@@ -723,6 +753,19 @@
       d.threshold + ". Unreviewed."
     ].forEach(function (x) { msrc.appendChild(typeof x === "string" ? document.createTextNode(x) : x); });
 
+    var judge = d.judge || null;
+    var jleg = $("a-judge-legend");
+    if (judge && jleg) {
+      var jsrc = $("a-judge-src");
+      jsrc.textContent = "";
+      [ "Labels from an LLM judge (" + (judge.models || []).join(", ") + ") on the top machine candidates: same, partial, " +
+        "different value, stricter, option chosen or unrelated, with a confidence, a one-line rationale and quotes from both " +
+        "texts, checked against them. Nobody has reviewed them; they are suggestions, not findings. ",
+        el("a", { href: JUDGE_DOCS, text: "How it compares with the official table" }), "."
+      ].forEach(function (x) { jsrc.appendChild(typeof x === "string" ? document.createTextNode(x) : x); });
+      jleg.hidden = false;
+    }
+
     var s = d.summary || {};
     var kpis = $("a-kpis");
     function kpi(v, l) { kpis.appendChild(el("div", { className: "kpi" }, [el("div", { className: "v", text: v }), el("div", { className: "l", text: l })])); }
@@ -737,12 +780,16 @@
     kpi(String(s.gap_candidates || 0), "gap candidates" + (s.gap_articles ? " in " + s.gap_articles + " articles" : ""));
     if (d.extra_note) kpi("–", "extra-rule list not reported (see below)");
     else kpi(String(s.extra_rule_sections || 0), "§§ with extra-rule candidates");
+    if (judge) kpi(String(judge.related || 0) + " / " + String(judge.shown || 0), "judged candidates the AI judge calls related (unreviewed)");
 
     var show = $("f-show");
     if (!official) {
       Array.prototype.slice.call(show.options).forEach(function (o) {
         if (o.value === "official" || o.value === "differs" || o.value === "none") show.removeChild(o);
       });
+    }
+    if (!judge) {
+      Array.prototype.slice.call(show.options).forEach(function (o) { if (o.value === "judge") show.removeChild(o); });
     }
     var sel = $("f-art");
     (d.articles || []).forEach(function (a) {
@@ -776,6 +823,7 @@
       if (state.show === "none" && listed) return false;
       if (state.show === "differs" && r.agreement !== "differs") return false;
       if (state.show === "gaps" && !(r.gaps || []).length) return false;
+      if (state.show === "judge" && !r.machine.some(function (m) { return judgeRelated(m.judge); })) return false;
       var needle = state.q.trim().toLowerCase();
       return !needle || r._hay.indexOf(needle) >= 0;
     }
@@ -809,6 +857,17 @@
           el("span", { className: "muted", text: "score " + m.score.toFixed(2) + (m.above_threshold ? "" : " · weak") }),
           official && ag.text ? el("span", { className: "agree " + ag.cls, text: ag.text }) : null
         ]));
+        if (m.judge) mach.appendChild(el("div", { className: "small judge-line" }, [judgePill(m.judge)]));
+        var also = r.machine.slice(1).filter(function (x) { return judgeRelated(x.judge); });
+        if (also.length) {
+          var line = el("div", { className: "small judge-line" }, [el("span", { className: "muted", text: "AI judge also relates: " })]);
+          also.forEach(function (x, i) {
+            if (i) line.appendChild(document.createTextNode("; "));
+            line.appendChild(natLink(nat, x.id, portal, natLang));
+            line.appendChild(document.createTextNode(" (" + (JUDGE_LABELS[x.judge.label] || "") + ")"));
+          });
+          mach.appendChild(line);
+        }
       } else {
         mach.appendChild(el("span", { className: "muted small", text: "no candidate" }));
       }
@@ -844,7 +903,8 @@
           }
           panels.push(textPanel("Machine suggestions", "machine", r.machine.map(function (x, i) {
             return { label: (i + 1) + ". " + nationalRef(nat, x.id, acts), url: (nat[x.id] || {}).url, text: (nat[x.id] || {}).text,
-              extra: "score " + x.score.toFixed(2) + (x.above_threshold ? "" : " (weak)") };
+              extra: "score " + x.score.toFixed(2) + (x.above_threshold ? "" : " (weak)"),
+              after: x.judge ? judgeBox(x.judge, euLang, natLang) : null };
           }), natLang));
           cell.appendChild(el("div", { className: "tgrid" + (official ? "" : " two") }, panels));
         }
@@ -1007,7 +1067,10 @@
     $("m-lede").textContent = "Each row is an article of " + m.short + "; each column a country. A cell shows the national section the " +
       "machine most often suggests for the article's paragraphs, how many of the article's provisions have a suggestion, gap " +
       "candidates, and, where a government published one, the sections its official correlation table lists. Click a cell to " +
-      "read the texts side by side.";
+      "read the texts side by side." + ((m.articles || []).some(function (a) {
+        return Object.keys(a.cells || {}).some(function (k) { return !!(a.cells[k] || {}).judge; });
+      }) ? " Where an AI judge (Claude) has labelled the candidates, a cell counts the ones it calls stricter or a different value: " +
+        "unreviewed suggestions, not findings of gold-plating or of a difference." : "");
     var cap = $("m-cols");
     cols.forEach(function (c, i) {
       if (i) cap.appendChild(document.createTextNode(" · "));
@@ -1038,6 +1101,11 @@
       }
       td.appendChild(el("div", { className: "small muted", text: c.linked_units + "/" + c.units + " linked" }));
       if (c.gaps) td.appendChild(el("div", { className: "small" }, [el("span", { className: "pill gap", text: c.gaps + " gap" + (c.gaps === 1 ? "" : "s") })]));
+      var jd = c.judge || {};
+      var flags = [];
+      if (jd.stricter) flags.push(jd.stricter + " stricter");
+      if (jd.different_value) flags.push(jd.different_value + " different value");
+      if (flags.length) td.appendChild(el("div", { className: "small" }, [el("span", { className: "pill judge", title: JUDGE_NAME, text: "AI judge: " + flags.join(", ") })]));
       return td;
     }
 

@@ -14,6 +14,11 @@ metadata and the national measures each member state has notified, and writes:
                                   the review queue: every machine suggestion with its texts and
                                   whether it has been reviewed (data/reviews/)
     site/data/matrix/<CELEX>.json article x country matrix (from the alignment pages)
+
+When ``data/judgments/<CELEX>_<cc>.jsonl`` exists, each judged machine candidate on the alignment page
+gets the LLM judge's label, confidence, rationale and verified quotes (``judge``), and the matrix
+counts ``stricter`` / ``different_value`` labels per article. They are merged at build time, so the
+committed ``site/static-data/`` copies do not change.
     site/data/dataset/            the open dataset (links.csv, links.jsonl, datapackage.json ...)
 
 The site itself is static HTML/JS that reads these files; nothing else is needed.
@@ -65,6 +70,9 @@ ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_OUT = ROOT / "site" / "data"
 SAMPLE_DIR = Path(__file__).resolve().parent / "sample_data"
 STATIC_DIR = ROOT / "site" / "static-data"
+#: LLM judge results (``data/judgments/<celex>_<cc>.jsonl``, from openacquis.judge_batch or
+#: scripts/judge_session.py), shown on the alignment pages next to the candidates they judge.
+JUDGMENTS_DIR = ROOT / "data" / "judgments"
 SCHEMA_VERSION = 1
 ALIGNMENT_SCHEMA = 2
 
@@ -754,7 +762,14 @@ def matrix_data(celex: str, pages: list[dict], *, headings: dict[str, str] | Non
             official: list[str] = []
             units = linked = gaps = 0
             oos = 0
+            judged: dict[str, int] = {"related": 0, "stricter": 0, "different_value": 0}
             for r in a["rows"]:
+                for m in r["machine"]:
+                    lab = (m.get("judge") or {}).get("label")
+                    if lab and lab != "unrelated":
+                        judged["related"] += 1
+                        if lab in judged:
+                            judged[lab] += 1
                 units += r.get("units", 0)
                 linked += r.get("linked_units", 0)
                 gaps += len(r.get("gaps", []))
@@ -778,6 +793,8 @@ def matrix_data(celex: str, pages: list[dict], *, headings: dict[str, str] | Non
                 "units": units, "linked_units": linked, "gaps": gaps,
                 "href": f"alignment.html?id={d['id']}&art={a['id']}",
             }
+            if d.get("judge"):  # LLM judge labels of the article's candidates (unreviewed)
+                row["cells"][d["country_code"]]["judge"] = judged
     built = (now or datetime.now(timezone.utc)).replace(microsecond=0)
     short = pages[0]["short"] if pages else celex
     return {
@@ -853,13 +870,15 @@ def write_alignments(
     build: Callable[..., dict] = build_alignment,
     live: set[str] | None = None,
     states: list[CountryState] | None = None,
+    judgments_dir: Path | None = JUDGMENTS_DIR,
 ) -> list[str]:
     """Write ``out_dir/align/<slug>.json`` and ``out_dir/review/<slug>.json`` for each entry, then
     ``out_dir/matrix/<CELEX>.json``. Live first, then the committed static copy. Returns the
     slugs that have no data at all (neither worked).
 
     ``live``: the directives computed live (``None`` = all); the others use the static copy
-    directly. ``states``: registry countries with nothing to align, listed on the matrix."""
+    directly. ``states``: registry countries with nothing to align, listed on the matrix.
+    ``judgments_dir``: where LLM judge results are read from (``None``: none shown)."""
     align_dir = out_dir / "align"
     review_dir = out_dir / "review"
     matrix_dir = out_dir / "matrix"
@@ -904,6 +923,8 @@ def write_alignments(
                 review["mode"] = "static"
         _add_languages(data, review, e)
         _add_registry(data, e)
+        if judgments_dir is not None:
+            _add_judgments(data, judgments_dir / f"{e.slug}.jsonl", log)
         (align_dir / f"{e.slug}.json").write_text(
             json.dumps(data, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
         if review is not None:
@@ -928,6 +949,51 @@ def write_alignments(
             encoding="utf-8")
         log(f"  matrix {celex}: {len(ps)} countries")
     return missing
+
+
+#: Fields of a judgment shown on the page (texts are inserted with textContent by app.js).
+JUDGE_FIELDS = ("label", "confidence", "rationale", "evidence_eu", "evidence_national", "evidence_verified", "notes")
+
+
+def _add_judgments(data: dict, path: Path, log: Callable[[str], None] = lambda msg: None) -> None:
+    """Attach LLM judge results from ``path`` (JSONL) to the machine candidates they judged (in place).
+
+    A judgment is matched to a candidate by (EU row ID, national ID); judgments of pairs that are not
+    on the page (an alignment recomputed since the judge ran) are counted, not shown. ``data["judge"]``
+    describes the run. Nothing happens when the file does not exist or cannot be read."""
+    if not path.is_file():
+        return
+    try:
+        recs = [json.loads(x) for x in path.read_text(encoding="utf-8").splitlines() if x.strip()]
+    except (OSError, ValueError) as exc:
+        log(f"    judgments {path.name}: not read ({type(exc).__name__}: {exc})")
+        return
+    by_pair = {(r.get("eu_id"), r.get("national_id")): r for r in recs if isinstance(r, dict)}
+    shown: dict[str, int] = {}
+    for a in data.get("articles") or []:
+        for r in a.get("rows") or []:
+            for m in r.get("machine") or []:
+                j = by_pair.get((r["id"], m["id"]))
+                if j is None:
+                    continue
+                m["judge"] = {k: j.get(k) for k in JUDGE_FIELDS}
+                lab = str(j.get("label"))
+                shown[lab] = shown.get(lab, 0) + 1
+    if not shown:
+        log(f"    judgments {path.name}: none matches a candidate on the page; not shown")
+        return
+    data["judge"] = {
+        "source": f"data/judgments/{path.name}",
+        "models": sorted({str(r.get("model")) for r in recs if r.get("model")}),
+        "prompt_versions": sorted({str(r.get("prompt_version")) for r in recs if r.get("prompt_version")}),
+        "status": "unreviewed",
+        "pairs": len(recs),
+        "shown": sum(shown.values()),
+        "related": sum(n for lab, n in shown.items() if lab != "unrelated"),
+        "labels": dict(sorted(shown.items(), key=lambda kv: (-kv[1], kv[0]))),
+    }
+    log(f"    judgments {path.name}: {data['judge']['shown']} of {len(recs)} shown, "
+        f"{data['judge']['related']} related")
 
 
 def _add_languages(data: dict, review: dict | None, entry: AlignmentEntry) -> None:
