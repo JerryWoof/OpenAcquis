@@ -1,0 +1,96 @@
+{
+  "source": {
+    "print": "https://www.nrsr.sk/web/Default.aspx?sid=zakony/cpt&ZakZborID=13&CisObdobia=9&ID=516",
+    "table": "https://www.nrsr.sk/web/Dynamic/Download.aspx?DocID=553726",
+    "celex": "32022L2557",
+    "final_act": "367/2024",
+    "in_force": "2025-01-01",
+    "bill_articles": {
+      "1": "367/2024",
+      "2": "17/1992",
+      "3": "211/2000",
+      "4": "319/2002",
+      "5": "215/2004",
+      "6": "578/2004",
+      "7": "87/2018",
+      "8": "95/2019",
+      "9": "452/2021",
+      "10": "497/2022",
+      "11": "500/2022",
+      "12": null
+    }
+  },
+  "links": 414,
+  "rows": 123,
+  "eu_ids": 122,
+  "national_ids": 237,
+  "eu_check": {
+    "exact": 121,
+    "fallback": 1
+  },
+  "national_check": {
+    "renumbered": 2,
+    "same_number": 233,
+    "unverified": 2
+  },
+  "eu_resolved_share": 1.0,
+  "national_resolved_share": 1.0,
+  "unparsed_refs": [],
+  "eu_unresolved": [],
+  "national_unresolved": [],
+  "negatives": {
+    "records": 52,
+    "rows": 52,
+    "eu_ids": 51,
+    "status": {
+      "not_applicable": 52
+    },
+    "eu_check": {
+      "exact": 52
+    },
+    "partial_negative": 5
+  },
+  "national_confirmed_share": 0.9916,
+  "by_act": {
+    "367/2024": 326,
+    "10/1996": 61,
+    "215/2004": 19,
+    "575/2001": 6,
+    "162/2015": 2
+  },
+  "status": {
+    "fully_compatible": 404,
+    "listed": 10
+  },
+  "act_assignment": {
+    "single": 306,
+    "position": 58,
+    "text": 46,
+    "none": 2,
+    "ordered": 2
+  },
+  "notes": {
+    "renumbered": 2,
+    "id_adjusted": 42,
+    "qualifier": 32
+  },
+  "table_rows": 175,
+  "rows_without_records": [],
+  "method": {
+    "N": 117,
+    "n.a.": 52,
+    "D": 3,
+    "O": 1,
+    "D/N": 1,
+    "": 1
+  },
+  "compliance": {
+    "Ú": 122,
+    "n.a.": 52,
+    "": 1
+  },
+  "gold_plating": {
+    "GP-N": 123,
+    "": 52
+  }
+}

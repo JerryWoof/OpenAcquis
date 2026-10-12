@@ -1,0 +1,104 @@
+{
+  "source": {
+    "print": "https://www.nrsr.sk/web/Default.aspx?sid=zakony/cpt&ZakZborID=13&CisObdobia=9&ID=1142",
+    "table": "https://www.nrsr.sk/web/Dynamic/Download.aspx?DocID=583022",
+    "celex": "32023L0970",
+    "final_act": "76/2026",
+    "in_force": "2026-06-07",
+    "bill_articles": {
+      "1": "76/2026",
+      "2": "311/2001",
+      "3": "5/2004",
+      "4": "125/2006",
+      "5": null
+    }
+  },
+  "links": 232,
+  "rows": 111,
+  "eu_ids": 111,
+  "national_ids": 190,
+  "eu_check": {
+    "exact": 110,
+    "fallback": 1
+  },
+  "national_check": {
+    "not_checked": 3,
+    "renumbered": 3,
+    "same_number": 180,
+    "unresolved": 1,
+    "unverified": 3
+  },
+  "eu_resolved_share": 1.0,
+  "national_resolved_share": 0.9789,
+  "unparsed_refs": [],
+  "eu_unresolved": [],
+  "national_unresolved": [
+    "sk:35/2019:par18.ods4"
+  ],
+  "negatives": {
+    "records": 18,
+    "rows": 18,
+    "eu_ids": 18,
+    "status": {
+      "not_applicable": 10,
+      "no_national_provision": 8
+    },
+    "eu_check": {
+      "exact": 18
+    },
+    "partial_negative": 0
+  },
+  "national_confirmed_share": 0.9632,
+  "by_act": {
+    "76/2026": 109,
+    "311/2001": 23,
+    "125/2006": 16,
+    "160/2015": 15,
+    "365/2004": 14,
+    "308/1993": 11,
+    "35/2019": 6,
+    "460/1992": 5,
+    "73/1998": 5,
+    "103/2007": 4,
+    "315/2001": 4,
+    "281/2015": 3,
+    "233/1995": 3,
+    "308/1999": 3,
+    "400/2015": 3,
+    "575/2001": 2,
+    "343/2015": 2,
+    "540/2001": 2,
+    "55/2017": 1,
+    "40/1964": 1
+  },
+  "status": {
+    "fully_compatible": 231,
+    "listed": 1
+  },
+  "act_assignment": {
+    "single": 124,
+    "ordered": 48,
+    "position": 48,
+    "text": 12
+  },
+  "notes": {
+    "renumbered": 4,
+    "id_adjusted": 17,
+    "qualifier": 5
+  },
+  "table_rows": 129,
+  "rows_without_records": [],
+  "method": {
+    "N": 111,
+    "n.a.": 10,
+    "D": 8
+  },
+  "compliance": {
+    "Ú": 110,
+    "n.a.": 16,
+    "": 3
+  },
+  "gold_plating": {
+    "GP-N": 129
+  }
+}

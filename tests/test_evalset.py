@@ -10,18 +10,24 @@ from openacquis.adapters.cz import parse_fragments
 from openacquis.eurlex import parse_html
 from openacquis.evalset import (
     GoldLink,
+    sentence_support,
     check_links,
     containment,
     cz_ref_to_ids,
     doc_rows,
     doc_text,
     docx_rows,
+    celex_chains,
     download,
     eu_ref_to_ids,
+    find_table_files,
+    fix_celex,
     links_from_rows,
     load_jsonl,
+    normalize_cz_ref,
     parse_cz_ref,
     parse_eu_ref,
+    published_act,
     read_table,
     resolve_eu_id,
     save_jsonl,
@@ -70,6 +76,13 @@ TABLE_URL = "https://www.psp.cz/sqw/text/orig2.sqw?idd=244067"
         ("čl. 2 písm. c) až d)", ["art2.pt_c", "art2.pt_d"]),
         ("příloha I", ["anx_i"]),
         ("Čl. 23 odst. 1 věta první, pátá a poslední", ["art23.par1"]),
+        # indents ("odrážka čtvrtá"), chapeaux ("návětí") and annex sections (kept as qualifiers)
+        ("Čl. 2 odst. 1 písm. b) bod ii) odrážka čtvrtá", ["art2.par1.pt_b.subpt_ii.ind4"]),
+        ("Čl. 2 odst. 1 návětí", ["art2.par1"]),
+        ("Příloha I oddíl VII první odstavec", ["anx_i"]),
+        ("Příloha I Oddíl I bod 1", ["anx_i.pt1"]),
+        # the level word repeated after "až" is still a range
+        ("Čl. 5 odst. 1 až odst. 3", ["art5.par1", "art5.par2", "art5.par3"]),
     ],
 )
 def test_parse_eu_ref(ref, ids):
@@ -92,6 +105,14 @@ def test_parse_eu_ref(ref, ids):
         ("Čl. II bod 3", ["cl2.bod3"]),
         ("§ 2 bodu 5", ["par2.bod5"]),
         ("§ 12 body 1 a 2", ["par12.bod1", "par12.bod2"]),
+        ("Příloha č. 1 Oddíl I bod 1", ["priloha1.oddil1.bod1"]),
+        ("příloha č. 2 oddíl 1 a oddíl 3 bod 2", ["priloha2.oddil1", "priloha2.oddil3.bod2"]),
+        ("část 3 bod 1", ["cast3.bod1"]),
+        ("§ 20 odst. 1 až odst. 3", ["par20.odst1", "par20.odst2", "par20.odst3"]),
+        # a number after a list of letters is the next paragraph, never a letter "pism2"
+        ("§ 11 odst. 1 písm. a) až e) a 2",
+         ["par11.odst1.pism_a", "par11.odst1.pism_b", "par11.odst1.pism_c", "par11.odst1.pism_d",
+          "par11.odst1.pism_e", "par11.odst2"]),
     ],
 )
 def test_parse_cz_ref(ref, ids):
@@ -111,6 +132,41 @@ def test_parse_ref_qualifiers_and_errors():
     bad = parse_eu_ref("viz důvodová zpráva")
     assert bad.ids == [] and not bad.ok and bad.unparsed
     assert parse_cz_ref("odst. 2").ids == []  # no § / článek: not a full reference
+    q = parse_eu_ref("Příloha I oddíl VII první odstavec")
+    assert q.qualifier == "oddíl VII první odstavec" and q.ok
+    assert parse_eu_ref("Čl. 2 odst. 1 návětí").qualifier == "návětí"  # not the letter "n"
+
+
+@pytest.mark.parametrize(
+    "ref, parsed, flags",
+    [
+        ("ČÁST PRVNÍ\n§ 1 odst. 1 písm. a)\n", "§ 1 odst. 1 písm. a)", []),
+        ("ČÁST SEDMÁ § 41 bod 1.", "§ 41 bod 1.", []),
+        ("ČÁST X Účinnost (§ 42) ", "§ 42", []),
+        ("ČÁST TŘETÍ bod 1.", "část 3 bod 1.", ["amendment_point"]),
+        ("ČÁST DESÁTÁ", "část 10", ["part_ref"]),
+        ("§ 12 odst. 3", "§ 12 odst. 3", []),
+    ],
+)
+def test_normalize_cz_ref_parts(ref, parsed, flags):
+    out, fl, _ = normalize_cz_ref(ref)
+    assert (out, fl) == (parsed, flags)
+
+
+def test_fix_celex_and_chains():
+    known = {"32013L0034", "32022L2464", "32006L0043", "32022L2523"}
+    assert fix_celex("32019L1937") == ("32019L1937", "")
+    assert fix_celex("02006L0043")[0] == "32006L0043"  # consolidated-text prefix
+    assert fix_celex("32013L32022L2464", known)[0] == "32022L2464"
+    assert fix_celex("23022L2464", known)[0] == "32022L2464"
+    assert fix_celex("32022L246", known)[0] == "32022L2464"
+    assert fix_celex("32013L004", known)[0] == "32013L0034"
+    # well-formed numbers are never "corrected": NIS2 and CER differ by one character
+    assert fix_celex("32022L2557", {"32022L2555"}) == ("32022L2557", "")
+    assert fix_celex("1234X", known)[0] is None
+    assert celex_chains("32019L1937\r\r32019L1937\r")[0] == [["32019L1937"]]
+    chains, _ = celex_chains("\t32013L0034 ve znění 32021L2101 ve znění 32023L2775")
+    assert chains == [["32013L0034", "32021L2101", "32023L2775"]]
 
 
 # --- reading Word files -------------------------------------------------------------
@@ -337,6 +393,266 @@ def test_containment():
     assert containment("", "x") == 0.0
 
 
+# --- other table templates (excerpts of real tables) ----------------------------------------------
+
+
+def _fixture(name):
+    return json.loads((FIXTURES / name).read_text(encoding="utf-8"))
+
+
+def test_multi_celex_cells_in_doc():
+    # Whistleblower bill (t0352a0.doc): CELEX cells list the act once per EU ref line, and a
+    # continuation row (empty bill cells) has such a cell, which used to break the row grouping
+    rows = doc_rows(_fixture("eval_t0352a0_excerpt.json")["text"])
+    tr = table_rows(rows, celex="32019L1937")
+    assert [r.national_ref for r in tr] == [
+        "§ 1 odst. 1 písm. a) až c)", "§ 21 odst. 1 až 3", "§ 21 odst. 1 až 3", "§ 22 odst. 1 až odst. 3"]
+    assert tr[2].eu_ref.startswith("Článek 5 odst. 6") and tr[2].national_text == tr[1].national_text
+    links = links_from_rows(tr[1:2], "171/2023")
+    assert {lk.eu_id.rsplit(":", 1)[1] for lk in links} == {"art12.par1.pt_a", "art12.par1.pt_b", "art16.par1", "art18.par1"}
+    assert len(links) == 4 * 3  # 4 EU IDs x § 21 odst. 1, 2, 3
+    assert sorted({lk.national_id.rsplit(":", 1)[1] for lk in links_from_rows(tr[3:4], "171/2023")}) == [
+        "par22.odst1", "par22.odst2", "par22.odst3"]  # "odst. 1 až odst. 3": the middle one too
+
+
+def test_four_column_template_with_celex_in_header():
+    # CER bill (t0947d0.docx): no CELEX column, "CELEX 32022L2557" in the header, "ČÁST" prefixes
+    tr = table_rows(_fixture("eval_t0947d0_excerpt.json")["rows"], celex="32022L2557")
+    assert len(tr) == 12 and all(r.celex == "32022L2557" for r in tr)
+    assert table_rows(_fixture("eval_t0947d0_excerpt.json")["rows"], celex="32022L2555") == []
+    links = links_from_rows(tr, "266/2025")
+    got = {(lk.national_id.split(":", 2)[2], lk.eu_id.split(":", 3)[3]): lk for lk in links}
+    assert ("par1.odst1.pism_a", "art26.par2") in got  # two EU refs in one cell
+    assert ("par2.pism_a", "art2.pt5") in got
+    assert ("par5.pism_a.bod1", "art9.par1") in got
+    assert ("par42", "art26.par1") in got  # "ČÁST X Účinnost (§ 42)"
+    amend = got[("cast3.bod1", "art1.par1.pt_a")]
+    assert amend.flags == ["amendment_point"] and amend.raw_national_ref == "ČÁST TŘETÍ bod 1."
+    assert got[("cast10", "art1.par1.pt_a")].flags == ["part_ref"]
+    assert not summarize(links)["unparsed_refs"]
+
+
+def test_sections_consolidated_refs_and_typos():
+    # CSRD bill (t0783b0.docx): sections per national act, "2013/34 ve znění 2022/2464", typos
+    rows = _fixture("eval_t0783b0_excerpt.json")["rows"]
+    tr = table_rows(rows, celex="32022L2464", section_acts={"o auditorech": "93/2009"})
+    assert [(r.national_act, r.eu_act) for r in tr] == [
+        ("563/1991", ""), ("563/1991", "32013L0034"), ("563/1991", "32013L0034"), ("93/2009", "32006L0043")]
+    assert all("celex_typo" in r.flags for r in tr)
+    links = links_from_rows(tr, "563/1991")
+    cons = [lk for lk in links if lk.eu_act]
+    assert cons and all(lk.eu_id.startswith("eu:32013L0034:cs:") or lk.eu_id.startswith("eu:32006L0043:cs:")
+                        for lk in cons)
+    assert all(lk.celex == "32022L2464" and "consolidated" in lk.flags for lk in cons)
+    aud = [lk for lk in links if lk.national_id.startswith("cz:93/2009:")]
+    assert aud and all("section_act" in lk.flags for lk in aud)
+    # without a celex filter every row keeps its own act; the 416/2023 section is read from its label
+    every = table_rows(rows)
+    assert [r.celex for r in every][:3] == ["32023L2775", "32023L2775", "32013L0034"]
+    assert every[-1].celex == "32022L2523" and every[-1].national_act == "416/2023"
+    assert every[-2].national_act == ""  # auditors' section: no act number in its label
+
+
+def _act(act: str, provs: list[tuple[str, str, str | None, str]]) -> Document:
+    """A national document from ``(local id, kind, heading, text)``; parents follow the IDs."""
+    d = Document("cz", act, "cs")
+    for local, kind, heading, text in provs:
+        parent = None
+        if "." in local:
+            parent = f"cz:{act}:{local.rsplit('.', 1)[0]}"
+        elif kind == "par" and d.roots():
+            parent = d.roots()[-1].id if d.roots()[-1].kind == "cast" else None
+        d.add(Provision(f"cz:{act}:{local}", "cz", act, "cs", kind, local, local[-1], text, heading,
+                        parent_id=parent))
+    return d
+
+
+def test_part_references_are_matched_by_text():
+    # bill parts are offset against the act (a part was dropped); a part with one change has no points
+    act = _act("9/2025", [
+        ("cast1", "cast", None, ""),
+        ("par1", "par", None, "Tento zákon upravuje odolnost subjektů kritické infrastruktury."),
+        ("cast2", "cast", "Změna zákona o působnosti Správy státních hmotných rezerv", ""),
+        ("par31", "par", None, "Zákon č. 97/1993 Sb. se mění takto:"),
+        ("par31.bod1", "bod", None, "V § 4b odst. 1 se za slovo „situace“ vkládají slova „, k zachování poskytování základní služby“."),
+        ("par31.bod2", "bod", None, "V § 4b odst. 2 se za slovo „systému“ vkládají slova „, subjekt kritické infrastruktury“."),
+        ("cast3", "cast", "Změna zákona o zeměměřictví", ""),
+        ("par32", "par", None, "V § 5 odst. 1 zákona č. 200/1994 Sb., o zeměměřictví, se slova „ochrany kritické "
+                                "infrastruktury podle krizového zákona“ nahrazují slovy „připravenosti na krizové situace“."),
+    ])
+    rows = [["", "", "", ""],
+            ["Ustanovení", "Obsah", "CELEX 32022L2557", "Ustanovení"],
+            ["ČÁST TŘETÍ bod 2.", "2. V § 4b odst. 2 se za slovo „systému“ vkládají slova „, subjekt kritické infrastruktury“.",
+             "Čl. 1 odst. 1 písm. a)", "a) stanoví"],
+            ["ČÁST ČTVRTÁ bod 1.", "1. § 5 odst. 1 se slova „ochrany kritické infrastruktury podle krizového zákona“ "
+             "nahrazují slovy „připravenosti na krizové situace“.", "Čl. 1 odst. 1 písm. a)", "a) stanoví"],
+            ["ČÁST PÁTÁ bod 2.", "2. V § 11 odst. 1 písm. f) se slova „ochranu kritické infrastruktury“ zrušují.",
+             "Čl. 1 odst. 1 písm. a)", "a) stanoví"]]
+    tr = table_rows(rows, celex="32022L2557")
+    links = check_links(links_from_rows(tr, "9/2025"), national_doc=act, rows=tr)
+    got = [(lk.bill_national_id.split(":")[2], lk.national_id.split(":")[2], lk.national_check) for lk in links]
+    assert got == [("cast3.bod2", "par31.bod2", "renumbered"), ("cast4.bod1", "par32", "renumbered"),
+                   ("cast5.bod2", "cast5.bod2", "unresolved")]
+    assert "matches act par31.bod2 (part 2) by text" in links[0].note
+
+
+def test_paragraph_level_added_ancestor_and_ties():
+    act = _act("8/2025", [
+        ("par2", "par", None, ""),
+        ("par2.odst1", "odst", None, "Pro účely tohoto zákona se rozumí"),
+        ("par2.odst1.pism_a", "pism", None, "základní službou služba nezbytná pro zachování důležitých funkcí,"),
+        ("par2.odst1.pism_b", "pism", None, "kritickou infrastrukturou aktivum nebo systém,"),
+        ("par28", "par", None, "Přestupky podle tohoto zákona projednává ministerstvo."),
+        ("par15", "par", None, "Ministerstvo"),
+        ("par15.pism_a", "pism", None, "vede seznam,"),
+        ("par15.pism_b", "pism", None, "vydává pokyny,"),
+    ])
+    level = GoldLink("", "cz:8/2025:par2.pism_b", bill_national_id="cz:8/2025:par2.pism_b",
+                     national_text="b) kritickou infrastrukturou aktivum nebo systém,")
+    anc = GoldLink("", "cz:8/2025:par28.pism_a", bill_national_id="cz:8/2025:par28.pism_a",
+                   national_text="Přestupky podle tohoto zákona projednává ministerstvo.")
+    tie = GoldLink("", "cz:8/2025:par15.pism_j", bill_national_id="cz:8/2025:par15.pism_j",
+                   national_text="Ministerstvo a) vede seznam, b) vydává pokyny,")
+    check_links([level, anc, tie], national_doc=act)
+    assert (level.national_id, level.national_check) == ("cz:8/2025:par2.odst1.pism_b", "renumbered")
+    assert (anc.national_id, anc.national_check) == ("cz:8/2025:par28", "ancestor") and "parent par28" in anc.note
+    # the quote supports every letter equally: no letter is picked, the quoted § is used
+    assert (tie.national_id, tie.national_check) == ("cz:8/2025:par15", "ancestor")
+    assert summarize([level, anc])["national_resolved_share"] == 1.0
+
+
+def _row_links(act: str, row: int, ids: list[str], quote: str) -> list[GoldLink]:
+    return [GoldLink("", f"cz:{act}:{i}", row=row, bill_national_id=f"cz:{act}:{i}", national_text=quote)
+            for i in ids]
+
+
+def test_renumbering_never_lands_on_another_id_of_the_row():
+    # Whistleblower § 21: the row quotes odst. 1-3 of the bill; the act added words to odst. 2,
+    # whose own text then falls below the threshold, while odst. 3 is fully in the quote
+    act = _act("171/2023", [
+        ("par21", "par", None, ""),
+        ("par21.odst1", "odst", None, "Povinný subjekt vede v elektronické podobě evidenci údajů o přijatých oznámeních."),
+        ("par21.odst2", "odst", None, "Příslušná osoba je povinna uchovávat oznámení podané prostřednictvím vnitřního "
+                                      "oznamovacího systému a dokumenty související s oznámením po dobu 5 let ode dne "
+                                      "přijetí oznámení a ministerstvo stejně tak u oznámení jemu podaných."),
+        ("par21.odst3", "odst", None, "Do evidence podle odstavce 1 a k uchovávaným oznámením má přístup pouze "
+                                      "příslušná osoba."),
+    ])
+    quote = ("(1) Povinný subjekt vede v elektronické podobě evidenci údajů o přijatých oznámeních. (2) Příslušná "
+             "osoba je povinna uchovávat oznámení podané prostřednictvím vnitřního oznamovacího systému. (3) Do "
+             "evidence podle odstavce 1 a k uchovávaným oznámením má přístup pouze příslušná osoba.")
+    links = _row_links("171/2023", 36, ["par21.odst1", "par21.odst2", "par21.odst3"], quote)
+    check_links(links, national_doc=act)
+    got = {lk.bill_national_id.rsplit(":", 1)[1]: (lk.national_id.rsplit(":", 1)[1], lk.national_check)
+           for lk in links}
+    assert got["par21.odst2"] == ("par21.odst2", "unverified")
+    assert got["par21.odst3"] == ("par21.odst3", "same_number")
+    assert len({lk.national_id for lk in links}) == 3
+    s = summarize(links)
+    assert sum(s["national_check"].values()) == s["national_ids"] == 3
+
+
+def test_sentence_support_confirms_an_id_in_a_long_quote():
+    act = _act("1/2025", [
+        ("par29", "par", None, ""),
+        ("par29.odst1", "odst", None, "Úřad vede registr poskytovatelů, jejich provozoven, odpovědných osob, "
+                                      "kontaktních údajů a poskytovaných služeb včetně jejich změn a zániku. "
+                                      "Registr je neveřejný a údaje z něj lze poskytnout pouze orgánům činným v "
+                                      "trestním řízení. Podrobnosti o vedení registru stanoví prováděcí právní předpis "
+                                      "vydaný ministerstvem po projednání s dotčenými ústředními správními úřady."),
+        ("par29.odst2", "odst", None, "Úřad zveřejní seznam poskytovatelů na svých internetových stránkách."),
+    ])
+    quote = ("Registr je neveřejný a údaje z něj lze poskytnout pouze orgánům činným v trestním řízení. "
+             + "Další text jiných ustanovení, který se netýká registru, je zde citován v plné délce. " * 4)
+    (lk,) = _row_links("1/2025", 1, ["par29.odst1"], quote)
+    check_links([lk], national_doc=act)
+    assert (lk.national_id, lk.national_check) == ("cz:1/2025:par29.odst1", "same_number")
+    assert "whole sentence" in lk.note
+    # words in order but not contiguous do not count: formulaic sentences recur
+    assert sentence_support("O rozhodnutí podle § 20 odst. 3 orgán dozoru neprodleně informuje Evropskou komisi",
+                            "orgán dozoru zakáže výrobek a neprodleně o tom informuje Evropskou komisi") < 0.9
+
+
+def test_letters_are_aligned_when_the_act_inserted_a_letter():
+    # Whistleblower § 2 odst. 1: the act inserted b), so the bill's b) and c) are the act's c) and d)
+    act = _act("171/2023", [
+        ("par2", "par", None, ""),
+        ("par2.odst1", "odst", None, "Oznámení obsahuje informace o možném protiprávním jednání, které"),
+        ("par2.odst1.pism_a", "pism", None, "má znaky trestného činu,"),
+        ("par2.odst1.pism_b", "pism", None, "má znaky přestupku, za který zákon stanoví sazbu pokuty alespoň 100 000 Kč,"),
+        ("par2.odst1.pism_c", "pism", None, "porušuje tento zákon, nebo"),
+        ("par2.odst1.pism_d", "pism", None, "porušuje jiný právní předpis nebo předpis Evropské unie v oblasti"),
+    ])
+    quote = ("(1) Oznámení obsahuje informace o možném protiprávním jednání, které a) má znaky trestného činu, "
+             "nebo b) porušuje tento zákon, jiný právní předpis nebo předpis Evropské unie v oblasti")
+    links = _row_links("171/2023", 1, ["par2.odst1.pism_a", "par2.odst1.pism_b", "par2.odst1.pism_c"], quote)
+    check_links(links, national_doc=act)
+    assert [(lk.national_id.rsplit(".", 1)[1], lk.national_check) for lk in links] == [
+        ("pism_a", "same_number"), ("pism_c", "renumbered"), ("pism_d", "renumbered")]
+    assert "letters of the list aligned" in links[2].note
+
+
+def test_collision_takes_the_same_shift():
+    # two points of a row matched the same act point; the second takes the first one's shift
+    act = _act("125/2006", [
+        ("par2", "par", None, ""),
+        ("par2.odst1", "odst", None, "Na účely tohoto zákona sa rozumie"),
+        ("par2.odst1.pism_a", "pism", None, "diskrimináciou"),
+        ("par2.odst1.pism_a.bod8", "bod", None, "pri zverejňovaní informácií o odmeňovaní zamestnancov a o kritériách"),
+        ("par2.odst1.pism_a.bod9", "bod", None, "pri zverejňovaní ponuky zamestnania"),
+    ])
+    quote = "diskrimináciou 8. pri zverejňovaní informácií o odmeňovaní zamestnancov a o kritériách 9. pri zverejňovaní ponuky zamestnania"
+    links = _row_links("125/2006", 67, ["par1.odst1.pism_a.bod8", "par1.odst1.pism_a.bod9"], quote)
+    from openacquis.evalset import _undo_collisions
+    # simulate the text match of both onto bod8
+    for lk in links:
+        lk.national_id, lk.national_check = "cz:125/2006:par2.odst1.pism_a.bod8", "renumbered"
+    links[0].national_similarity, links[1].national_similarity = 1.0, 0.9
+    _undo_collisions([(lk, act, quote) for lk in links])
+    assert [lk.national_id.rsplit(":", 1)[1] for lk in links] == ["par2.odst1.pism_a.bod8", "par2.odst1.pism_a.bod9"]
+    assert "renumbered like" in links[1].note
+
+
+def test_check_links_uses_the_document_of_each_act():
+    cer = "32022L2464"
+    base = Document("eu", "32013L0034", "cs")
+    base.add(Provision("eu:32013L0034:cs:art19a", "eu", "32013L0034", "cs", "article", "Článek 19a", "19a",
+                       "Velké podniky zahrnou do zprávy vedení informace o udržitelnosti."))
+    target = Document("eu", cer, "cs")
+    lk = GoldLink("eu:32013L0034:cs:art19a", "", celex=cer, eu_act="32013L0034", flags=["consolidated"],
+                  eu_text="Velké podniky zahrnou do zprávy vedení informace o udržitelnosti.")
+    check_links([lk], eu_doc=target)  # the target's text cannot check a consolidated ref
+    assert lk.eu_check == "not_checked" and "not checked" in lk.note
+    check_links([lk], eu_doc=target, eu_docs=[base])
+    assert lk.eu_check == "exact" and lk.eu_similarity == 1.0
+    other = _act("93/2009", [("par2", "par", None, "Pro účely tohoto zákona se rozumí auditorem fyzická osoba.")])
+    main = _act("563/1991", [("par2", "par", None, "Účetní jednotky vedou účetnictví.")])
+    sec = GoldLink("", "cz:93/2009:par2", bill_national_id="cz:93/2009:par2", flags=["section_act"],
+                   national_text="Pro účely tohoto zákona se rozumí auditorem fyzická osoba.")
+    check_links([sec], national_doc=main)
+    assert sec.national_check == "not_checked"  # never checked against the wrong act
+    check_links([sec], national_doc=main, national_docs=[other])
+    assert sec.national_check == "same_number"
+
+
+def test_new_fields_are_written_only_when_set():
+    plain = GoldLink("eu:x:cs:art1", "cz:1/2025:par1")
+    assert "flags" not in plain.to_dict() and "eu_act" not in plain.to_dict()
+    flagged = GoldLink("eu:x:cs:art1", "cz:1/2025:cast3.bod1", flags=["amendment_point"])
+    assert flagged.to_dict()["flags"] == ["amendment_point"]
+    assert GoldLink.from_dict(flagged.to_dict()) == flagged
+
+
+def test_find_table_on_psp_pages():
+    files = find_table_files((FIXTURES / "eval_psp_tiskt_9_947.html").read_bytes())
+    assert [f["name"] for f in files] == ["t0947d0.docx", "t0947d0.pdf"]
+    assert files[0]["url"] == "https://www.psp.cz/sqw/text/orig2.sqw?idd=253085"
+    assert find_table_files("<html>Návrh zákona</html>") == []
+    hist = "Zákon vyhlášen 4. 8. 2025 ve Sbírce zákonů v částce 266 pod číslem <a href='x'>266/2025 Sb.</a>"
+    assert published_act(hist.encode("cp1250")) == "266/2025"
+    assert published_act("Návrh zákona rozeslán poslancům") is None
+
+
 # --- storage and download --------------------------------------------------------------------
 
 
@@ -385,9 +701,57 @@ def test_published_gold_set_is_consistent():
             assert lk.national_id != lk.bill_national_id and "matches act" in lk.note
 
 
+GOLD_SETS = {
+    # file: (CELEX, act, psp.cz table URL)
+    "32022L2557_cz.jsonl": ("32022L2557", "266/2025", "https://www.psp.cz/sqw/text/orig2.sqw?idd=253085"),
+    "32019L0882_cz.jsonl": ("32019L0882", "424/2023", "https://www.psp.cz/sqw/text/orig2.sqw?idd=232281"),
+    "32019L1937_cz.jsonl": ("32019L1937", "171/2023", "https://www.psp.cz/sqw/text/orig2.sqw?idd=221044"),
+}
+
+
+@pytest.mark.parametrize("name", sorted(GOLD_SETS))
+def test_published_gold_sets_are_consistent(name):
+    celex, act, url = GOLD_SETS[name]
+    links = load_jsonl(DATA / name)
+    summary = json.loads((DATA / name.replace(".jsonl", "_summary.json")).read_text(encoding="utf-8"))
+    assert len(links) == summary["links"] and summarize(links)["national_check"] == summary["national_check"]
+    assert summary["source"]["table"] == url and summary["source"]["act"] == act
+    for lk in links:
+        assert lk.celex == celex and lk.eu_id.startswith(f"eu:{celex}:cs:")
+        assert lk.national_id.startswith(f"cz:{act}:") and lk.source_url == url and lk.status == "listed"
+        assert lk.eu_check in {"exact", "fallback", "unresolved"}
+        assert lk.national_check in {"same_number", "renumbered", "ancestor", "unverified", "unresolved"}
+        assert set(lk.flags) <= {"amendment_point", "part_ref"}
+
+
+def test_published_whistleblower_regressions():
+    links = load_jsonl(DATA / "32019L1937_cz.jsonl")
+    nat = {lk.national_id.rsplit(":", 1)[1] for lk in links}
+    # § 21 odst. 2 (retention, Art. 18) and the middle paragraphs of "odst. 1 až odst. 3" are linked
+    assert {"par21.odst2", "par20.odst2", "par22.odst2", "par11.odst2", "par2.odst1.pism_d"} <= nat
+    assert not any("pism2" in lk.bill_national_id for lk in links)
+    # no two bill IDs of a row are mapped onto one act ID by renumbering
+    seen: dict[tuple, set] = {}
+    for lk in links:
+        if lk.national_check != "ancestor":
+            seen.setdefault((lk.row, lk.national_id), set()).add(lk.bill_national_id)
+    assert all(len(v) == 1 for v in seen.values())
+
+
 @pytest.mark.live
 def test_live_table_from_psp(tmp_path):
     data = download(TABLE_URL, cache_dir=tmp_path)
     tr = table_rows(read_table(data), celex=NIS2)
     assert len(tr) == 479
     assert tr[0].national_ref == "§ 1 odst. 1" and tr[0].eu_ref == "Čl. 1 odst. 1"
+
+
+@pytest.mark.live
+def test_live_cer_table_found_from_the_print(tmp_path):
+    from openacquis.evalset import history_url, tisk_url
+
+    files = find_table_files(download(tisk_url(9, 947), cache_dir=tmp_path))
+    assert files[0]["name"] == "t0947d0.docx"
+    assert published_act(download(history_url(9, 947), cache_dir=tmp_path)) == "266/2025"
+    tr = table_rows(read_table(download(files[0]["url"], cache_dir=tmp_path)), celex="32022L2557")
+    assert len(tr) == 200

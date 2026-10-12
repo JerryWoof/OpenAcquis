@@ -1,0 +1,28 @@
+{
+  "source": {
+    "tisk": "https://www.psp.cz/sqw/historie.sqw?o=9&t=352",
+    "table": "https://www.psp.cz/sqw/text/orig2.sqw?idd=221044",
+    "act": "171/2023",
+    "act_version": "2025-02-15",
+    "celex": "32019L1937"
+  },
+  "links": 685,
+  "rows": 49,
+  "eu_ids": 97,
+  "national_ids": 143,
+  "eu_check": {
+    "exact": 95,
+    "fallback": 2
+  },
+  "national_check": {
+    "ancestor": 1,
+    "renumbered": 5,
+    "same_number": 134,
+    "unverified": 3
+  },
+  "eu_resolved_share": 1.0,
+  "national_resolved_share": 1.0,
+  "unparsed_refs": [],
+  "eu_unresolved": [],
+  "national_unresolved": []
+}

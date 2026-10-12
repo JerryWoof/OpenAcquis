@@ -1,0 +1,120 @@
+{
+ "source": "https://www.psp.cz/sqw/text/orig2.sqw?idd=244580",
+ "description": "Excerpt of t0783b0.docx (sněmovní tisk 783/0, 9th term, CSRD bill, Act 316/2025 Sb.) as returned by openacquis.evalset.read_table: rows picked for section headers (563/1991, the auditors act, 416/2023), consolidated refs (2013/34 ve znění 2022/2464), CELEX typos and the closing lists of EU acts; cells cut to 300 characters. Official work; EU text © European Union.",
+ "rows_picked": [
+  0,
+  1,
+  2,
+  3,
+  4,
+  22,
+  84,
+  87,
+  90,
+  91,
+  93,
+  98,
+  100,
+  126,
+  127,
+  130,
+  132
+ ],
+ "rows": [
+  [
+   "\tNavrhovaný právní předpis \n\tUstanovení novely zákona č. 563/1991 Sb., o účetnictví, ve znění pozdějších předpisů",
+   "\tOdpovídající předpis EU "
+  ],
+  [
+   "\tUstanovení (část, §, odst., písm., apod.)",
+   "\tObsah",
+   "\tCelex č.",
+   "\tUstanovení (čl., odst., písm., bod, apod.)",
+   "\tObsah"
+  ],
+  [
+   "\t§ 1 odst. 1 pozn. pod čarou č. 1",
+   "\tSměrnice Komise v přenesené pravomoci (EU) 2023/2775 ze dne 17. října 2023, kterou se mění směrnice Evropského parlamentu a Rady 2013/34/EU, pokud jde o úpravy kritérií velikosti pro mikropodniky a malé, střední a velké podniky nebo skupiny.",
+   "\t32023L2775",
+   "\tČl. 2 odst. 1 čtvrtý pododstavec",
+   "\tTyto předpisy přijaté členskými státy musí obsahovat odkaz na tuto směrnici nebo musí být takový odkaz učiněn při jejich úředním vyhlášení. Způsob odkazu si stanoví členské státy."
+  ],
+  [
+   "\t§ 1b odst. 1",
+   "\tMikro účetní jednotkou je ta, která k rozvahovému dni nepřekračuje alespoň 2 z uvedených hraničních hodnot\n\ta) aktiva celkem 11 000 000 Kč,\n\tb) roční úhrn čistého obratu 22 000 000 Kč, \n\tc) průměrný počet zaměstnanců v průběhu účetního období: 10.",
+   "\t32013L0034 ve znění 32023L2775",
+   "\tČl. 3 odst. 1",
+   "\tUplatňují-li členské státy jednu nebo více možností podle článku 36, vymezí mikropodniky jako podniky, které k rozvahovému dni nepřekračují alespoň dvě z těchto tří hraničních hodnot:\n\ta) bilanční suma: 450 000 EUR,\n\tb) čistý obrat: 900 000 EUR\n\tc) průměrný počet zaměstnanců během účetního období: "
+  ],
+  [
+   "\t",
+   "\t",
+   "\t32013L0034",
+   "\tČl. 3 odst. 9",
+   "\tPokud jde o členské státy, které nepřijaly euro, částka v národní měně odpovídající částkám uvedeným v odstavcích 1 až 7 se vypočte pomocí směnného kurzu zveřejněného v Úředním věstníku Evropské unie ke dni vstupu v platnost jakékoli směrnice, kterou se tyto částky stanoví.\n\tPro účely převodu na ná"
+  ],
+  [
+   "\t§ 32f odst. 1",
+   "\tZprávu o udržitelnosti vyhotovuje účetní jednotka, která je obchodní společností, spořitelním a úvěrním družstvem nebo pojišťovnou, a která je\n\ta) \tvelkou účetní jednotkou nebo \n\tb)\tstřední účetní jednotkou nebo malou účetní jednotkou, které jsou emitenty investičních cenných papírů přijatých k obc",
+   "\t32013L32022L2464",
+   "\tČl. 19a odst. 1 první pododstavec",
+   "\tVelké podniky a malé a střední podniky, s výjimkou mikropodniků, které jsou subjekty veřejného zájmu ve smyslu čl. 2 bodu 1 písm. a), zahrnou do zprávy vedení podniku informace potřebné k pochopení dopadů podniku na otázky udržitelnosti a informace potřebné k pochopení toho, jak otázky udržitelnost"
+  ],
+  [
+   "\tČl. II Přechodná ustanovení, bod 10",
+   "\tZa účetní období započaté před 1. lednem 2028 nemusí zprávu o udržitelnosti vyhotovovat střední účetní jednotka a malá účetní jednotka, pokud ve své výroční zprávě uvedou důvod nevyhotovení zprávy o udržitelnosti. \n\t",
+   "\t32013L0034 ve znění 32022L246",
+   "\tČl. 19a odst. 7",
+   "\tPro účetní období začínající před 1. lednem 2028 se mohou malé a střední podniky, které jsou subjekty veřejného zájmu ve smyslu čl. 2 bodu 1 písm. a) tohoto článku, odchylně od odstavce 1 rozhodnout, že do své zprávy vedení podniku nezahrnou informace uvedené v odstavci 1 tohoto článku. V takových "
+  ],
+  [
+   "\t",
+   "\t",
+   "\t32013L004 ve znění 32022L2464",
+   "\tČl. 29a odst. 3 druhý pododstavec",
+   "\tV prvních třech letech uplatňování předpisů přijatých členskými státy podle čl. 5 odst. 2 směrnice Evropského parlamentu a Rady (EU) 2022/2464 a v případě, že nejsou k dispozici všechny nezbytné informace o jeho hodnotovém řetězci, mateřský podnik vysvětlí úsilí, které na získání nezbytných informa"
+  ],
+  [
+   "\tČíslo předpisu EU (kód celex)",
+   "\tNázev předpisu EU"
+  ],
+  [
+   "32013L0034 ",
+   "Směrnice Evropského parlamentu a Rady 2013/34/EU ze dne 26. června 2013 o ročních účetních závěrkách, konsolidovaných účetních závěrkách a souvisejících zprávách některých formě podniků, o změně směrnice Evropského parlamentu a Rady 2006/43/ES a o zrušení směrnic Rady 78/660/EHS a 83/349/EHS"
+  ],
+  [
+   "32022L2464",
+   "Směrnice Evropského parlamentu a Rady (EU) 2022/2464 ze dne 14. prosince 2022, kterou se mění nařízení (EU) č. 537/2014, směrnice 2004/109/ES, směrnice 2006/43/ES a směrnice 2013/34/EU, pokud jde o podávání zpráv podniků o udržitelnosti"
+  ],
+  [
+   "\tZákon ze dne 26. března 2009\n\to auditorech a o změně některých zákonů (zákon o auditorech)",
+   "\tOdpovídající předpis EU"
+  ],
+  [
+   "§ 2 písm. k) ",
+   "k) auditorem skupiny jeden nebo více auditorů, kteří provádějí povinný audit konsolidované účetní závěrky nebo ověření konsolidované zprávy o udržitelnosti,",
+   "02006L0043\nve znění\n32022L2464",
+   "Čl. 2 odst. 6\n\n",
+   "„auditorem skupiny“ jeden nebo více statutárních auditorů nebo jedna nebo více auditorských společností, kteří provádějí povinný audit konsolidované účetní závěrky či případně ověřování konsolidovaných zpráv o udržitelnosti"
+  ],
+  [
+   "\tČíslo předpisu EU (kód CELEX)",
+   "\tNázev předpisu EU"
+  ],
+  [
+   "23022L2464",
+   "Směrnice Evropského parlamentu a Rady (EU) 2022/2464 ze dne 14. prosince 2022, kterou se mění nařízení (EU) č. 537/2014, směrnice 2004/109/ES, směrnice 2006/43/ES a směrnice 2013/34/EU, pokud jde o podávání zpráv podniků o udržitelnosti"
+  ],
+  [
+   "\tZměna zákona č. 416/2023 Sb. o dorovnávacích daních pro velké nadnárodní skupiny a velké vnitrostátní skupiny ",
+   "\tOdpovídající předpis EU"
+  ],
+  [
+   "§ 5 odst. 1",
+   "(1)\tPravidlem pro nedostatečně zdaněný zisk se pro účely dorovnávacích daní rozumí postup, podle kterého členské entitě nadnárodní skupiny vznikne za dané výkazní období dodatečná splatná daň ve výši odpovídající podílu této entity na přiřazované dorovnávací dani, která nebyla stanovena podle pravid",
+   "32022L2523",
+   "čl. 1 odst. 1 písm. b)\n\n\n\n\n\n\n\n\n\n\n\n",
+   "1.   Tato směrnice stanoví společná opatření pro minimální efektivní zdanění nadnárodních skupin podniků a velkých vnitrostátních skupin v podobě:\n\na) pravidla pro zahrnutí příjmů, podle něhož mateřský subjekt nadnárodní skupiny podniků nebo velké vnitrostátní skupiny vypočítává a hradí svůj přiděli"
+  ]
+ ]
+}

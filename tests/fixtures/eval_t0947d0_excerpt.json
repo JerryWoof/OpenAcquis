@@ -1,0 +1,104 @@
+{
+ "source": "https://www.psp.cz/sqw/text/orig2.sqw?idd=253085",
+ "description": "Excerpt of t0947d0.docx (sněmovní tisk 947/0, 9th term, rozdílová tabulka of the CER bill, Act 266/2025 Sb.) as returned by openacquis.evalset.read_table: 14 of 202 rows, cells cut to 400 characters. Four-column template, CELEX only in the header. Official work (§ 3 of Act 121/2000 Sb.); EU text © European Union.",
+ "rows_picked": [
+  0,
+  1,
+  2,
+  3,
+  5,
+  14,
+  15,
+  174,
+  175,
+  176,
+  179,
+  180,
+  191,
+  200
+ ],
+ "rows": [
+  [
+   "Navrhovaný právní předpis (resp. jiný právní předpis)",
+   "Odpovídající předpis EU"
+  ],
+  [
+   "Ustanovení (část, §, odst. písm., apod)",
+   "Obsah",
+   " CELEX 32022L2557",
+   "Ustanovení (čl., odst., písm., bod., apod.)"
+  ],
+  [
+   "ČÁST PRVNÍ\n§ 1 odst. 1 písm. a)\n",
+   "(1) Tento zákon zapracovává příslušné předpisy Evropské unie) a stanoví \na) působnost státních orgánů v oblasti zvyšování odolnosti subjektů kritické infrastruktury,",
+   "Čl. 1 odst. 1\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nČl. 26 odst. 2",
+   "1.   Tato směrnice:\na) stanovuje členským státům povinnosti přijmout konkrétní opatření, jejichž cílem je zajistit, aby služby nezbytné pro zachování nejdůležitějších společenských funkcí nebo hospodářských činností v rámci působnosti článku 114 Smlouvy o fungování EU byly na vnitřním trhu poskytovány neomezeně, zejména povinnosti určit kritické subjekty a podporovat kritické subjekty při plnění p"
+  ],
+  [
+   "ČÁST PRVNÍ\n§ 1 odst. 1 písm. b)\n",
+   "b) práva a povinnosti právnických a fyzických osob k zajištění poskytování základních služeb, \n",
+   "Čl. 1 odst. 1",
+   "1.   Tato směrnice:\na) stanovuje členským státům povinnosti přijmout konkrétní opatření, jejichž cílem je zajistit, aby služby nezbytné pro zachování nejdůležitějších společenských funkcí nebo hospodářských činností v rámci působnosti článku 114 Smlouvy o fungování EU byly na vnitřním trhu poskytovány neomezeně, zejména povinnosti určit kritické subjekty a podporovat kritické subjekty při plnění p"
+  ],
+  [
+   "ČÁST PRVNÍ\n§ 2 písm. a)",
+   "a) základní službou služba, která je nezbytná pro zachování základních funkcí státu, hospodářských činností, bezpečnosti, veřejného zdraví nebo životního prostředí, poskytovaná v odvětvích nebo pododvětvích podle přílohy tohoto zákona",
+   "Čl. 2 bod 5",
+   "5) „základní službou“ služba, která je zásadní pro zachování nejdůležitějších společenských funkcí, hospodářských činností, veřejného zdraví a bezpečnosti nebo životního prostředí;"
+  ],
+  [
+   "ČÁST PRVNÍ\n§ 5 písm. a) bod 1.",
+   "Ministerstva a jiné ústřední správní úřady za účelem zvyšování odolnosti subjektů kritické infrastruktury\na) poskytují Ministerstvu vnitra součinnost při \n1. zpracování strategie pro posílení odolnosti subjektů kritické infrastruktury,\n\n\n\n\n\n\n\n\n\n\n\n\n",
+   "Čl. 9 odst. 1",
+   "1. Každý členský stát určí nebo zřídí jeden nebo více příslušných orgánů odpovědných za správné uplatňování této směrnice na vnitrostátní úrovni a v případě potřeby vymáhání pravidel stanovených v této směrnici.\nPokud jde o kritické subjekty v odvětvích stanovených v bodech 3 a 4 tabulky v příloze této směrnice, jsou příslušnými orgány v zásadě příslušné orgány podle článku 46 nařízení (EU) 2022/2"
+  ],
+  [
+   "ČÁST PRVNÍ\n§ 5 písm. a) bod 2.",
+   "2. zpracování souhrnné zprávy o incidentech,",
+   "Čl. 9 odst. 1",
+   "1. Každý členský stát určí nebo zřídí jeden nebo více příslušných orgánů odpovědných za správné uplatňování této směrnice na vnitrostátní úrovni a v případě potřeby vymáhání pravidel stanovených v této směrnici.\nPokud jde o kritické subjekty v odvětvích stanovených v bodech 3 a 4 tabulky v příloze této směrnice, jsou příslušnými orgány v zásadě příslušné orgány podle článku 46 nařízení (EU) 2022/2"
+  ],
+  [
+   "ČÁST X\nÚčinnost\n(§ 42)\n",
+   "Tento zákon nabývá účinnosti patnáctým dnem následujícím po dni jeho vyhlášení.",
+   "Čl. 26 odst. 1",
+   "1. Členské státy do 17. října 2024přijmou a zveřejní opatření nezbytná pro dosažení souladu s touto směrnicí. Neprodleně o nich uvědomí Komisi.\nPoužijí tato opatření od 18. října 2024."
+  ],
+  [
+   "ČÁST TŘETÍ\nbod 1.",
+   "1. V § 4b odst. 1 se za slovo „situace“ vkládají slova „, k zachování poskytování základních služeb subjekty kritické infrastruktury“.",
+   "Čl. 1 odst. 1 písm. a)",
+   "1. Tato směrnice:\na) stanovuje členským státům povinnosti přijmout konkrétní opatření, jejichž cílem je zajistit, aby služby nezbytné pro zachování nejdůležitějších společenských funkcí nebo hospodářských činností v rámci působnosti článku 114 Smlouvy o fungování EU byly na vnitřním trhu poskytovány neomezeně, zejména povinnosti určit kritické subjekty a podporovat kritické subjekty při plnění pov"
+  ],
+  [
+   "ČÁST TŘETÍ\nbod 2.",
+   "2. V § 4b odst. 2 se za slovo „systému“ vkládají slova „, subjekt kritické infrastruktury“.",
+   "Čl. 1 odst. 1 písm. a)",
+   "1. Tato směrnice:\na) stanovuje členským státům povinnosti přijmout konkrétní opatření, jejichž cílem je zajistit, aby služby nezbytné pro zachování nejdůležitějších společenských funkcí nebo hospodářských činností v rámci působnosti článku 114 Smlouvy o fungování EU byly na vnitřním trhu poskytovány neomezeně, zejména povinnosti určit kritické subjekty a podporovat kritické subjekty při plnění pov"
+  ],
+  [
+   "ČÁST PÁTÁ\nbod 1.",
+   "1. V § 11 odst. 1 se na konci textu písmene d) doplňují slova „nebo připravenosti na krizové situace a jejich řešení“.",
+   "Čl. 1 odst. 1 písm. a)",
+   "1. Tato směrnice:\na) stanovuje členským státům povinnosti přijmout konkrétní opatření, jejichž cílem je zajistit, aby služby nezbytné pro zachování nejdůležitějších společenských funkcí nebo hospodářských činností v rámci působnosti článku 114 Smlouvy o fungování EU byly na vnitřním trhu poskytovány neomezeně, zejména povinnosti určit kritické subjekty a podporovat kritické subjekty při plnění pov"
+  ],
+  [
+   "ČÁST PÁTÁ\nbod 2.",
+   "2. V § 11 odst. 1 písm. f) se slova „ochranu kritické infrastruktury22)“ nahrazují slovy „účinnost opatření při přípravě a zajišťování obrany státu před vnějším napadením“.",
+   "Čl. 1 odst. 1 písm. a)",
+   "1. Tato směrnice:\na) stanovuje členským státům povinnosti přijmout konkrétní opatření, jejichž cílem je zajistit, aby služby nezbytné pro zachování nejdůležitějších společenských funkcí nebo hospodářských činností v rámci působnosti článku 114 Smlouvy o fungování EU byly na vnitřním trhu poskytovány neomezeně, zejména povinnosti určit kritické subjekty a podporovat kritické subjekty při plnění pov"
+  ],
+  [
+   "ČÁST SEDMÁ\nbod 48.",
+   "48. V § 29 odst. 3 se slova „funkce prvku“ nahrazují slovy „poskytování základní služby subjektem“.",
+   "Čl. 1 odst. 1 písm. a)",
+   "1. Tato směrnice:\na) stanovuje členským státům povinnosti přijmout konkrétní opatření, jejichž cílem je zajistit, aby služby nezbytné pro zachování nejdůležitějších společenských funkcí nebo hospodářských činností v rámci působnosti článku 114 Smlouvy o fungování EU byly na vnitřním trhu poskytovány neomezeně, zejména povinnosti určit kritické subjekty a podporovat kritické subjekty při plnění pov"
+  ],
+  [
+   "ČÁST DESÁTÁ",
+   "V § 17 odst. 2 písm. a) zákona č. 585/2004 Sb., o branné povinnosti a jejím zajišťování (branný zákon), ve znění zákona č. 375/2011 Sb., zákona č. 320/2015 Sb., zákona č. 47/2016 Sb., zákona č. 294/2017 Sb. a zákona č. 178/2023 Sb., se slova „prvků kritické infrastruktury“ nahrazují slovy „subjektů kritické infrastruktury“.",
+   "Čl. 1 odst. 1 písm. a)",
+   "1. Tato směrnice:\na) stanovuje členským státům povinnosti přijmout konkrétní opatření, jejichž cílem je zajistit, aby služby nezbytné pro zachování nejdůležitějších společenských funkcí nebo hospodářských činností v rámci působnosti článku 114 Smlouvy o fungování EU byly na vnitřním trhu poskytovány neomezeně, zejména povinnosti určit kritické subjekty a podporovat kritické subjekty při plnění pov"
+  ]
+ ]
+}
