@@ -1,0 +1,115 @@
+name: Review records
+
+# Validates review records submitted as issues (template: .github/ISSUE_TEMPLATE/review.yml) and comments the
+# result. It never writes to the repository: a maintainer adds valid records with
+# `openacquis review add <file>` in a pull request (see docs/review.md). Validation only, by design: the issue
+# body is untrusted input, so it is handed to the validator as a file (through an environment variable, never
+# interpolated into the script) and nothing from it is executed or committed automatically.
+#
+# Two jobs, least privilege: `validate` checks out and runs code on the untrusted body with a read-only token
+# (and no token left in .git/config); `comment` holds issues:write, never checks out code, and only reads the
+# validator's JSON result. The validator (`python -m openacquis.review check-issue`) reads only the
+# "Review record" section, checks the licence box only under "Licence", requires every record's reviewer to be
+# the issue author, and quotes nothing the submitter wrote in its errors; `comment` still renders each error as
+# an escaped inline code span.
+
+on:
+  issues:
+    types: [opened, edited, labeled]
+
+permissions: {}
+
+concurrency:
+  group: review-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    if: contains(github.event.issue.labels.*.name, 'review')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e .
+      - name: Validate the record(s) in the issue
+        env:
+          BODY: ${{ github.event.issue.body }}
+          AUTHOR: ${{ github.event.issue.user.login }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/out"
+          printf '%s' "$BODY" > "$RUNNER_TEMP/issue.md"
+          python -m openacquis.review check-issue "$RUNNER_TEMP/issue.md" "$AUTHOR" \
+            > "$RUNNER_TEMP/out/result.json" || true
+          cat "$RUNNER_TEMP/out/result.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: review-result
+          path: ${{ runner.temp }}/out/result.json
+          retention-days: 1
+
+  comment:
+    needs: validate
+    if: ${{ !cancelled() && contains(github.event.issue.labels.*.name, 'review') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: review-result
+          path: ${{ runner.temp }}/out
+      - name: Comment and label
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const marker = '<!-- openacquis-review-check -->';
+            let result;
+            try {
+              result = JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP + '/out/result.json', 'utf8'));
+            } catch (e) {
+              result = { valid: false, records: 0, errors: ['the record could not be read'] };
+            }
+            // Defence in depth: the validator quotes no user text, but render every error as an inline code
+            // span anyway (no mentions, links, images or markup), capped in length and number.
+            const code = s => {
+              const t = String(s).replace(/[\r\n]+/g, ' ').slice(0, 300).replace(/`/g, "'");
+              return '`' + t + '`';
+            };
+            const errors = Array.isArray(result.errors) ? result.errors.slice(0, 20) : [];
+            const records = Number.isInteger(result.records) ? result.records : 0;
+            const ok = result.valid === true && records > 0 && errors.length === 0;
+            let text;
+            if (ok) {
+              text = `${marker}\n✅ ${records} valid review record(s). A maintainer will add ` +
+                     'this to `data/reviews/` (`openacquis review add --author`). Thank you!';
+            } else {
+              const errs = errors.map(e => '- ' + code(e)).join('\n');
+              text = `${marker}\n❌ This review could not be accepted yet:\n` +
+                     (errs ? errs + '\n' : '') +
+                     '\nEdit the issue to fix it; this check runs again. Format: docs/review.md';
+            }
+            const { owner, repo } = context.repo;
+            const issue_number = context.payload.issue.number;
+            const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number });
+            const mine = comments.find(c => c.user.type === 'Bot' && c.body.includes(marker));
+            if (mine) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: mine.id, body: text });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body: text });
+            }
+            const add = ok ? 'review-valid' : 'review-invalid';
+            const remove = ok ? 'review-invalid' : 'review-valid';
+            await github.rest.issues.addLabels({ owner, repo, issue_number, labels: [add] });
+            try {
+              await github.rest.issues.removeLabel({ owner, repo, issue_number, name: remove });
+            } catch (e) { /* not present */ }
