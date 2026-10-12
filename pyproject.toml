@@ -1,0 +1,38 @@
+[build-system]
+requires = ["hatchling>=1.21"]
+build-backend = "hatchling.build"
+
+[project]
+name = "openacquis"
+version = "0.1.0"
+description = "Open, AI-assisted map of how EU directives are written into national law."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [{ name = "Vojtech Kraus" }]
+keywords = ["eu-law", "transposition", "eur-lex", "legal-informatics", "open-data"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Intended Audience :: Legal Industry",
+  "Intended Audience :: Science/Research",
+  "Topic :: Text Processing :: Linguistic",
+]
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.scripts]
+openacquis = "openacquis.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/JerryWoof/OpenAcquis"
+Issues = "https://github.com/JerryWoof/OpenAcquis/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/openacquis"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["live: hits the real EU Publications Office endpoint (deselect with -m 'not live')"]
