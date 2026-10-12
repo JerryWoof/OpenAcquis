@@ -3,9 +3,31 @@
 **Open, AI-assisted map of how EU directives are written into national law: provision by provision, country by country.**
 Spot gaps, gold-plating and national choices, with links to the source texts.
 
-> Status: **early prototype (v0.3)**. The tool lists which national laws each member state has notified for a directive, fetches directive texts (24 languages) and Czech laws split into citable provisions with stable IDs, and, for **NIS2 × Czechia**, proposes provision-level links scored against the government's official correlation table. On that test, a provision the table lists is among the top 5 machine candidates for 56 % of NIS2 provisions, and the right § for 79 %. The top single suggestion is the table's provision for only 35 %, so suggestions still need a reviewer (see [docs/evaluation.md](docs/evaluation.md)).
+> Status: **early prototype (v0.4)**. The tool lists which national laws each member state has notified for a
+> directive and fetches directive texts in 24 languages. It also fetches national law, split into citable
+> provisions with stable IDs, for **Czechia, Slovakia, Austria and Germany**. For **NIS2** it proposes
+> provision-level links in all four countries, with filtered gap and extra-rule candidates.
 >
-> Website: **https://jerrywoof.github.io/OpenAcquis/** (notified national measures for 10 directives by country, and [NIS2 × Czechia provision by provision](https://jerrywoof.github.io/OpenAcquis/alignment.html?id=32022L2555_cz); published by GitHub Actions after the first deploy from `main`).
+> Only Czechia has an official correlation table to check against. There:
+> - a provision the table lists is among the top 5 machine candidates for 61–64 % of NIS2 provisions, and
+>   the right § for about 81 %;
+> - the top single suggestion is right for about 43 %;
+> - 13 of the 16 gap candidates are provisions the table does not list, but 12 of the 16 sit in one
+>   article (Art. 32), and outside it the list does no better than chance.
+>
+> Suggestions still need reviewers, and the website now has a review queue (see
+> [docs/evaluation.md](docs/evaluation.md)).
+>
+> Website: **https://jerrywoof.github.io/OpenAcquis/**, published by GitHub Actions after the first deploy from
+> `main`. It has:
+> - notified national measures for 10 directives;
+> - the [NIS2 article × country matrix](https://jerrywoof.github.io/OpenAcquis/matrix.html?celex=32022L2555);
+> - NIS2 provision by provision for [CZ](https://jerrywoof.github.io/OpenAcquis/alignment.html?id=32022L2555_cz),
+>   [SK](https://jerrywoof.github.io/OpenAcquis/alignment.html?id=32022L2555_sk),
+>   [AT](https://jerrywoof.github.io/OpenAcquis/alignment.html?id=32022L2555_at) and
+>   [DE](https://jerrywoof.github.io/OpenAcquis/alignment.html?id=32022L2555_de);
+> - a [review page](https://jerrywoof.github.io/OpenAcquis/review.html?id=32022L2555_sk);
+> - the open dataset.
 
 ---
 
@@ -23,34 +45,40 @@ Example: for the NIS2 cybersecurity directive, the EU database lists **304 natio
 |---|---|---|---|---|
 | Art. 23(4)(a): early warning within 24 h | ✅ same | ⚠️ stricter | 🔍 review | ❌ not found |
 
-Every cell links to the exact text on both sides. Every AI suggestion is labelled as a suggestion until a human reviews it. *(Illustrative; not real results.)*
+Every cell links to the exact text on both sides. Every AI suggestion is labelled as a suggestion until a human reviews it. *(Illustrative; not real results. The real, machine-only first version is the [NIS2 matrix](https://jerrywoof.github.io/OpenAcquis/matrix.html?celex=32022L2555).)*
 
 ## How it works
 
 ```
-EUR-Lex / CELLAR ──► which national acts implement directive X   (works today, v0.1)
+EUR-Lex / CELLAR ──► which national acts implement directive X   (v0.1)
+        │                └─► mapped to fetchable acts per country     (v0.4: CZ, SK, AT, DE)
+        ▼
+Directive text (24 languages) + national law texts (national portals)   (v0.2 CZ; v0.4 SK, AT, DE)
         │
         ▼
-Directive text (24 languages) + national law texts (national portals)   (works today for CZ, v0.2)
+Split into provisions ──► candidate matching ──► judge per pair (implemented, LLM run pending)
+        │                  lexical / hybrid / embeddings   (same / partial / different value / stricter / option chosen)
+        ▼
+Leftovers: gap candidates (EU provisions with nothing similar) and extra-rule candidates
+(national rules matching nothing), filtered by scope, margin and structure    (v0.4)
         │
         ▼
-Split into provisions (v0.2) ──► candidate matching (v0.3) ──► judge per pair (v0.3, LLM run pending)
-        │                         lexical or embeddings          (same / partial / different value /
-        ▼                                                          stricter / option chosen)
-Leftovers: unmatched EU provisions = gap candidates; unmatched national rules = extra-rule candidates  (v0.3)
+Evaluation against official correlation tables (NIS2 × CZ)
         │
         ▼
-Evaluation against official correlation tables (v0.3: NIS2 × CZ)
-        │
-        ▼
-Human review ──► open dataset (CC-BY) ──► website, API, change alerts
+Human review (review page → GitHub) ──► open dataset (CC-BY) ──► website matrix (v0.4); API, change alerts later
 ```
 
-More detail: [docs/how-it-works.md](docs/how-it-works.md) · Evaluation: [docs/evaluation.md](docs/evaluation.md) · Judge: [docs/judge.md](docs/judge.md) · Data: [docs/data-sources.md](docs/data-sources.md) · Provision IDs: [docs/provisions.md](docs/provisions.md) · Website: [docs/website.md](docs/website.md) · All docs: [docs/README.md](docs/README.md) · Plan: [ROADMAP.md](ROADMAP.md) · Changes: [CHANGELOG.md](CHANGELOG.md)
+More detail: [docs/how-it-works.md](docs/how-it-works.md) · Evaluation: [docs/evaluation.md](docs/evaluation.md) · Review: [docs/review.md](docs/review.md) · Dataset: [docs/dataset.md](docs/dataset.md) · Judge: [docs/judge.md](docs/judge.md) · Data: [docs/data-sources.md](docs/data-sources.md) · Provision IDs: [docs/provisions.md](docs/provisions.md) · Website: [docs/website.md](docs/website.md) · All docs: [docs/README.md](docs/README.md) · Plan: [ROADMAP.md](ROADMAP.md) · Changes: [CHANGELOG.md](CHANGELOG.md)
 
 ## Quickstart
 
-Requires Python 3.10+. No API keys; no dependencies. Optional extras: `pip install -e '.[embeddings]'` (dense multilingual embeddings, sentence-transformers) and `pip install -e '.[llm]'` (LLM judge, Anthropic SDK; needs `ANTHROPIC_API_KEY`).
+Requires Python 3.10+. No API keys; no dependencies. Optional extras:
+
+- `pip install -e '.[embeddings]'`: dense multilingual embeddings (sentence-transformers); `align` then uses
+  the `hybrid` matcher.
+- `pip install -e '.[llm]'`: LLM judge (Anthropic SDK; needs `ANTHROPIC_API_KEY`).
+- `pip install -e '.[tls]'`: certifi, if your Python cannot verify the Austrian RIS certificate.
 
 ```bash
 git clone https://github.com/JerryWoof/OpenAcquis.git
@@ -136,15 +164,46 @@ zkb = fetch_act("264/2025")
 print(nis2.full_text("eu:32022L2555:cs:art23.par4"))
 ```
 
+### Four countries (v0.4)
+
+```bash
+# National law from each adapter: cz (e-Sbírka), sk (Slov-Lex), at (RIS), de (gesetze-im-internet.de)
+openacquis law sk 69/2018 --section 20                   # Slovak Cybersecurity Act, current version
+openacquis law sk 69/2018-366/2024 -f json               # the version CELLAR lists as notified (as amended by 366/2024)
+openacquis law at "NISG 2026" --section 32               # Austrian NISG 2026 (also: 20013065, "BGBl. I Nr. 94/2025")
+openacquis law de bsig_2025 --section 30                 # German BSIG (current text only)
+
+# Which notified measures each adapter can fetch
+openacquis measures 32022L2555 -c SK --map
+
+# Align NIS2 with the main transposing act; the directive is fetched in the act's language
+openacquis align 32022L2555 sk -o nis2_sk.json           # also: at, de, cz; --measures adds every notified measure
+#   --embedder auto (default): hybrid with openacquis[embeddings], else the stdlib hybrid-lex
+```
+
+Real output (2026-10-12, `hybrid-lex`):
+
+```
+$ openacquis align 32022L2555 at -e hybrid-lex -o nis2_at.json
+32022L2555 x 20013065 (hybrid:…, threshold 0.17): 473 EU units, 463 with a link, 1 gap candidates in 1 articles,
+13 extra-rule candidates in 7 sections of 545 units of the main act 20013065 -> nis2_at.json
+Machine suggestions for review, not findings.
+```
+
+IDs follow each country's citation: `sk:69/2018:par24.ods3.pism_a` (§ 24 ods. 3 písm. a)),
+`at:20013065:par32.abs4.lit_a` (§ 32 Abs. 4 lit. a), `de:bsig_2025:par28.abs1.nr3` (§ 28 Abs. 1 Nr. 3); see
+[docs/provisions.md](docs/provisions.md).
+
 ### Alignment and evaluation (v0.3, NIS2 × Czechia)
 
 ```bash
 # Candidate links between NIS2 (Czech text) and Act 264/2025 Sb., with gap and extra-rule candidates
 openacquis align 32022L2555 cz -o nis2_cz.json
-#   options: --embedder lexical|e5|e5-sym|bge-m3   --judge none|rule|anthropic   --threshold 0.2   -k 5
+#   options: --embedder auto|lexical|hybrid-lex|hybrid|e5|e5-sym|bge-m3|bm25   --judge none|rule|anthropic
+#            --threshold 0.17   --gap-margin 0.01   -k 5   --measures
 
 # Score matching against the official correlation table (data/eval/nis2_cz.jsonl)
-openacquis eval nis2-cz                    # also: --embedder e5, --k 1,5,10, --judge rule, --errors 10
+openacquis eval nis2-cz -e lexical         # the v0.3 tables below; also: -e hybrid-lex, --k 1,5,10, --judge rule
 ```
 
 Real output (2026-10-12):
@@ -172,7 +231,32 @@ Predicted links (best candidate per EU unit, score >= 0.200)
   ...
 ```
 
+*(v0.3 output with the lexical embedder. In v0.4, `hybrid-lex` with the new filters gives 16 gap candidates (3 of them
+listed in the table) and 33 extra-rule candidates in 11 §§; the eval report has a step-by-step table.)*
+
 Every entry in `nis2_cz.json` keeps the provision IDs, scores, texts and links to EUR-Lex and e-Sbírka; for NIS2 Art. 23(4)(a) (the 24-hour early warning) the first candidate is `cz:264/2025:par16.odst1` (score 0.58), the 24-hour initial report. Everything is labelled `status: "candidate"`: a gap candidate means "nothing similar found in the acts searched", not a transposition failure. The multilingual e5 model scores lower than the stdlib lexical baseline on this test (R@5 0.442 vs 0.563); the LLM judge is implemented but has not been run yet (it needs an API key). Details and error analysis: [docs/evaluation.md](docs/evaluation.md).
+
+### Review and dataset (v0.4)
+
+Anyone with a GitHub account can check machine suggestions:
+
+1. Open a review page, e.g.
+   [NIS2 × Slovakia](https://jerrywoof.github.io/OpenAcquis/review.html?id=32022L2555_sk).
+2. Read the two texts side by side.
+3. Confirm, reject or correct the suggestion. Corrections take the right provision IDs.
+4. Send it as a prefilled GitHub issue, or download a batch as JSON lines for a pull request.
+
+A workflow checks each review issue, including that the record's `reviewer` is the GitHub user who opened it.
+Maintainers add valid records to `data/reviews/`.
+
+```bash
+openacquis review validate my_reviews.jsonl     # check records (also issue bodies with ```json blocks)
+openacquis review add my_reviews.jsonl --author LOGIN   # validate, check the reviewer, append to data/reviews/
+openacquis dataset build                        # dataset/: links.csv, links.jsonl, reviews.jsonl, datapackage.json
+```
+
+The dataset (CC-BY-4.0) holds the official correlation-table links (568 for NIS2 × CZ) and reviewed links. It is
+downloadable from the website. See [docs/review.md](docs/review.md) and [docs/dataset.md](docs/dataset.md).
 
 ### Website
 
@@ -187,8 +271,8 @@ python -m http.server 8000 -d site         # then open http://localhost:8000/
 
 There is a lot to do, and much of it is welcoming to newcomers:
 
-- **Country adapters**: fetch and split national law for your country (each country is a separate module in `openacquis.adapters`; Czechia is the worked example).
-- **Legal review**: law students and practitioners checking AI suggestions.
+- **Country adapters**: fetch and split national law for your country (each country is a separate module in `openacquis.adapters`; Czechia is the worked example, Slovakia, Austria and Germany followed in v0.4).
+- **Legal review**: law students and practitioners checking AI suggestions on the [review page](https://jerrywoof.github.io/OpenAcquis/review.html?id=32022L2555_cz), no coding needed (how: [docs/review.md](docs/review.md)).
 - **Evaluation data**: Czech government bills include official correlation tables (*rozdílové tabulky*) that pair Czech sections with EU articles. NIS2 × Czechia is done (`data/eval/`); the companion bill (tisk 760) and other directives are open.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).
@@ -199,4 +283,4 @@ OpenAcquis is a research and transparency tool, **not legal advice**. Outputs ar
 
 ## License
 
-Code: [MIT](LICENSE). Published datasets will be CC-BY-4.0. EUR-Lex data is reused under the European Commission's reuse policy (Decision 2011/833/EU); source: © European Union, https://eur-lex.europa.eu.
+Code: [MIT](LICENSE). Published datasets and reviews: CC-BY-4.0. EUR-Lex data is reused under the European Commission's reuse policy (Decision 2011/833/EU); source: © European Union, https://eur-lex.europa.eu.

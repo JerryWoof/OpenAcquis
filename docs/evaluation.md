@@ -1,6 +1,8 @@
 # Evaluation: NIS2 × Czechia
 
-*Run on 2026-10-12 with OpenAcquis 0.3.0.*
+*Sections up to "Take-aways" were run on 2026-10-12 with OpenAcquis 0.3.0; the v0.4 sections at the end with
+0.4.0. Since 0.4.0 the default embedder of `align` and `eval` is `auto` (`hybrid` with the embeddings extra,
+else `hybrid-lex`); pass `--embedder lexical` to reproduce the v0.3 tables.*
 
 How well does automatic matching find the Czech provisions that transpose each NIS2 provision? We
 compare it with the **official correlation table** (*rozdílová tabulka*) that the Czech government
@@ -12,7 +14,7 @@ and 243 provisions of Act No. 264/2025 Sb.
 Reproduce:
 
 ```bash
-openacquis eval nis2-cz                      # lexical (stdlib), about 4 s once the texts are cached
+openacquis eval nis2-cz -e lexical           # lexical (stdlib), about 4 s once the texts are cached
 openacquis eval nis2-cz --embedder e5        # needs pip install 'openacquis[embeddings]'
 openacquis eval nis2-cz --judge rule         # adds the keyless heuristic judge
 openacquis eval nis2-cz --errors 10 -o report.json
@@ -181,3 +183,358 @@ From `openacquis eval nis2-cz --errors 10` and the rankings of both embedders.
   - separate scoring of short list items;
   - the LLM judge on the top 3 candidates;
   - adding tisk 760 to the gold set.
+
+## v0.4 hybrid matching
+
+*Run on 2026-10-12 with the v0.4 development tree. Same gold set, documents and units as above.*
+
+v0.3 found that lexical and e5 retrieve different gold provisions. v0.4 adds score fusion to
+`openacquis.match`:
+
+- `BM25Embedder`: Okapi BM25 over the same stemmed, diacritic-free words (stdlib).
+- `HybridEmbedder`: fuses several channels. It can use a weighted sum of z-scores, standardised per
+  EU unit (`norm="query"`) or over the whole matrix (`"global"`), or reciprocal rank fusion
+  (`fusion="rrf"`, k = 60). A `Channel` can read a unit's own text only (`field="body"`), without the
+  headings and lead-ins. This addresses error 3 above: a short list item diluted by its context.
+  After weighted fusion, scores are mapped back onto the first channel's scale (per row for `query`).
+  So an EU unit that matches nothing still scores low, and thresholds stay close to the lexical ones.
+- `StructuralPrior`: lets the structure vote. A national unit gains when other parts of its § match
+  the EU unit (`section_weight`) or its odstavec does (`paragraph_weight`). It also gains when the EU
+  unit's siblings match its § (`sibling_weight`): points of one NIS2 paragraph tend to land in one §.
+  The result is renormalised, so the best unit of a § keeps its score.
+- Presets: `make_hybrid("hybrid-lex" | "hybrid" | "hybrid-rrf")`. You can also select them on the
+  command line:
+
+```bash
+openacquis eval nis2-cz --embedder hybrid-lex   # stdlib only, about 5 s
+openacquis eval nis2-cz --embedder hybrid       # needs openacquis[embeddings]
+openacquis eval nis2-cz --embedder bm25
+openacquis eval nis2-cz --embedder hybrid-rrf
+```
+
+### How it was tuned
+
+Weights, normalisation and prior weights were chosen with **two folds by article parity**, the split
+used for the threshold above. For each fold, the configuration with the best provision-level MRR was
+picked on the other fold's gold provisions. It was then scored on this fold, and the two test folds
+were pooled. The grids:
+
+- stdlib: lexical body weight {0, 0.25, 0.5}, BM25 {0, 0.25, 0.5, 1}, BM25 body {0, 0.25}, global or
+  query z-scores;
+- full: the stdlib channels, plus e5 {0, 0.5, 1}, e5-sym {0, 0.5, 1, 1.5} and e5 body {0, 0.25};
+- RRF: weights for lexical, lexical body, BM25, e5 and e5-sym;
+- prior: section {0, 0.25, 0.5, 1} × odstavec {0, 0.25, 0.5} × siblings {0, 0.25, 0.5, 1}, with
+  siblings at paragraph or article level.
+
+The tuning script lives outside the repository. It reuses `evaluate.retrieval` on cached score
+matrices.
+
+The two folds agreed on the main choices:
+
+- per-query z-scores;
+- lexical text weight 1, lexical body 0.25–0.5;
+- for the full grid, e5-sym 1–1.5 and e5 body 0.25, with e5 on the full text weighted 0;
+- for the stdlib prior, siblings 0.5–1.
+
+The presets fix these rounded values. The preset rows further down therefore use settings informed by
+both folds and are slightly optimistic. **The cross-validated rows are the honest estimate.**
+
+### Results: EU provision → national provision (197 gold EU provisions)
+
+| Method | Tuning | R@1 | R@5 | R@10 | MRR | § R@1 | § R@5 | § R@10 | § MRR |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| lexical (v0.3 default) | none | 0.350 | 0.563 | 0.635 | 0.445 | 0.492 | 0.787 | 0.858 | 0.615 |
+| lexical, body only | none | 0.376 | 0.584 | 0.640 | 0.457 | 0.503 | 0.761 | 0.848 | 0.611 |
+| BM25 | none | 0.325 | 0.508 | 0.579 | 0.404 | 0.431 | 0.716 | 0.807 | 0.550 |
+| BM25, body only | none | 0.391 | 0.558 | 0.619 | 0.464 | 0.477 | 0.746 | 0.807 | 0.584 |
+| e5 | none | 0.264 | 0.442 | 0.543 | 0.341 | 0.396 | 0.736 | 0.822 | 0.541 |
+| e5, body only | none | 0.365 | 0.553 | 0.609 | 0.437 | 0.477 | 0.756 | 0.832 | 0.593 |
+| e5-sym | none | 0.294 | 0.482 | 0.584 | 0.377 | 0.452 | 0.766 | 0.832 | 0.593 |
+| RRF lexical + e5-sym (`hybrid-rrf`) | none | 0.365 | 0.584 | 0.665 | 0.462 | 0.513 | 0.777 | 0.832 | 0.629 |
+| z-fusion lexical + e5-sym, equal weights | none | 0.401 | 0.599 | 0.660 | 0.489 | 0.553 | 0.812 | 0.853 | 0.657 |
+| lexical + prior | 2-fold CV | 0.350 | 0.574 | 0.655 | 0.449 | 0.528 | 0.802 | **0.873** | 0.643 |
+| stdlib fusion | 2-fold CV | 0.416 | 0.589 | 0.675 | 0.495 | 0.533 | 0.787 | 0.858 | 0.642 |
+| stdlib fusion + prior | 2-fold CV | 0.416 | 0.594 | 0.670 | 0.491 | 0.553 | 0.812 | 0.863 | 0.662 |
+| RRF, tuned weights | 2-fold CV | 0.350 | 0.599 | 0.680 | 0.457 | 0.503 | 0.792 | 0.863 | 0.632 |
+| full fusion (lexical + e5) | 2-fold CV | 0.411 | **0.635** | 0.690 | **0.505** | 0.543 | **0.822** | 0.868 | 0.661 |
+| full fusion + prior | 2-fold CV | 0.401 | 0.624 | **0.695** | 0.497 | 0.548 | **0.822** | 0.868 | **0.663** |
+| preset `hybrid-lex` (stdlib) | fixed, see above | 0.431 | 0.609 | 0.685 | 0.505 | 0.584 | 0.807 | 0.858 | 0.679 |
+| preset `hybrid` (lexical + e5) | fixed, see above | 0.426 | 0.635 | 0.690 | 0.515 | 0.563 | 0.817 | 0.863 | 0.670 |
+
+`hybrid-lex` = lexical 1 + lexical body 0.5 + BM25 0.5, per-query z-scores, prior (§ 0.25, siblings 1).
+`hybrid` = lexical 1 + lexical body 0.25 + e5-sym 1 + e5 body 0.25, per-query z-scores, no prior (the
+folds disagreed on the prior).
+
+At the other levels, for the presets on the full set:
+
+- **odstavec:** `hybrid-lex` R@1 0.508, R@5 0.721, MRR 0.596; `hybrid` 0.477, 0.721, 0.582. Lexical
+  was 0.411, 0.655, 0.516.
+- **article → §:** `hybrid` 0.697 / 0.879 / 0.909 / MRR 0.780; `hybrid-lex` 0.636 / 0.879 / 0.909 /
+  0.739. Lexical was 0.636 / 0.909 / 0.939 / 0.750.
+
+The article level has only 33 items, so one article is 3 points.
+
+**What changed, honestly.**
+
+- **Fusion helps, and most of the gain is stdlib.** Under cross-validation, provision-level MRR goes
+  from 0.445 to 0.495 without any model (stdlib fusion), and to 0.505 with e5. R@1 goes from 0.350 to
+  about 0.41.
+- **R@5 is where e5 adds something.** R@5 rises from 0.563 to 0.635 with e5; the stdlib fusion gets
+  0.589–0.609.
+- **Equal-weight z-fusion of lexical and e5-sym, with no tuning at all, already gets most of the
+  gain** (MRR 0.489).
+- **The gains are small next to the sample.** One gold EU provision is 0.5 points. The differences
+  between the tuned variants (about ±0.01) are within noise; the gain over lexical (+0.05 to +0.07
+  MRR) is not.
+- **RRF is worse than weighted z-fusion here.** RRF throws away how far ahead lexical's top hit is.
+  Lexical is often decisively right (shared wording), so that margin is worth keeping.
+- **The body-only channels carry much of the gain.**
+  - Example 3 above, Art. 21(2)(i): its first hit moves from rank 7 to rank 1 in both presets.
+  - Example 1, Art. 23(4)(a): stays at rank 1.
+  - Example 4, Art. 30(2): moves from 7 to 5 (`hybrid-lex`) or 6 (`hybrid`).
+  - Art. 6(6), the paraphrased definition from the take-aways: 7 → 2 with `hybrid`; lost from the top 10 with
+    `hybrid-lex`.
+  - Example 5, Art. 2(2)(a): still missed.
+  - At R@5 against lexical: `hybrid` gains 15 gold EU provisions and loses 1; `hybrid-lex` gains 16
+    and loses 7.
+- **The structural prior is mostly a § -level tool.** It lifts § R@1 (0.533 → 0.553 for stdlib
+  fusion, 0.492 → 0.528 for lexical) and § MRR, but does not improve provision-level MRR under
+  cross-validation. Sanctions (Art. 36, example 2) are still not solved: `hybrid-lex` brings a first
+  hit to rank 8, `hybrid` none. Following cross-references remains the fix to try.
+
+### Predicted links and thresholds
+
+Fused scores are mapped onto the lexical scale, but they are a little lower. The lexical default
+threshold (0.20, which `align.default_threshold` uses for any unknown method, including `hybrid:…`)
+is too strict for them. The 2-fold choices were:
+
+- `hybrid-lex`: 0.174 and 0.157, giving pooled in-scope P 0.430, R 0.158, F1 **0.232** (lexical:
+  0.190);
+- `hybrid`: 0.142 and 0.127, giving P 0.410, R 0.155, F1 0.225.
+
+At a threshold of 0.17, `hybrid-lex` gives:
+
+- **Provision links:** P 0.329 (in scope 0.437), R 0.160, F1 in scope 0.234; 90 gold EU provisions
+  get a correct link (lexical at 0.20: 73).
+- **Section links:** in-scope F1 0.491 (lexical 0.414).
+- **Gap candidates:** 50, of which 21 are listed in the table (lexical: 118, of which 66).
+- **Extra-rule candidates:** 112, of which 35 are in the table.
+
+The gap list is shorter and less often contradicted by the table, but 42 % of it still is. It
+remains a reading list.
+
+`hybrid-rrf` scores are about 1/61 and carry only ranks, not an absolute level. Since 0.4.0 the RRF
+presets have their own threshold family (`"hybrid-rrf"` in `align.DEFAULT_THRESHOLDS`: threshold 0.03,
+gap margin 0.001), which gives links: 421 predicted, in-scope precision 0.405. They give **no gap
+list**: every EU unit's best candidate scores about the same, so a low score does not mean "nothing
+similar". Measured against the table, RRF gap lists agree with it less often than a random list
+(15–21 % not listed at every margin tried, against the 28.3 % base rate below). `align` and `eval`
+therefore report no gap candidates for `hybrid-rrf` and say why (`gap_note` in the JSON). Its
+extra-rule list is still produced (99 units at 80.8 %). Use RRF for ranking only.
+
+### Cross-lingual readiness
+
+Lexical and BM25 compare surface forms, so they only work when the directive and the act are in
+the same language. The pipeline is built for that: `load_documents` fetches the directive in the
+country's language. That is Czech for CZ, and will be **Slovak for Slovakia and German for Austria and
+Germany** when those adapters exist. NIS2 provision IDs are identical across language versions, so
+the gold set and rollups carry over.
+
+The light stemmer is Czech. Slovak is close enough; for German use `LexicalEmbedder(stem=False)`, or
+add a German stemmer, and re-tune the weights.
+
+Only the dense channels are cross-lingual by design. Both multilingual-e5 and bge-m3 are trained
+multilingual. To check this without a Slovak or German act, NIS2 was matched in other languages
+against the Czech act, with the gold remapped by language code (all 197 gold provisions exist in
+every version):
+
+| NIS2 language vs CZ act | lexical MRR (R@5) | e5 MRR (R@5) | e5-sym MRR (R@5) | `hybrid` MRR (R@5) |
+|---|---:|---:|---:|---:|
+| cs (same language) | 0.445 (0.563) | 0.341 (0.442) | 0.377 (0.482) | **0.515 (0.635)** |
+| sk | 0.410 (0.528) | 0.335 (0.457) | 0.373 (0.503) | **0.462 (0.604)** |
+| de | 0.192 (0.264) | 0.332 (0.416) | **0.354 (0.437)** | 0.271 (0.376) |
+| en | 0.214 (0.279) | 0.290 (0.371) | **0.333 (0.447)** | 0.293 (0.401) |
+
+These are provision-level figures.
+
+- **e5 barely moves across languages** (MRR 0.33–0.35 from DE, EN, SK or CS), so the dense path is
+  language-independent as intended.
+- **Lexical collapses across language families.** Lexical SK → CZ still works, because the languages
+  share many stems. It is not a substitute for same-language matching.
+- **Use a hybrid only within one language.** For a cross-language pair, `hybrid` is worse than e5-sym
+  alone, because the lexical channel adds noise. Use a dense embedder on its own, or fetch the
+  directive in the act's language (the default).
+
+### Recommendation
+
+- **CI and default without extras: `hybrid-lex`.** It is stdlib-only, deterministic, and runs in
+  about 5 s. Cross-validated, it improves on lexical at every provision-level measure: MRR 0.445 →
+  0.49–0.50, R@1 0.350 → 0.42–0.43. It also improves § R@1 and link F1. Adopted in 0.4.0: it is what
+  `--embedder auto` (the default) picks without the embeddings extra and what the website uses, and
+  `align.DEFAULT_THRESHOLDS` has `"hybrid": 0.17`.
+- **Full install: `hybrid`** (lexical + multilingual-e5; about 5 s with a warm vector cache, a few minutes on CPU when cold). It has
+  the best R@5 (0.635 vs 0.563) and MRR (0.505 cross-validated), and the best article-level MRR. Its
+  default threshold is 0.14 (`"hybrid-dense"` in `align.DEFAULT_THRESHOLDS`); `--embedder auto` picks it
+  when the extra is installed. For a cross-language pair use `e5-sym` alone.
+- **Not recommended:** RRF (worse ranking, no gap list) and BM25 alone (below lexical). The prior is
+  useful at § level and optional at provision level.
+- **Still weak:**
+  - top-1 at provision level is right only about 43 % of the time;
+  - sanctions need cross-reference following;
+  - all figures come from one directive, one country and one government table.
+
+## v0.4 gap and extra-rule candidates
+
+*Run on 2026-10-12 with OpenAcquis 0.4.0. Same gold set, documents and units as above.*
+
+v0.3 reported every EU unit without a predicted link as a *gap candidate*, and every unit of the act
+that matched nothing as an *extra-rule candidate*. Neither list was usable: with lexical matching at
+0.20, 66 of the 118 gap candidates are provisions the official table lists. v0.4
+(`openacquis.leftovers`) filters both lists in four steps. None needs a model, and all work in every
+language with a keyword list (cs, sk, de, en):
+
+1. **Scope.**
+   - EU provisions that no member state transposes are set aside, not reported as gaps:
+     - final provisions, found by article heading (transposition, amendments of other EU acts, repeal,
+       entry into force, addressees, delegated acts, committee procedure, review, correlation table);
+     - units addressed only to the Commission or ENISA, naming no member state, national authority
+       or regulated entity. Joint bodies made up of national representatives (the Cooperation Group,
+       the CSIRTs network, EU-CyCLONe) do not count: units about them are national duties too, and the
+       table often maps them.
+   - On the national side, boilerplate is set aside: definitions, entry into force, transitional and
+     repeal clauses, enabling clauses, penalty lists (they implement Art. 36 through cross-references,
+     see error 2 above), amendments of other acts, transposition notes, footnotes, and annexes
+     published only as PDF.
+2. **Score margin.** A gap candidate's best score must stay at least 0.01 below the link threshold.
+   An EU unit that just misses the threshold usually has a match.
+3. **Structure.**
+   - A lead-in is not a gap when one of its points is linked, and a point is not a gap when its
+     lead-in is linked.
+   - An extra-rule candidate must sit in a § with no linked unit at all: a § that partly transposes
+     an article is not an extra rule.
+   - Only the **main** transposing act (the first act searched) can have extra-rule candidates.
+4. **Grouping.** Both lists are also reported per EU article and per national §, the level a
+   reviewer reads.
+
+The LLM judge was not used: it has still not been run, and the keyless rule judge made links worse in
+v0.3. Reproduce with `openacquis eval nis2-cz -e hybrid-lex` (or `-e lexical`). The report has a
+step-by-step table (`leftover_ablation` in `openacquis.evaluate`, nine rows: three filter steps and six
+gap margins scaled to the method's default margin). Each row also gives the article with the most gap
+candidates and the precision outside it, a 95 % Wilson interval, the scope-filtered counts, and the
+margin chosen out of sample (`cross_validated_gap_margin`).
+
+### Results against the table
+
+**Precision** is the share of candidates the table does *not* list (gap candidates) or does *not*
+cite (extra-rule candidates), i.e. agreement with the table's silence. The **base rate** is what a
+random list of the same units would get: 28.3 % of the 473 EU units are not covered by the table, and
+49.9 % of the 629 units of Act 264/2025 Sb. are not cited.
+
+| Embedder (threshold) | Step | Gap candidates | Gap precision | Extra-rule candidates | Extra-rule precision | §§ with extra rules |
+|---|---|---:|---:|---:|---:|---:|
+| lexical (0.20) | v0.3: every unlinked unit | 118 | 44.1 % | 195 | 74.9 % | 37 |
+| | + scope and boilerplate | 107 | 40.2 % | 120 | 85.8 % | 25 |
+| | + structure | 54 | 44.4 % | 47 | 83.0 % | 12 |
+| | + gap margin 0.01 (**v0.4 default**) | 39 | 51.3 % | 47 | 83.0 % | 12 |
+| `hybrid-lex` (0.17) | v0.3: every unlinked unit | 50 | 58.0 % | 112 | 68.8 % | 27 |
+| | + scope and boilerplate | 44 | 54.5 % | 72 | 80.6 % | 18 |
+| | + structure | 30 | 66.7 % | 33 | 81.8 % | 11 |
+| | + gap margin 0.005 | 21 | 71.4 % | 33 | 81.8 % | 11 |
+| | + gap margin 0.0075 | 19 | 73.7 % | 33 | 81.8 % | 11 |
+| | + gap margin 0.01 (**v0.4 default**) | **16** | **81.2 %** | **33** | **81.8 %** | **11** |
+| | + gap margin 0.015 | 12 | 75.0 % | 33 | 81.8 % | 11 |
+| | + gap margin 0.02 | 7 | 57.1 % | 33 | 81.8 % | 11 |
+| | + gap margin 0.03 | 3 | 66.7 % | 33 | 81.8 % | 11 |
+| `hybrid` (0.14, with e5) | v0.4 default | 4 | 75.0 % | 16 | 93.8 % | 5 |
+
+**Read these numbers with care.**
+
+- **The samples are small and clustered.**
+  - With `hybrid-lex`, 13 of 16 gap candidates are not in the table. The 95 % Wilson interval is
+    57–93 %.
+  - 12 of the 16 come from one place, Art. 32(2) and 32(7): the list of factors an authority weighs
+    before enforcement, and two kinds of audit. The table does not map them. They are more likely
+    transposed by the general administrative-offences law (Act 250/2016 Sb.), which the table does not
+    cover, than missing.
+  - **Outside Art. 32 the list is no better than chance:** only 1 of the other 4 candidates is not in
+    the table (25 %, below the 28.3 % base rate). The 81 % rests on that one cluster.
+  - Precision does not rise steadily with the margin (0.005: 71.4 %, 0.0075: 73.7 %, 0.01: 81.2 %,
+    0.015: 75.0 %, 0.02: 57.1 %, 0.03: 66.7 %), so the default margin sits on a local peak.
+- **The margin was chosen on this set.** Chosen out of sample over the grid {0, 0.005, 0.0075, 0.01,
+  0.015, 0.02, 0.03} by the Wilson lower bound:
+  - one half of the articles (by parity) scored on the other: the folds pick 0 and 0.0075, and pooled
+    16 of 25 gap candidates are not in the table (64.0 %, interval 44.5–79.8 %); with lexical, 16 of
+    34 (47.1 %);
+  - leave one article out: 16 of 21 (76.2 %, interval 54.9–89.4 %); with lexical, 16 of 32 (50.0 %).
+
+  Both figures still depend on the link threshold and the preset, which were tuned on all articles.
+- **The scope filter costs a little precision.** Final provisions and units addressed only to the
+  Commission or ENISA are mostly not in the table, so dropping them lowers the measured precision
+  (lexical 44.1 % → 40.2 %). With lexical at 0.20 the filter sets aside 11 unlinked EU units, 2 of
+  which the table does map (Art. 4(3) and Art. 41(1)); with `hybrid-lex`, 6, of which 1 (Art. 41(1)).
+  Before the joint bodies were taken out of the filter it set aside 18 such units with lexical, 9 of
+  them mapped by the table. They are dropped because a reviewer gains little from them.
+- **Extra rules: precision is high, recall is not measured.**
+  - 27 of the 33 `hybrid-lex` candidates are not cited in the table (interval 66–91 %). Of the 11 §§,
+    7 are not cited at all.
+  - Most are national machinery with no NIS2 counterpart: the state of cyber emergency (§ 37), the
+    national coordination centre and its community (§§ 48–53, which implement Regulation 2021/887,
+    not NIS2), and the public contract with the operator of the national CERT.
+  - The 6 cited units are in §§ 12, 20 and 23. For example, the table pairs § 20 odst. 2 and § 23
+    odst. 1 (countermeasures) with the supervisory and enforcement measures of Art. 32, whose wording
+    they do not share.
+  - "Not cited" does not mean "gold-plating". Most of these are procedure or organisation, which a
+    directive leaves to member states.
+- **What improved.**
+  - Against v0.3 (lexical, 118 gap candidates at 44 %), `hybrid-lex` with the filters gives 16 at
+    81 %. The gap list is 7 times shorter, and false alarms against the table fall from 66 to 3.
+  - The extra-rule list goes from 195 units at 75 % to 33 units in 11 §§ at 82 %.
+  - Both lists are now short enough to review in an hour. They are still **candidates**: the table
+    describes a 2024 bill and covers one act.
+
+## v0.4 four countries (no gold set)
+
+*Run on 2026-10-12 with OpenAcquis 0.4.0, `hybrid-lex`, the directive fetched in each act's language.
+These are the numbers on the website's alignment pages (`site/static-data/`).*
+
+| | CZ | SK | AT | DE |
+|---|---|---|---|---|
+| Main act | 264/2025 Sb. (version of 2025-11-01) | 69/2018 Z. z. (version of 2026-04-30) | NISG 2026, Gesetzesnummer 20013065 (in force 2026-10-01) | BSIG, `bsig_2025` (NeuRIS version 2026-07-29) |
+| NIS2 text | Czech | Slovak | German | German |
+| Stemmer | Czech | Czech (close enough) | none | none |
+| Units of the act | 629 | 762 | 545 | 603 |
+| EU units with a link (of 473) | 423 | 454 | 463 | 448 |
+| Unlinked EU units set aside (final provisions, Commission / ENISA only) | 6 | 7 | 8 | 10 |
+| Linked EU units in those categories | 31 | 34 | 32 | 30 |
+| Gap candidates (articles) | 16 (4) | 5 (3) | 1 (1) | 6 (4) |
+| Extra-rule candidates (§§) | 33 (11) | 34 (7) | 13 (7) | 59 (12) |
+
+- **No official table, so no precision.** Only Czechia has one. For SK, AT and DE these lists are
+  unchecked; they need reviewers (`review.html`).
+- **The thresholds come from Czech.** Scores are higher where the act copies the directive's wording.
+  The median best score per EU unit is 0.22 (CZ), 0.29 (SK), 0.27 (DE) and 0.44 (AT).
+  - Austria's NISG 2026 often reproduces NIS2 word for word. For example, § 39 Abs. 7 Z 1 scores 0.99
+    against Art. 32(7)(a).
+  - So nearly every unit clears the Czech-tuned threshold, and Austria has a single gap candidate,
+    Art. 14(7) (the Cooperation Group's work programme). That may be right, but it is not measured.
+- **Some extra-rule candidates look like real national additions:**
+  - SK: § 27b, blocking;
+  - DE: § 8, malware defence for the federal administration, and § 55, the voluntary IT security
+    label;
+  - AT: § 12 and § 14, the national coordination bodies.
+- **Some gap candidates are EU-facing duties that the filters do not recognise:**
+  - SK Art. 3(5), member states reporting lists of entities to the Commission;
+  - duties of the joint bodies, which the scope filter no longer sets aside because the Czech table
+    maps many such units: EU-CyCLONe's rules of procedure, Art. 16(4) (SK, DE), and Art. 16(3)(b)
+    and (c) (DE); the Cooperation Group's work programme, Art. 14(7) (AT).
+- **Searching more acts moves links away from the main act.** With `--measures`, Slovakia's 9 notified
+  measures are searched together (85 s). Then 468 EU units get a link and there are no gap candidates.
+  But the extra-rule candidates of Act 69/2018 grow from 34 to 49. 92 of the 468 links now go to other
+  acts, most to the Electronic Communications Act 452/2021 (41), which leaves more of the main act
+  unlinked. The default is therefore the main act alone.
+- **Labels and IDs.**
+  - Provision labels follow each country's citation style: `§ 24 ods. 3 písm. a)` (SK),
+    `§ 32 Abs. 4 lit. a` (AT), `§ 28 Abs. 1 Nr. 3 Buchst. a` (DE).
+  - EU provisions are labelled in the language version used.
+  - NIS2 IDs differ only by language code, so a future Slovak, Austrian or German correlation table
+    plugs into `GOLD_FILES` unchanged.

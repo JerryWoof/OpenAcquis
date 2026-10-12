@@ -2,9 +2,11 @@
 
 ``openacquis summary|measures <CELEX>``: which national acts implement a directive (CELLAR).
 ``openacquis text <CELEX> --lang cs``: a directive's text split into provisions (CELLAR/EUR-Lex).
-``openacquis law cz 264/2025``: a national act split into provisions (country adapters).
-``openacquis align 32022L2555 cz``: candidate links, gap and extra-rule candidates (v0.3).
+``openacquis law cz 264/2025``: a national act split into provisions (adapters: cz, sk, at, de).
+``openacquis align 32022L2555 sk``: candidate links, gap and extra-rule candidates (v0.3, v0.4).
 ``openacquis eval nis2-cz``: score the alignment against the official correlation table (v0.3).
+``openacquis review validate FILE``: check human review records (v0.4).
+``openacquis dataset build``: export the open dataset (CSV, JSON lines, Data Package; v0.4).
 """
 
 from __future__ import annotations
@@ -15,19 +17,22 @@ import json
 import os
 import sys
 
+from typing import Any
+
 from . import __version__
-from .adapters.cz import ESbirkaClient
+from .adapters import ADAPTERS, get_adapter
+from .align import EMBEDDERS
 from .cellar import CellarClient, count_by_country
 from .countries import MEMBER_STATES, normalize_country
 from .eurlex import EurLexClient, counts, validate_celex
 from .provisions import Document, make_id, roman_to_int
 
-#: Countries with a national-law adapter (ISO alpha-3 -> printable code).
-LAW_ADAPTERS = {"CZE": "cz"}
+#: Countries with a national-law adapter (ISO alpha-3 -> adapter code).
+LAW_ADAPTERS = {a.alpha3: a.code for a in ADAPTERS.values()}
+_HAVE = ", ".join(a.code for a in ADAPTERS.values())
 
 #: Evaluation sets: name -> (CELEX, country).
 EVALSETS = {"nis2-cz": ("32022L2555", "cz")}
-EMBEDDERS = ["lexical", "e5", "e5-sym", "bge-m3"]
 JUDGES = ["none", "rule", "anthropic"]
 
 
@@ -55,6 +60,8 @@ def cmd_summary(args: argparse.Namespace, client: CellarClient) -> int:
 
 def cmd_measures(args: argparse.Namespace, client: CellarClient) -> int:
     measures = client.national_measures(args.celex, country=args.country)
+    if args.map:
+        return _print_mapped(args, client, measures)
     if args.format == "json":
         json.dump([m.to_dict() for m in measures], sys.stdout, ensure_ascii=False, indent=2)
         print()
@@ -123,20 +130,57 @@ def cmd_text(args: argparse.Namespace, client: EurLexClient) -> int:
     return 0
 
 
-def cmd_law(args: argparse.Namespace, client: ESbirkaClient) -> int:
+def _print_mapped(args: argparse.Namespace, client: CellarClient, measures: list) -> int:
+    """``measures --map``: how each notified measure maps to an act the country's adapter can fetch."""
+    from .adapters import map_measures
+
+    if not args.country:
+        raise ValueError("--map needs --country (a country with an adapter: " + _HAVE + ")")
+    a = get_adapter(normalize_country(args.country))
+    rows = map_measures(a.code, measures, celex=validate_celex(args.celex), cellar=client)
+    if args.format == "json":
+        json.dump([r.to_dict() for r in rows], sys.stdout, ensure_ascii=False, indent=2)
+        print()
+        return 0
+    if args.format == "csv":
+        w = csv.DictWriter(sys.stdout, fieldnames=list(rows[0].to_dict()) if rows else ["uri"])
+        w.writeheader()
+        for r in rows:
+            w.writerow({k: (";".join(v) if isinstance(v, list) else v) for k, v in r.to_dict().items()})
+        return 0
+    for r in rows:
+        extra = f" ({', '.join(r.sections)})" if r.sections else ""
+        print(f"{r.status:<12} {(r.ref or '-') + extra:<34} {_short(r.title, 90)}")
+    n = sum(r.status == "mapped" for r in rows)
+    print(f"\n{n} of {len(rows)} measures mapped to {a.portal} (openacquis law {a.code} <ref>)")
+    return 0
+
+
+def cmd_law(args: argparse.Namespace, client: Any) -> int:
+    a = get_adapter(normalize_country(args.country))
+    if args.version_date and not a.versions:
+        raise ValueError(f"{a.portal} publishes only the current text; --version-date is not supported for {a.code}")
     doc = client.document(args.ref, args.version_date)
     pid = args.id
     if args.section:
         pid = make_id(doc.source, doc.act_id, [("par", args.section)])
+        if a.code == "at" and doc.get(pid) is None:
+            # §§ inside an Artikel (DSG: Art. 2 § 4) have IDs like art2.par4
+            from .adapters import at
+
+            pid = at.provision_id(doc, pid.rsplit(":", 1)[1]) or pid
     elif args.article:
-        # článek IDs use the ELI number (cl1, cl2), labels are printed in roman ("Čl. I")
-        number = roman_to_int(args.article) or args.article
-        pid = make_id(doc.source, doc.act_id, [("cl", number)])
+        if a.article_kind == "cl":
+            # článek IDs use the number (cl1, cl2), labels are printed in roman ("Čl. I")
+            number = roman_to_int(args.article) or args.article
+        else:
+            number = args.article
+        pid = make_id(doc.source, doc.act_id, [(a.article_kind, number)])
     _print_document(_select(doc, pid), args.format)
     return 0
 
 
-# --- alignment and evaluation (v0.3) -------------------------------------------
+# --- alignment and evaluation (v0.3, v0.4) ----------------------------------------
 def _log(msg: str) -> None:
     print(msg, file=sys.stderr, flush=True)
 
@@ -150,38 +194,35 @@ def _judge(name: str):
     return make_judge(name)
 
 
-def _embedder(name: str):
+def _embedder(name: str, language: str = "cs"):
     """The embedder, checked before any text is fetched (dense models need an optional extra)."""
-    import importlib.util
+    from .align import choose_embedder
 
-    from .align import make_embedder
-
-    if name != "lexical" and importlib.util.find_spec("sentence_transformers") is None:
-        raise ValueError(f"--embedder {name} needs the optional extra: pip install 'openacquis[embeddings]' "
-                         "(sentence-transformers); --embedder lexical works without it")
-    return make_embedder(name)
+    emb = choose_embedder(name, language)
+    if name == "auto":
+        _log(f"embedder: {emb.name} (--embedder auto)")
+    return emb
 
 
 def _documents(args: argparse.Namespace, clients: dict, celex: str, country: str):
     from .align import load_documents
 
-    code = normalize_country(country)
-    if code not in LAW_ADAPTERS:
-        have = ", ".join(v.upper() for v in LAW_ADAPTERS.values())
-        raise ValueError(f"no national-law adapter for {country} yet (available: {have})")
+    a = get_adapter(normalize_country(country))
     version = args.version_date if args.version_date else "default"
-    return load_documents(validate_celex(celex), LAW_ADAPTERS[code], args.acts or None, version=version,
-                          eurlex=clients.get("eurlex"), national_client=clients.get("esbirka"), log=_log)
+    return load_documents(validate_celex(celex), a.code, args.acts or None, version=version,
+                          eurlex=clients.get("eurlex"), national_client=clients.get(a.code),
+                          measures=getattr(args, "measures", False), cellar=clients.get("cellar"), log=_log)
 
 
 def cmd_align(args: argparse.Namespace, clients: dict) -> int:
     from .align import align
 
-    embedder = _embedder(args.embedder)
+    a = get_adapter(normalize_country(args.country))
+    embedder = _embedder(args.embedder, a.language)
     judge = _judge(args.judge)
     eu, national = _documents(args, clients, args.celex, args.country)
-    result = align(eu, national, embedder=embedder, judge=judge, k=args.k,
-                   threshold=args.threshold, judge_k=args.judge_k, log=_log)
+    result = align(eu, national, embedder=embedder, judge=judge, k=args.k, threshold=args.threshold,
+                   judge_k=args.judge_k, gap_margin=args.gap_margin, log=_log)
     out = result.to_json(text_limit=args.text_limit)
     if args.output and args.output != "-":
         with open(args.output, "w", encoding="utf-8") as f:
@@ -190,8 +231,10 @@ def cmd_align(args: argparse.Namespace, clients: dict) -> int:
         print(out)
     s = result.summary()
     _log(f"{eu.act_id} x {', '.join(d.act_id for d in national)} ({result.method}, threshold {result.threshold}): "
-         f"{s['eu_units']} EU units, {s['eu_units_with_link']} with a link, {s['gap_candidates']} gap candidates, "
-         f"{s['extra_rule_candidates']} extra-rule candidates of {s['transposing_act_units']} national units"
+         f"{s['eu_units']} EU units, {s['eu_units_with_link']} with a link, {s['gap_candidates']} gap candidates "
+         f"in {s.get('gap_articles', 0)} articles, {s['extra_rule_candidates']} extra-rule candidates in "
+         f"{s.get('extra_rule_sections', 0)} sections of {s['transposing_act_units']} units of the main act "
+         f"{result.transposing_acts[0] if result.transposing_acts else ''}"
          + (f" -> {args.output}" if args.output and args.output != "-" else ""))
     _log("Machine suggestions for review, not findings.")
     return 0
@@ -216,7 +259,7 @@ def cmd_eval(args: argparse.Namespace, clients: dict) -> int:
     if path is None:
         raise LookupError(f"evaluation set for {args.dataset} not found; pass --gold data/eval/nis2_cz.jsonl")
     gold = load_gold(path)
-    embedder = _embedder(args.embedder)
+    embedder = _embedder(args.embedder, get_adapter(country).language)
     judge = _judge(args.judge)
     eu, national = _documents(args, clients, celex, country)
     report = evaluate(eu, national, gold, embedder=embedder, judge=judge,
@@ -240,15 +283,76 @@ def cmd_eval(args: argparse.Namespace, clients: dict) -> int:
     return 0
 
 
+# --- review and dataset (v0.4) -------------------------------------------------------
+def cmd_review(args: argparse.Namespace, _client: Any = None) -> int:
+    from .review import ReviewError, append_records, load_reviews, merge, records_from_text, validate_record
+
+    if args.action == "stats":
+        records = load_reviews(args.dir)
+        decisions = merge(records)
+        by: dict[str, int] = {}
+        for d in decisions:
+            by[d.status] = by.get(d.status, 0) + 1
+        print(f"{len(records)} review records, {len(decisions)} suggestions reviewed: "
+              + ", ".join(f"{k} {v}" for k, v in sorted(by.items())))
+        return 0
+    if not args.files:
+        raise ValueError(f"review {args.action} needs one or more files ('-' = stdin)")
+    records: list[dict] = []
+    problems: list[str] = []
+    for name in args.files:
+        text = sys.stdin.read() if name == "-" else open(name, encoding="utf-8").read()
+        try:
+            found = records_from_text(text)
+        except (ValueError, json.JSONDecodeError) as exc:
+            problems.append(f"{name}: {exc}")
+            continue
+        for i, rec in enumerate(found, 1):
+            try:
+                records.append(validate_record(rec))
+            except ReviewError as exc:
+                problems.append(f"{name}: record {i}: {exc}")
+                continue
+            if args.author and rec["reviewer"].lower() != args.author.lower():
+                problems.append(f"{name}: record {i}: reviewer {rec['reviewer']!r} is not {args.author!r}")
+    if args.format == "json":
+        print(json.dumps({"valid": not problems, "records": len(records), "errors": problems}, ensure_ascii=False))
+    else:
+        for msg in problems:
+            print(f"invalid: {msg}", file=sys.stderr)
+        if not problems:
+            print(f"{len(records)} valid review record(s)")
+    if problems:
+        return 1
+    if args.action == "add":
+        for path in append_records(records, args.dir):
+            print(f"appended to {path}")
+    return 0
+
+
+def cmd_dataset(args: argparse.Namespace, _client: Any = None) -> int:
+    from .dataset import build_dataset
+
+    s = build_dataset(args.out, reviews_dir=args.reviews)
+    print(f"{s.rows} links ({s.official} from official correlation tables, {s.reviewed} from human review), "
+          f"{s.review_records} review records -> {args.out}")
+    for k, v in sorted(s.by_pair.items()):
+        print(f"  {k}: {v}")
+    return 0
+
+
 def _add_alignment_options(a: argparse.ArgumentParser) -> None:
-    a.add_argument("-e", "--embedder", choices=EMBEDDERS, default="lexical",
-                   help="lexical (default, no dependencies) or a dense model (needs openacquis[embeddings])")
+    a.add_argument("-e", "--embedder", choices=EMBEDDERS, default="auto",
+                   help="auto (default: hybrid with openacquis[embeddings] installed, else hybrid-lex); "
+                        "lexical, bm25, hybrid-lex (no dependencies); e5, e5-sym, bge-m3, hybrid, hybrid-rrf "
+                        "(need openacquis[embeddings]; hybrid-rrf gives links only, no gap list)")
     a.add_argument("-j", "--judge", choices=JUDGES, default="none",
                    help="none (default), rule (keyless heuristics) or anthropic (needs ANTHROPIC_API_KEY)")
     a.add_argument("--threshold", type=float, help="minimum score for a predicted link (default per embedder)")
     a.add_argument("--judge-k", type=int, default=3, help="candidates per EU provision sent to the judge")
-    a.add_argument("--acts", nargs="+", metavar="REF", help="national acts to search (default: transposing act(s))")
-    a.add_argument("--version-date", help="consolidated version of the national acts (YYYY-MM-DD)")
+    a.add_argument("--acts", nargs="+", metavar="REF",
+                   help="national acts to search, main transposing act first (default: per directive and country)")
+    a.add_argument("--version-date", help="consolidated version of the national acts (format depends on the country)")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -266,6 +370,8 @@ def build_parser() -> argparse.ArgumentParser:
     m = sub.add_parser("measures", help="List notified national measures")
     m.add_argument("celex", help="Directive CELEX number, e.g. 32022L2555 (NIS2)")
     m.add_argument("-c", "--country", help="Member state, e.g. CZ or CZE")
+    m.add_argument("--map", action="store_true",
+                   help=f"show which act each measure maps to in the country's adapter ({_HAVE})")
     m.add_argument("-f", "--format", choices=["table", "json", "csv"], default="table")
     m.set_defaults(func=cmd_measures)
 
@@ -279,23 +385,29 @@ def build_parser() -> argparse.ArgumentParser:
     t.add_argument("-f", "--format", choices=["text", "json", "jsonl"], default="text")
     t.set_defaults(func=cmd_text, client="eurlex")
 
-    w = sub.add_parser("law", help="National act split into provisions (countries: cz)")
-    w.add_argument("country", help="Country with an adapter: CZ")
-    w.add_argument("ref", help="Act reference, e.g. 264/2025 or an e-Sbírka URL")
+    examples = "; ".join(f"{a.code}: {a.example}" for a in ADAPTERS.values())
+    w = sub.add_parser("law", help=f"National act split into provisions (countries: {_HAVE})")
+    w.add_argument("country", help=f"Country with an adapter: {_HAVE.upper()}")
+    w.add_argument("ref", help=f"Act reference ({examples}) or a portal URL")
     w.add_argument("-s", "--section", help="Only this § and its subdivisions, e.g. 12")
-    w.add_argument("-a", "--article", help="Only this článek (Čl.), e.g. 1 or I")
+    w.add_argument("-a", "--article", help="Only this article: Czech/Slovak článok (1 or I), Austrian/German Artikel")
     w.add_argument("--id", help="Only this provision, e.g. par12.odst2 or a full ID")
     w.add_argument(
         "--version-date",
-        help="Consolidated version in force from this date (YYYY-MM-DD); 0000-00-00 = as promulgated",
+        help="Consolidated version: CZ YYYY-MM-DD (0000-00-00 = as promulgated); SK YYYY-MM-DD, YYYYMMDD or "
+             "0000-00-00; AT YYYY-MM-DD (text in force on that day); DE not supported (current text only)",
     )
     w.add_argument("-f", "--format", choices=["text", "json", "jsonl"], default="text")
     w.set_defaults(func=cmd_law, client="law")
 
     a = sub.add_parser("align", help="Candidate links between a directive and national law (machine suggestions)")
     a.add_argument("celex", help="Directive CELEX number, e.g. 32022L2555 (NIS2)")
-    a.add_argument("country", help="Country with an adapter: CZ")
+    a.add_argument("country", help=f"Country with an adapter: {_HAVE.upper()}")
     _add_alignment_options(a)
+    a.add_argument("--measures", action="store_true",
+                   help="also search every notified measure (CELLAR) the adapter can fetch")
+    a.add_argument("--gap-margin", type=float,
+                   help="gap candidates must score this far below the threshold (default 0.01; 0 = v0.3)")
     a.add_argument("-k", type=int, default=5, help="candidates kept per EU provision (default 5)")
     a.add_argument("--text-limit", type=int, default=600, help="characters of text kept per provision")
     a.add_argument("-o", "--output", help="write JSON here (default: stdout)")
@@ -310,21 +422,37 @@ def build_parser() -> argparse.ArgumentParser:
     e.add_argument("-f", "--format", choices=["text", "json"], default="text")
     e.add_argument("-o", "--output", help="also write the JSON report here")
     e.set_defaults(func=cmd_eval, client="align")
+
+    r = sub.add_parser("review", help="Human review records: validate, add to data/reviews/, statistics")
+    r.add_argument("action", choices=["validate", "add", "stats"],
+                   help="validate: check files; add: check and append to data/reviews/; stats: summary")
+    r.add_argument("files", nargs="*", help="JSONL files or GitHub issue bodies with ```json blocks ('-' = stdin)")
+    r.add_argument("--dir", help="reviews directory (default: data/reviews)")
+    r.add_argument("--author", metavar="LOGIN",
+                   help="also require every record's reviewer to be this GitHub user (case-insensitive), "
+                        "e.g. the author of the pull request that adds the records")
+    r.add_argument("-f", "--format", choices=["text", "json"], default="text")
+    r.set_defaults(func=cmd_review, client="none")
+
+    d = sub.add_parser("dataset", help="Export the open dataset (CSV, JSON lines, Data Package, CC-BY-4.0)")
+    d.add_argument("action", choices=["build"])
+    d.add_argument("-o", "--out", default="dataset", help="output directory (default: dataset/)")
+    d.add_argument("--reviews", default=None, help="reviews directory (default: data/reviews)")
+    d.set_defaults(func=cmd_dataset, client="none")
     return p
 
 
-def _client(args: argparse.Namespace, cellar, eurlex, esbirka):
+def _client(args: argparse.Namespace, cellar, eurlex, national: dict[str, Any]):
     kind = getattr(args, "client", "cellar")
+    if kind == "none":
+        return None
     if kind == "align":
-        return {"eurlex": eurlex, "esbirka": esbirka}
+        return {"eurlex": eurlex, "cellar": cellar, **national}
     if kind == "eurlex":
         return eurlex or EurLexClient()
     if kind == "law":
-        code = normalize_country(args.country)
-        if code not in LAW_ADAPTERS:
-            have = ", ".join(v.upper() for v in LAW_ADAPTERS.values())
-            raise ValueError(f"no national-law adapter for {args.country} yet (available: {have})")
-        return esbirka or ESbirkaClient()
+        a = get_adapter(normalize_country(args.country))
+        return national.get(a.code) or a.make_client()
     return cellar or CellarClient()
 
 
@@ -332,13 +460,24 @@ def main(
     argv: list[str] | None = None,
     client: CellarClient | None = None,
     eurlex: EurLexClient | None = None,
-    esbirka: ESbirkaClient | None = None,
+    esbirka: Any = None,
+    slovlex: Any = None,
+    ris: Any = None,
+    gii: Any = None,
 ) -> int:
-    """Run the CLI. The client arguments replace the network in tests."""
+    """Run the CLI. The client arguments replace the network in tests (``esbirka`` = Czech,
+    ``slovlex`` = Slovak, ``ris`` = Austrian, ``gii`` = German adapter client)."""
     args = build_parser().parse_args(argv)
+    national = {k: v for k, v in {"cz": esbirka, "sk": slovlex, "at": ris, "de": gii}.items() if v is not None}
+    if getattr(args, "dir", "unset") is None:
+        args.dir = None
+    if getattr(args, "reviews", "unset") is None:
+        from .review import REVIEWS_DIR
+
+        args.reviews = REVIEWS_DIR
     try:
-        return args.func(args, _client(args, client, eurlex, esbirka))
-    except (ValueError, LookupError, ImportError) as exc:  # ImportError: a missing optional extra
+        return args.func(args, _client(args, client, eurlex, national))
+    except (ValueError, LookupError, ImportError, OSError) as exc:  # ImportError: a missing optional extra
         print(f"error: {exc}", file=sys.stderr)
         return 2
     except BrokenPipeError:  # e.g. `openacquis measures ... | head`

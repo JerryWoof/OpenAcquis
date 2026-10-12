@@ -24,7 +24,7 @@ JSON lines and to diff; the tree is rebuilt on demand (`doc.children(id)`, `doc.
 |---|---|
 | `id` | Stable ID, see below |
 | `source`, `act_id`, `language` | Copied from the document, so each JSON line stands on its own |
-| `kind` | `article`, `paragraph`, `point`, `subpoint`, `indent`, `recital`, `annex` (EU); `cast`, `hlava`, `dil`, `oddil`, `pododdil`, `par` (§), `cl` (článek), `odst`, `pism`, `bod`, `priloha`, `ppc` (footnote) (Czechia) |
+| `kind` | `article`, `paragraph`, `point`, `subpoint`, `indent`, `recital`, `annex` (EU); `cast`, `hlava`, `dil`, `oddil`, `pododdil`, `par` (§), `cl` (článek), `odst`, `pism`, `bod`, `priloha`, `ppc` (footnote) (Czechia); Slovakia, Austria and Germany: see [National kinds](#national-kinds-v04) |
 | `label` | Number as printed: `Article 23`, `4.`, `(a)`, `a)`, `§ 12`, `(2)` |
 | `number` | Normalised number used in the ID: `23`, `4`, `a`, `12`, `iv` (Roman numerals are kept, not converted) |
 | `text` | The provision's **own** text, without its children's text. Later subparagraphs are appended after a line break |
@@ -92,6 +92,49 @@ Rules worth knowing:
 - **Czech článek numbers come from the ELI** (`cl1`, `cl2`) even when printed in roman numerals
   (`Čl. I`, `Čl. II`, in `label`). `openacquis law cz 270/2025 -a II` accepts either form.
 
+## National kinds (v0.4)
+
+Every adapter anchors IDs at the unit lawyers cite (§ or article), whatever part or chapter it sits
+in, and keeps the full path for structural units. `openacquis.align.path_label` prints a provision as
+it is cited in the country.
+
+| Country (`source`) | `act_id` | Kinds (ID prefix) | Example ID | Printed as |
+|---|---|---|---|---|
+| Slovakia (`sk`) | `69/2018` (number/year in the Zbierka zákonov) | `par` §, `cl` článok, `ods` odsek, `pism` písmeno, `bod`, `priloha`, `pozn` footnote; `cast`, `hlava`, `diel`, `oddiel` | `sk:69/2018:par12.ods3.pism_b` | § 12 ods. 3 písm. b) |
+| Austria (`at`) | `20013065` (RIS *Gesetzesnummer* of the consolidated law; the BGBl citation is in the title) | `par` §, `art` Artikel, `anl` Anlage, `abs` Absatz, `z` Ziffer, `lit` litera, `sublit`, `ind` dash item; `teil`, `hauptstueck`, `abschnitt`, `unterabschnitt` | `at:20013065:par32.abs4.lit_a` | § 32 Abs. 4 lit. a |
+| Germany (`de`) | `bsig_2025` (gesetze-im-internet.de slug, from the official abbreviation) | `par` §, `art` Artikel, `abs` Absatz, `nr` Nummer, `buchst` Buchstabe, `dbuchst` Doppelbuchstabe, `strich` dash, `anlage`, `anhang`, `praeambel`; `teil`, `kapitel`, `abschnitt` … | `de:bsig_2025:par28.abs1.nr3.buchst_a` | § 28 Abs. 1 Nr. 3 Buchst. a |
+
+Country rules:
+
+- **Slovakia.** An unnumbered odsek or bod is folded into its parent: `sk:69/2018:par1.pism_a` is
+  § 1 písm. a). A "Čl. I" that wraps all §§ of an act is not part of the ID or the printed citation.
+  Amending articles keep theirs (`sk:69/2018:cl3.bod1`). Annexes published only as PDF hold their
+  link text and a `PDF: <url>` line.
+  - A group heading printed above several §§ applies to every § in the group that has no heading of
+    its own; when a nested group ends, the outer group's heading applies again.
+  - A footnote quoted by an amending point is text of that point (with its marker, e.g. `27g)`), not
+    a `pozn` provision.
+  - A version reference `69/2018-366/2024` means the latest consolidated version produced by the
+    amending act 366/2024 that is already in force (an amending act can take effect in stages); if
+    none has started yet, its first version.
+- **Austria.** An Austrian law that nests §§ inside Artikel gets `art1.par2`. Hauptstück and
+  Abschnitt units nest inside the Artikel too (DSG: `at:10001597:art2.hauptstueck1.abschnitt1`, the
+  parent of `art2.par4`). `openacquis.adapters.at.provision_id(doc, "par4.abs1")` turns an ID tail
+  without the Artikel (as CELLAR measure titles cite it) into the full ID, or `None` when it is missing
+  or ambiguous; `openacquis law at DSG -s 4` uses it. A "(Verfassungsbestimmung)" marker stays in the
+  text of its Absatz. Absätze and items have no ELI of their own and link to their § page; laws
+  promulgated before 2004 have no document ELI either (`Document.eli` is `None`), since RIS has none
+  for those BGBl issues.
+  - Numbered lists tagged `aufzaehlung` or `ziffernliste` both become `z` provisions.
+  - A later list in the same Absatz whose numbers clash with an earlier one gets `_2` on every item
+    (`z1_2`, `z2_2`, …), as in Germany.
+- **Germany.** A second list in the same Absatz whose numbers clash with the first gets `_2` on every
+  item, as in EU IDs (BSIG-style: `nr1`, `nr2`, then `nr1_2` … `nr5_2`). Only the current text
+  exists, so there are no versions.
+
+The matcher (`openacquis.match`) treats all national § / Artikel / Anlage kinds as article level and
+Absatz / odsek / odstavec as paragraph level. It skips structural units and footnotes.
+
 ## Examples
 
 ```python
@@ -129,7 +172,7 @@ reformatted; `-f json` wraps the same objects in the document's metadata):
 Serialisation: `doc.to_json()` / `Document.from_json()` for a whole document, `doc.to_jsonl()` /
 `provisions_from_jsonl()` for one provision per line. On the command line use `-f json` or `-f jsonl`.
 
-## Known limitations (v0.2)
+## Known limitations (v0.2; Czech adapter and EU texts)
 
 - **Text after a list.** A subparagraph that follows a list of points is stored in the paragraph's own
   text, after a line break, so the text output prints it before the points. Its position relative to the

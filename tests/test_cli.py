@@ -120,7 +120,18 @@ def test_law_missing_section(capsys):
     assert "par999 not found" in capsys.readouterr().err
 
 
-@pytest.mark.parametrize("country", ["sk", "xx"])
+def test_law_at_section_inside_artikel(capsys):
+    from test_at import dsg_fetch
+
+    # DSG: the §§ sit in Artikel 2, so "-s 4" is art2.par4, not par4
+    assert main(["law", "at", "10001597", "-s", "4", "-f", "json"], ris=dsg_fetch().client) == 0
+    doc = json.loads(capsys.readouterr().out)
+    assert doc["provisions"][0]["id"] == "at:10001597:art2.par4"
+    assert main(["law", "at", "10001597", "-s", "99"], ris=dsg_fetch().client) == 2
+    assert "par99 not found" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("country", ["fr", "xx"])
 def test_law_unsupported_country(country, capsys):
     assert main(["law", country, "1/2020"], esbirka=esbirka_client()) == 2
     assert capsys.readouterr().err.startswith("error:")

@@ -36,15 +36,43 @@ Results and error analysis: [docs/evaluation.md](docs/evaluation.md).
   - Not yet a usable signal: 66 of the 118 gap candidates are listed in the official table.
 - [x] Website: [NIS2 × Czechia provision by provision](https://jerrywoof.github.io/OpenAcquis/alignment.html?id=32022L2555_cz), official correlation next to the top machine suggestion, texts side by side.
 
-## v0.4: four countries
-- [ ] Adapters for Slovakia (Slov-Lex), Austria (RIS OGD API), Germany (gesetze-im-internet.de / NeuRIS)
-- [ ] Gap and gold-plating candidates from unmatched provisions that are good enough to review (first version in v0.3; too many false alarms so far)
+## v0.4: four countries (done; LLM judge run and reviews pending)
+Results: [docs/evaluation.md](docs/evaluation.md) ("v0.4" sections).
+- [x] Adapters for Slovakia (Slov-Lex), Austria (RIS OGD API), Germany (gesetze-im-internet.de / NeuRIS): `openacquis law sk|at|de`, registry `openacquis.adapters.ADAPTERS`
+  - Live counts:
+    - SK: Act 69/2018 Z. z., 873 provisions; any dated version.
+    - AT: NISG 2026, 607 provisions; text in force on any date; IDs by Gesetzesnummer.
+    - DE: BSIG, 666 provisions; current text only.
+  - Notified NIS2 measures mapped to fetchable acts (`measures --map`, `align --measures`): SK 9 of 9, AT 8 of 8, DE 1 of 20.
+  - Limitations:
+    - DE: 17 of the 20 German measures are Land law, which gesetze-im-internet.de does not carry; the federal laws the transposition act amends are not listed by CELLAR.
+    - AT: RIS needs the `tls` extra (certifi) on some systems.
+    - Annexes published only as PDF have no text.
+- [x] Gap and gold-plating candidates good enough to review (`openacquis.leftovers`)
+  - How: scope filters (EU final provisions and units addressed only to the Commission or ENISA; national boilerplate), a gap margin below the link threshold, structural rules (lists, § with no link, main act only), grouping per article and per §.
+  - NIS2 × CZ, `hybrid-lex`, gap candidates: 16, of which 13 are not in the official table. That is 81 % (95 % interval 57–93 %), against a 28 % base rate; v0.3 had 118 at 44 %. With the margin chosen out of sample: 64 % (split by article parity) or 76 % (leave one article out).
+  - Extra-rule candidates: 33 units in 11 §§, 82 % not cited (base rate 50 %; v0.3: 195 at 75 %).
+  - Limitations:
+    - small, clustered samples (12 of the 16 gaps are Art. 32(2) and (7); outside Art. 32 only 1 of 4 is not in the table);
+    - `hybrid-rrf` gives links but no gap list (rank-only scores);
+    - thresholds tuned on Czech only;
+    - "not in the table" is not "not transposed";
+    - extra rules are mostly national procedure, not gold-plating.
 - [ ] Better matching: lexical + dense hybrid, following cross-references (sanctions), short list items; run the LLM judge
-- [ ] Review queue for human reviewers; reviewed results exported as an open CC-BY dataset
+  - [x] Hybrid matching (`hybrid-lex` stdlib, the default without extras: MRR 0.445 → about 0.50 cross-validated; `hybrid` with e5: R@5 0.563 → 0.635). Body-only channels fix short list items (Art. 21(2)(i): rank 7 → 1).
+  - [ ] Following cross-references for sanctions (Art. 36 still missed).
+  - [ ] LLM judge run (needs `ANTHROPIC_API_KEY`).
+- [x] Review queue for human reviewers; reviewed results exported as an open CC-BY dataset
+  - `review.html` queue, review records in `data/reviews/`, `openacquis review validate|add|stats` ([docs/review.md](docs/review.md)).
+  - GitHub issue form and a validate-and-comment workflow. It does not auto-commit, by design.
+  - `openacquis dataset build` writes `links.csv` / `links.jsonl` / `datapackage.json` (CC-BY-4.0), also published on the website ([docs/dataset.md](docs/dataset.md)).
+  - Today: 568 official-table links (NIS2 × CZ); no reviews yet. Release attachments come with the first tagged release.
 
 ## v1.0: public observatory
-- [ ] Website: article × country matrix with side-by-side source texts (the site above is the starting point)
-- [ ] Public API and dataset releases
+- [ ] Website: article × country matrix with side-by-side source texts
+  - [x] Seed: [NIS2 × CZ, SK, AT, DE](https://jerrywoof.github.io/OpenAcquis/matrix.html?celex=32022L2555) (v0.4), machine suggestions with the Czech official table; cells link to side-by-side texts
+  - [ ] More directives and countries; reviewed cells shown as such
+- [ ] Public API and dataset releases (dataset files exist since v0.4; attach them to tagged releases)
 - [ ] 10–20 high-profile directives (NIS2, Accessibility Act, Pay Transparency, CSRD, Whistleblower) at provision level (10 already listed act-level on the website)
 - [ ] Alerts when a national law or directive changes
 

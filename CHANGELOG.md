@@ -3,6 +3,146 @@
 All notable changes to OpenAcquis. Versions follow [Semantic Versioning](https://semver.org/); while the
 version is 0.x, the command-line options and data formats can still change.
 
+## 0.4.0 (2026-10-12)
+
+Four countries: NIS2 × Czechia, Slovakia, Austria and Germany, with filtered gap and extra-rule candidates, a
+review queue and an open dataset.
+
+### Added
+- **Country adapters** (stdlib only, injectable fetchers, cache under `$OPENACQUIS_CACHE`, 1 s between requests):
+  - `openacquis.adapters.sk` (Slov-Lex). Any consolidated version: by date, by Slov-Lex version id, or the
+    version a CELLAR measure names (`69/2018-366/2024`: the latest version that amendment produced which is
+    already in force). Group headings apply to every § of the group without its own heading; footnotes quoted
+    by amending points stay in the point's text. Act 69/2018 Z. z.: 873 provisions.
+  - `openacquis.adapters.at` (RIS OGD search API + XML). Any date. IDs use the RIS Gesetzesnummer. Fetches
+    only the cited §§ of a large act (also "§§ 3 und 5", "§§ 3 bis 5"), in document order. In laws whose §§
+    sit in Artikel (DSG), Hauptstück and Abschnitt nest inside the Artikel; `at.provision_id(doc, "par4.abs1")`
+    finds `art2.par4.abs1`. `ziffernliste` lists become `z` provisions. No ELI for laws promulgated before
+    2004 (RIS has none). NISG 2026: 607 provisions.
+  - `openacquis.adapters.de` (gesetze-im-internet.de + NeuRIS). Current text only. Abbreviations NeuRIS lacks
+    are found in the gesetze-im-internet.de table of contents (EnWG → `enwg_2005`, TKG → `tkg_2021`). Land
+    adjectives ("Hamburgisches", "Berliner") are recognised; Runderlass, Ministerialblatt,
+    Verwaltungsvorschrift and Amtsblatt titles are administrative measures (`not_found`, no BGBl lookup).
+    BSIG: 666 provisions, 324 with an ELI.
+  - In AT and DE a later list in the same Absatz whose numbers clash with an earlier one gets `_2` on every
+    item (`nr1_2`, `z1_2`).
+  - All three map CELLAR's notified NIS2 measures to fetchable acts: SK 9 of 9, AT 8 of 8, DE 1 of 20
+    (17 are Land measures).
+- **Adapter registry** `openacquis.adapters.ADAPTERS` (code, CELLAR country code, language, portal, client,
+  citation style), plus `get_adapter`, `map_measures` and `fetch_measure`.
+- **Command line:**
+  - `openacquis law sk|at|de <ref>`; `--article` uses `cl` (CZ, SK; roman numerals accepted) or `art` (AT, DE);
+    `--section` finds a § inside an Artikel in Austrian laws (`law at DSG -s 4` → `art2.par4`).
+  - `openacquis measures <CELEX> -c SK --map`: how each notified measure maps to an act.
+  - `openacquis align 32022L2555 sk|at|de`: the directive in the act's language (cs, sk, de, de) and the main
+    transposing act. Default acts: 264/2025, 69/2018, 20013065 (NISG 2026), bsig_2025. `--measures` adds
+    every notified measure the adapter can fetch; `--gap-margin` sets the gap margin.
+- **Hybrid matching** (`openacquis.match`): `BM25Embedder`, `HybridEmbedder` (weighted z-score or
+  reciprocal-rank fusion, body-only channels), `StructuralPrior`, and the presets `hybrid-lex` (stdlib),
+  `hybrid` (lexical + multilingual-e5) and `hybrid-rrf`. `make_hybrid(..., stem=False)` is for German.
+  `hybrid-rrf` has its own threshold (0.03) and gives links but no gap list: its scores carry only ranks
+  (`align.rank_only`, `gap_note` in the JSON); measured RRF gap lists were below the base rate.
+- **Gap and extra-rule candidates** (`openacquis.leftovers`; [docs/evaluation.md](docs/evaluation.md)):
+  - Scope filters: EU final provisions and units addressed only to the Commission or ENISA (not the joint
+    bodies of national representatives: Cooperation Group, CSIRTs network, EU-CyCLONe) on one side; national
+    boilerplate on the
+    other (definitions, penalty lists, transitional, repeal and entry-into-force clauses, amendments of other
+    acts, transposition notes, footnotes, PDF-only annexes). Keyword lists in cs, sk, de and en.
+  - A gap margin below the link threshold.
+  - Structure: a lead-in or point of a linked list is not a gap; an extra-rule candidate needs a § with no
+    link; only the main act can have extra rules.
+  - Grouping per EU article and per national §.
+  - `openacquis eval` reports the effect step by step against the table (`leftover_ablation`: nine rows,
+    margins scaled to the method), with the article holding most gap candidates and the precision outside
+    it, Wilson 95 % intervals, which set-aside units the table maps, and the margin chosen out of sample
+    (`cross_validated_gap_margin`: article parity and leave one article out).
+  - `find_leftovers(..., gaps=False, gap_note=...)`; the JSON `leftovers` block has `eu_linked_out_of_scope`
+    and `gap_note`.
+- **Review** (`openacquis.review`, [docs/review.md](docs/review.md)):
+  - Record format in `data/reviews/<CELEX>_<cc>.jsonl` (suggestion ID, IDs, machine label and score, verdict
+    confirm / reject / correct with corrected IDs, reviewer, date, note), with validation and merging into
+    decisions (confirmed, rejected, corrected, disputed).
+  - `openacquis review validate|add|stats`; `--author LOGIN` also requires every reviewer to be that user.
+    Validation is strict (exact matches, no trailing newlines, finite scores, integer schema 1, national act
+    IDs in `A-Za-z0-9_./-`), and error messages never repeat submitted text.
+  - GitHub issue form `.github/ISSUE_TEMPLATE/review.yml`; only its "Review record" section is read.
+  - Workflow `.github/workflows/reviews.yml`: `python -m openacquis.review check-issue FILE AUTHOR` validates
+    review issues, requires each record's reviewer to be the issue author, and the result is commented as
+    escaped code. Two least-privilege jobs (read-only `validate`, `issues: write` `comment` without checkout).
+    It never commits; maintainers add records in a pull request.
+- **Dataset** (`openacquis.dataset`, `openacquis dataset build`, [docs/dataset.md](docs/dataset.md)): `links.csv`
+  (formula-like cells prefixed with `'`), `links.jsonl`, `reviews.jsonl`, `datapackage.json` (Data Package
+  profile, CC-BY-4.0, EUR-Lex and national sources) and a README.
+  Official correlation-table links (NIS2 × CZ: 568) plus reviewed links (none yet).
+- **Website:**
+  - `alignment.html` for NIS2 × SK, AT and DE next to CZ (rows without an official table where there is none;
+    gap and extra-rule candidate sections).
+  - `matrix.html?celex=32022L2555`: article × country matrix with English headings. A cell shows the top
+    suggested §, the table's §§ (CZ), linked provisions and gap candidates, and links into the alignment pages.
+  - `review.html?id=32022L2555_<cc>`: the review queue, a prefilled GitHub issue per verdict, a JSON-lines
+    batch download.
+  - Dataset downloads under `site/data/dataset/`.
+  - Pages link only to data that was built (`link_built_pages`; `dataset` flag, nullable `review_href` and
+    `matrix_href`) and say "Not part of this build" otherwise; `lang` on every EU and national text; no
+    sideways scroll at 375 px; the review page checks records like the CLI, caps prefilled issue links at
+    7,500 characters and announces only a short status line to screen readers.
+  - Everything is stdlib-built (`hybrid-lex`), with committed fallbacks in `site/static-data/` (alignment,
+    review data and headings per country).
+- Optional extra `tls` (certifi), for RIS's certificate chain on Pythons whose OpenSSL bundle lacks the root.
+- Docs: `docs/review.md`, `docs/dataset.md`, `data/reviews/README.md`. Updated: data-sources, provisions
+  (SK, AT, DE kinds), website, how-it-works, evaluation, docs index, CONTRIBUTING (how to review).
+
+### Results
+- **Matching (NIS2 × CZ, 197 gold provisions).** `hybrid-lex` (stdlib), cross-validated: R@1 about 0.42,
+  MRR 0.49–0.50 (lexical: 0.350 / 0.445). `hybrid` with e5: R@5 0.635, MRR 0.505 (lexical R@5 0.563).
+- **Gap candidates against the table** (`hybrid-lex`, threshold 0.17, margin 0.01): 16 candidates, 13 not
+  listed in the table (81 %; 95 % interval 57–93 %). With the margin chosen out of sample: 16 of 25 (64 %,
+  split by article parity) or 16 of 21 (76 %, leave one article out).
+  - v0.3: 118 candidates at 44 %.
+  - Base rate: 28 % of EU units are not in the table.
+  - 12 of the 16 are Art. 32(2) and 32(7); outside Art. 32, 1 of 4 is not in the table (25 %).
+- **Extra-rule candidates** (`hybrid-lex`): 33 units in 11 §§, 27 not cited in the table (82 %; base rate
+  50 %; v0.3: 195 units at 75 %).
+- **SK, AT, DE (no gold set):**
+
+  | | SK | AT | DE |
+  |---|---:|---:|---:|
+  | EU units with a link (of 473) | 454 | 463 | 448 |
+  | Gap candidates | 5 | 1 | 6 |
+  | Extra-rule candidates (§§) | 34 (7) | 13 (7) | 59 (12) |
+
+  The thresholds are tuned on Czech. Austria's act reproduces much of NIS2's wording, so it scores high.
+
+### Changed
+- `openacquis align` and `eval`: the default embedder is now `auto` (`hybrid` with the embeddings extra,
+  `hybrid-lex` without). Pass `--embedder lexical` for the v0.3 behaviour.
+- Thresholds: `hybrid` 0.17 (stdlib channels) and 0.14 (with e5).
+- `AlignmentResult.gap_candidates` is the filtered list; the v0.3 list is `AlignmentResult.unlinked`.
+- `extra_rule_candidates` entries have `section_id`, `margin` and `best_eu_id`.
+- Extra-rule candidates by default come from the first (main) act only.
+- JSON export schema 2: `gap_candidates` are objects with evidence; new `leftovers` block.
+- The `coverage` report adds `unlinked_eu_units`.
+- Matching: the article / paragraph / skip kinds cover the Slovak, Austrian and German units (§, Artikel,
+  Anlage, odsek, Absatz; structural units and footnotes skipped).
+- `path_label` prints each country's citation style and the EU text in cs, sk and de.
+- `cli.main` takes `slovlex=`, `ris=` and `gii=` clients for tests. `LAW_ADAPTERS` comes from the registry.
+- Website alignment data schema 2 (`has_official`, gap and extra-rule sections, section labels). The CZ page
+  now uses `hybrid-lex`.
+- Version 0.4.0; User-Agent `OpenAcquis/0.4`.
+
+### Known limitations
+- **Gold sets.** Only Czechia has an official table. SK, AT and DE suggestions and candidates are unchecked
+  until reviewed, and thresholds and margins are tuned on Czech.
+- **Small samples.** The gap-candidate precision rests on 16 items, 12 of them in Art. 32; the margin and
+  threshold were tuned on the same set.
+- **Gold-plating.** Extra-rule candidates are mostly national procedure and organisation; telling real
+  gold-plating apart needs the judge or a reviewer.
+- **Judges.** The LLM judge has still not been run. The rule judge is not used for leftovers (it lowered
+  link precision in v0.3).
+- **Germany.** Only the federal BSIG; Land law and the laws the transposition act amends are not covered.
+- **Austria.** NISG 2018 and NISV are repealed; fetching them needs a version date.
+- **Reviews.** No reviews yet. The workflow validates but does not merge.
+
 ## 0.3.0 (2026-10-12)
 
 First alignment: NIS2 × Czechia, provision by provision, scored against the official correlation table.
