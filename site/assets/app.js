@@ -41,6 +41,17 @@
 
   function $(id) { return document.getElementById(id); }
 
+  // Language of national texts per member state (WCAG 3.1.2); multilingual states are left out.
+  var LANGS = {
+    AUT: "de", BGR: "bg", HRV: "hr", CYP: "el", CZE: "cs", DNK: "da", EST: "et", FIN: "fi", FRA: "fr",
+    DEU: "de", GRC: "el", HUN: "hu", ITA: "it", LVA: "lv", LTU: "lt", NLD: "nl", POL: "pl", PRT: "pt",
+    ROU: "ro", SVK: "sk", SVN: "sl", ESP: "es", SWE: "sv"
+  };
+  // adapter code -> language (fallback for data built before national_language existed)
+  var CC_LANG = { cz: "cs", sk: "sk", at: "de", de: "de" };
+  // "eu:32022L2555:cs:art1.par1" -> "cs"
+  function euLangOf(id) { var p = String(id || "").split(":"); return p[0] === "eu" && /^[a-z]{2}$/.test(p[2] || "") ? p[2] : null; }
+
   // Allow-list: http(s) URLs and scheme-less relative links. URL parsing strips tabs, newlines and
   // leading control characters, so "java\tscript:" must be judged by the parsed protocol, not a regex.
   function safeHref(v) {
@@ -74,7 +85,7 @@
 
   function getJSON(url) {
     return fetch(url, { cache: "no-cache" }).then(function (r) {
-      if (!r.ok) throw new Error("HTTP " + r.status + " for " + url);
+      if (!r.ok) { var e = new Error("HTTP " + r.status + " for " + url); e.status = r.status; throw e; }
       return r.json();
     });
   }
@@ -105,6 +116,17 @@
     }
   }
 
+  // A 404 for provision-level data: that page is simply not part of this build (e.g. --no-alignment).
+  function notBuilt(err) { return !!err && err.status === 404 && location.protocol !== "file:"; }
+
+  function showMissing(host, what) {
+    host.appendChild(el("div", { className: "note", role: "note" }, [
+      el("strong", { text: "Not part of this build. " }),
+      "The data for " + what + " was not built for this copy of the site. ",
+      el("a", { href: "./#directives", text: "All directives" }), "."
+    ]));
+  }
+
   function showError(host, err) {
     var msg = String(err && err.message || err);
     var hint = location.protocol === "file:"
@@ -127,12 +149,49 @@
     return (t || "").replace(/ of the European Parliament and of the Council of \d{1,2}\s\S+\s\d{4}/, "");
   }
 
+  // ------------------------------------------------- links to data not in this build
+
+  // Replace links to alignment, review and matrix pages and dataset downloads whose data is not
+  // part of this build (index.json lists what was built) with plain text.
+  function pruneLinks(idx) {
+    var align = {}, review = {}, matrix = {}, any = false;
+    (idx.directives || []).forEach(function (d) {
+      (d.alignments || []).forEach(function (a) {
+        var id = (a.href.split("id=")[1] || "");
+        align[id] = true; any = true;
+        if (a.review_href !== null) review[id] = true;
+      });
+      if (d.matrix_href) { matrix[d.celex] = true; any = true; }
+    });
+    var dataset = idx.dataset !== false; // older index.json without the flag: assume built
+    Array.prototype.forEach.call(document.querySelectorAll("a[href]"), function (a) {
+      var u;
+      try { u = new URL(a.getAttribute("href"), location.href); } catch (e) { return; }
+      if (u.origin !== location.origin) return;
+      var page = u.pathname.split("/").pop(), p = u.searchParams, dead = false;
+      if (page === "alignment.html") dead = !align[p.get("id") || "32022L2555_cz"];
+      else if (page === "review.html") dead = !review[p.get("id") || "32022L2555_cz"];
+      else if (page === "matrix.html") dead = !matrix[(p.get("celex") || "32022L2555").toUpperCase()];
+      else if (/\/data\/dataset\//.test(u.pathname)) dead = !dataset;
+      if (!dead) return;
+      var span = el("span", { className: "muted", title: "Not part of this build", text: a.textContent });
+      a.parentNode.replaceChild(span, a);
+    });
+    var note = $("v04-note");
+    if (note && !any) note.hidden = true;
+  }
+
+  function checkLinks() {
+    getJSON("data/index.json").then(pruneLinks).catch(function () { /* optional */ });
+  }
+
   // ---------------------------------------------------------------- index page
 
   function renderIndex() {
     var cards = $("cards");
     getJSON("data/index.json").then(function (data) {
       $("built").textContent = setBuilt(data) + " Source: EU Publications Office (CELLAR).";
+      pruneLinks(data);
       sampleNote(data, $("sample-note"));
       var total = Object.keys(data.member_states || ALPHA2).length;
       data.directives.forEach(function (d) {
@@ -153,9 +212,19 @@
             el("div", { className: "small muted", style: "margin-top:4px", text: "Deadline: " + deadlineText(d) })
           ]);
         }
-        var aligned = (d.alignments || []).map(function (a) {
-          return el("a", { className: "card-link", href: a.href, text: "Provision-level: " + a.country_name + " →" });
-        });
+        var aligned = [];
+        if ((d.alignments || []).length) {
+          var line = el("span", { className: "card-link" }, ["Provision level: "]);
+          d.alignments.forEach(function (a, i) {
+            if (i) line.appendChild(document.createTextNode(" · "));
+            line.appendChild(el("a", { href: a.href, title: d.short + " × " + a.country_name, "aria-label": (ALPHA2[a.country] || a.country) + " " + a.country_name, text: ALPHA2[a.country] || a.country }));
+          });
+          if (d.matrix_href) {
+            line.appendChild(document.createTextNode(" · "));
+            line.appendChild(el("a", { href: d.matrix_href, text: "matrix →" }));
+          }
+          aligned.push(line);
+        }
         cards.appendChild(el("li", { className: "card" + (d.error ? " failed" : "") }, [
           el("span", { className: "celex", text: d.celex + " · " + (d.topic || "") }),
           el("h3", {}, [el("a", { href: href, text: d.short })]),
@@ -172,6 +241,7 @@
   // ------------------------------------------------------------ directive page
 
   function renderDirective() {
+    checkLinks();
     var params = new URLSearchParams(location.search);
     var celex = (params.get("celex") || "").toUpperCase();
     if (!/^3\d{4}L\d{4}$/.test(celex)) {
@@ -218,13 +288,19 @@
     ]));
 
     sampleNote(d, $("d-notes"));
-    (d.alignments || []).forEach(function (a) {
+    if ((d.alignments || []).length) {
+      var links = el("span", {});
+      d.alignments.forEach(function (a, i) {
+        if (i) links.appendChild(document.createTextNode(", "));
+        links.appendChild(el("a", { href: a.href, text: d.short + " × " + a.country_name }));
+      });
       $("d-notes").appendChild(el("div", { className: "note info", role: "note" }, [
-        el("strong", { text: "Provision by provision: " }),
-        el("a", { href: a.href, text: d.short + " × " + a.country_name }),
-        ": each article next to the official correlation table and the top machine suggestion, with both texts side by side."
+        el("strong", { text: "Provision by provision: " }), links,
+        ". Each paragraph next to the top machine suggestion (and the official correlation table where one exists), with both texts side by side",
+        d.matrix_href ? el("span", {}, ["; all countries at once in the ", el("a", { href: d.matrix_href, text: "article × country matrix" })]) : null,
+        "."
       ]));
-    });
+    }
     if (d.error) {
       $("d-notes").appendChild(el("div", { className: "note error", role: "alert" }, [
         el("strong", { text: "This directive could not be fetched in the latest build. " }),
@@ -373,7 +449,7 @@
           el("td", { text: m.reference || "—" }),
           el("td", { text: m.act_type || "—" }),
           el("td", { className: "t" }, [
-            el("a", { href: d.eurlex_nim_url, title: "Open the EUR-Lex national transposition page", text: m.title || "(untitled measure)" }),
+            el("a", { href: d.eurlex_nim_url, title: "Open the EUR-Lex national transposition page", lang: m.title ? LANGS[m.country] : null, text: m.title || "(untitled measure)" }),
             m.journal ? el("span", { className: "j", text: m.journal }) : null
           ])
         ]));
@@ -410,46 +486,82 @@
     article_level: { text: "", cls: "" },
     no_table_entry: { text: "", cls: "" }
   };
+  var SLUG = /^3\d{4}L\d{4}_[a-z]{2}$/;
 
   function fmtPct(x) { return Math.round(100 * (x || 0)) + "%"; }
 
-  function nationalRef(nat, id) {
-    var n = nat[id] || { label: id, act: "" };
-    return n.label + (n.act ? " (" + n.act + " Sb.)" : "");
+  function actLabels(d) {
+    var m = {};
+    (d.national || []).forEach(function (n) { m[n.act_id] = n.label || n.act_id; });
+    return m;
   }
 
-  function natLink(nat, id) {
+  function nationalRef(nat, id, acts) {
+    var n = nat[id] || { label: id, act: "" };
+    var act = n.act ? (acts && acts[n.act]) || n.act : "";
+    return n.label + (act ? " (" + act + ")" : "");
+  }
+
+  function natLink(nat, id, portal, lang) {
     var n = nat[id];
     var text = n ? n.label : id;
-    return n && n.url ? el("a", { href: n.url, title: "Open in e-Sbírka", text: text }) : el("span", { text: text });
+    return n && n.url ? el("a", { href: n.url, title: "Open in " + (portal || "the official portal"), lang: lang, text: text })
+      : el("span", { lang: lang, text: text });
   }
 
-  function textPanel(title, cls, items) {
+  // lang: language of the items' labels and texts (the panel title stays English)
+  function textPanel(title, cls, items, lang) {
     var box = el("div", { className: "tpanel " + cls }, [el("h4", { text: title })]);
     if (!items.length) box.appendChild(el("p", { className: "small muted", text: "None." }));
     items.forEach(function (it) {
       box.appendChild(el("div", { className: "titem" }, [
         el("div", { className: "thead" }, [
-          it.url ? el("a", { href: it.url, text: it.label }) : el("strong", { text: it.label }),
+          it.url ? el("a", { href: it.url, lang: lang, text: it.label }) : el("strong", { lang: lang, text: it.label }),
           it.extra ? el("span", { className: "small muted", text: " " + it.extra }) : null
         ]),
-        el("p", { className: "ptext", text: it.text || "(text not available)" })
+        it.text ? el("p", { className: "ptext", lang: lang, text: it.text }) : el("p", { className: "ptext", text: "(text not available)" })
       ]));
     });
     return box;
   }
 
+  // "Other countries" links for one directive, from index.json (quietly skipped if unavailable)
+  function siblingLinks(host, celex, currentId, makeHref, label) {
+    getJSON("data/index.json").then(function (idx) {
+      var dir = (idx.directives || []).filter(function (x) { return x.celex === celex; })[0];
+      if (!dir || !(dir.alignments || []).length) return;
+      var p = el("p", { className: "small" }, [label || "Countries: "]);
+      dir.alignments.forEach(function (a, i) {
+        if (i) p.appendChild(document.createTextNode(" · "));
+        var id = (a.href.split("id=")[1] || "");
+        p.appendChild(id === currentId ? el("strong", { text: a.country_name })
+          : el("a", { href: makeHref(id), text: a.country_name }));
+      });
+      if (dir.matrix_href) {
+        p.appendChild(document.createTextNode(" · "));
+        p.appendChild(el("a", { href: dir.matrix_href, text: "Article × country matrix" }));
+      }
+      host.appendChild(p);
+    }).catch(function () { /* optional */ });
+  }
+
   function renderAlignment() {
     var params = new URLSearchParams(location.search);
     var id = params.get("id") || "32022L2555_cz";
-    if (!/^3\d{4}L\d{4}_[a-z]{2}$/.test(id)) {
+    if (!SLUG.test(id)) {
       $("a-title").textContent = "Alignment not found";
       showError($("a-notes"), new Error("Missing or invalid ?id= parameter (expected e.g. 32022L2555_cz)"));
       return;
     }
+    checkLinks();
     getJSON("data/align/" + id + ".json").then(function (d) {
       drawAlignment(d, params);
     }).catch(function (err) {
+      if (notBuilt(err)) {
+        $("a-title").textContent = "Provision-level page not available";
+        showMissing($("a-notes"), "this provision-level page (" + id + ")");
+        return;
+      }
       $("a-title").textContent = id;
       showError($("a-notes"), err);
     });
@@ -457,50 +569,86 @@
 
   function drawAlignment(d, params) {
     var nat = d.national_texts || {};
-    var acts = (d.national || []).map(function (n) { return n.act_id + " Sb."; }).join(", ");
+    var acts = actLabels(d);
+    var official = !!d.has_official;
+    var actList = (d.national || []).map(function (n) { return n.label || n.act_id; }).join(", ");
+    var lang = (d.eu && d.eu.language_name) || "";
+    var euLang = (d.eu && d.eu.language) || null;
+    var natLang = d.national_language || CC_LANG[d.country_code] || null;
     document.title = d.short + " × " + d.country_name + " · OpenAcquis";
     $("a-title").textContent = d.short + " × " + d.country_name + ", provision by provision";
-    $("a-lede").textContent = "For each paragraph of " + d.short + " (Czech language version): the provisions of " + acts +
-      " that the government's official correlation table lists for it, and the most similar provision found by the machine. " +
-      "Open a row to read the texts side by side.";
+    $("a-lede").textContent = "For each paragraph of " + d.short + (lang ? " (" + lang + " language version)" : "") +
+      ": the most similar provision of " + actList + " found by the machine" +
+      (official ? ", next to the provisions the government's official correlation table lists for it" : "") +
+      ". Open a row to read the texts side by side. Below: gap and extra-rule candidates.";
     var back = $("a-back");
     back.href = "directive.html?celex=" + encodeURIComponent(d.celex);
     back.textContent = "← " + d.short + ": notified measures";
     var built = "Alignment computed " + fmtBuilt(d.built_at) + (d.mode === "live" ? "" : " (precomputed copy)") + ".";
     $("footer-built").textContent = built;
+    var portal = d.portal || "the official portal";
+    var fsrc = $("footer-sources");
+    if (fsrc) fsrc.textContent = "National law: " + portal + "." + (official ? " Correlation table: official government document." : "");
 
     var notes = $("a-notes");
+    siblingLinks(notes, d.celex, d.id, function (x) { return "alignment.html?id=" + x; });
     notes.appendChild(el("div", { className: "note", role: "note" }, [
       el("strong", { text: "Suggestions, not findings. " }),
       "A machine suggestion is the national provision whose wording is most similar; nobody has reviewed it. " +
-      "A difference from the table does not mean either is wrong, and neither column says whether " + d.country_name +
-      " transposed " + d.short + " correctly. " + built
+      (official ? "A difference from the table does not mean either is wrong, and neither column" : "It does not") +
+      " say whether " + d.country_name + " transposed " + d.short + " correctly. " + built + " ",
+      el("a", { href: "review.html?id=" + encodeURIComponent(d.id), text: "Help review these suggestions →" })
     ]));
 
     var src = d.official_source || {};
     var os = $("a-official-src");
-    os.appendChild(document.createTextNode(src.label + ": the government's own list of which bill provision implements which article. "));
-    if (src.url) os.appendChild(el("a", { href: src.url, text: "Table (psp.cz)" }));
-    if (src.history_url) { os.appendChild(document.createTextNode(" · ")); os.appendChild(el("a", { href: src.history_url, text: "Bill history" })); }
-    os.appendChild(document.createTextNode(". It describes the 2024 bill; its numbering was mapped to the act as published."));
-    $("a-machine-src").textContent = "Top candidate from OpenAcquis matching (" + d.method + ", text similarity of the Czech wording; " +
-      "scores are not probabilities). Marked weak when below the link threshold of " + d.threshold + ". Unreviewed.";
+    if (official) {
+      os.appendChild(document.createTextNode(src.label + ": the government's own list of which bill provision implements which article. "));
+      if (src.url) os.appendChild(el("a", { href: src.url, text: "Table" }));
+      if (src.history_url) { os.appendChild(document.createTextNode(" · ")); os.appendChild(el("a", { href: src.history_url, text: "Bill history" })); }
+      os.appendChild(document.createTextNode(". It describes the bill; its numbering was mapped to the act as published."));
+    } else {
+      os.appendChild(document.createTextNode("No official correlation table is available for " + d.country_name +
+        " yet, so the machine suggestions cannot be checked against one. Reviews can fill this gap."));
+    }
+    var msrc = $("a-machine-src");
+    msrc.textContent = "";
+    // the method string has no spaces: in <code> it wraps instead of widening the page on a phone
+    [ "Top candidate from OpenAcquis matching (", el("code", { className: "method", text: d.method }), ", text similarity of the " +
+      (lang || "national") + " wording; scores are not probabilities). Marked weak when below the link threshold of " +
+      d.threshold + ". Unreviewed."
+    ].forEach(function (x) { msrc.appendChild(typeof x === "string" ? document.createTextNode(x) : x); });
 
     var s = d.summary || {};
     var kpis = $("a-kpis");
     function kpi(v, l) { kpis.appendChild(el("div", { className: "kpi" }, [el("div", { className: "v", text: v }), el("div", { className: "l", text: l })])); }
-    kpi(s.rows_with_official + " / " + s.rows, "paragraphs with an official correlation");
-    kpi(String(s.match), "top suggestion matches the table");
-    kpi(String(s.same_section), "top suggestion in the same § as the table");
-    kpi(fmtPct(s.recall_at_5), "table's provision among the top 5 suggestions");
+    if (official) {
+      kpi(s.rows_with_official + " / " + s.rows, "paragraphs with an official correlation");
+      kpi(String(s.match), "top suggestion matches the table");
+      kpi(String(s.same_section), "top suggestion in the same § as the table");
+      kpi(fmtPct(s.recall_at_5), "table's provision among the top 5 suggestions");
+    } else {
+      kpi((s.eu_units_with_link || 0) + " / " + (s.eu_units || 0), "EU provisions with a suggestion above the threshold");
+    }
+    kpi(String(s.gap_candidates || 0), "gap candidates" + (s.gap_articles ? " in " + s.gap_articles + " articles" : ""));
+    kpi(String(s.extra_rule_sections || 0), "§§ with extra-rule candidates");
 
+    var show = $("f-show");
+    if (!official) {
+      Array.prototype.slice.call(show.options).forEach(function (o) {
+        if (o.value === "official" || o.value === "differs" || o.value === "none") show.removeChild(o);
+      });
+    }
     var sel = $("f-art");
     (d.articles || []).forEach(function (a) {
       sel.appendChild(el("option", { value: a.id, text: a.label + (a.heading ? " · " + a.heading : "") }));
     });
-    var state = { art: params.get("art") || "", show: params.get("show") || "", q: params.get("q") || "" };
+    // links from the matrix use the article ID of this language version, or a language-neutral key (art23)
+    var wantArt = params.get("art") || "";
+    (d.articles || []).forEach(function (a) { if (a.key && a.key === wantArt) wantArt = a.id; });
+    var state = { art: wantArt, show: params.get("show") || "", q: params.get("q") || "" };
     sel.value = state.art; if (sel.value !== state.art) state.art = "";
-    var show = $("f-show"); show.value = state.show; if (show.value !== state.show) state.show = "";
+    show.value = state.show; if (show.value !== state.show) state.show = "";
     var q = $("f-q"); q.value = state.q;
     sel.addEventListener("change", function () { state.art = sel.value; update(); });
     show.addEventListener("change", function () { state.show = show.value; update(); });
@@ -511,8 +659,8 @@
 
     (d.articles || []).forEach(function (a) {
       a.rows.forEach(function (r) {
-        var hay = [r.label, r.text].concat(r.official.map(function (o) { return nationalRef(nat, o) + " " + ((nat[o] || {}).text || ""); }))
-          .concat(r.machine.map(function (m) { return nationalRef(nat, m.id) + " " + ((nat[m.id] || {}).text || ""); }));
+        var hay = [r.label, r.text].concat(r.official.map(function (o) { return nationalRef(nat, o, acts) + " " + ((nat[o] || {}).text || ""); }))
+          .concat(r.machine.map(function (m) { return nationalRef(nat, m.id, acts) + " " + ((nat[m.id] || {}).text || ""); }));
         r._hay = hay.join(" ").toLowerCase();
       });
     });
@@ -522,65 +670,82 @@
       if (state.show === "official" && !listed) return false;
       if (state.show === "none" && listed) return false;
       if (state.show === "differs" && r.agreement !== "differs") return false;
+      if (state.show === "gaps" && !(r.gaps || []).length) return false;
       var needle = state.q.trim().toLowerCase();
       return !needle || r._hay.indexOf(needle) >= 0;
     }
 
     function rowFor(a, r) {
       var tr = el("tr", {});
-      var off = el("td", { className: "off-cell" });
-      if (r.official.length) {
-        var list = el("ul", { className: "refs" });
-        r.official.forEach(function (o) { list.appendChild(el("li", {}, [natLink(nat, o)])); });
-        off.appendChild(list);
-        if (r.official_eu.length) {
-          off.appendChild(el("span", { className: "small muted", text: "for " + r.official_eu.map(function (x) {
-            return x.indexOf(r.label + " ") === 0 ? x.slice(r.label.length + 1) : x;
-          }).join(", ") }));
+      var off = null;
+      if (official) {
+        off = el("td", { className: "off-cell" });
+        if (r.official.length) {
+          var list = el("ul", { className: "refs" });
+          r.official.forEach(function (o) { list.appendChild(el("li", {}, [natLink(nat, o, portal, natLang)])); });
+          off.appendChild(list);
+          if (r.official_eu.length) {
+            off.appendChild(el("span", { className: "small muted" }, ["for ", el("span", { lang: euLang, text: r.official_eu.map(function (x) {
+              return x.indexOf(r.label + " ") === 0 ? x.slice(r.label.length + 1) : x;
+            }).join(", ") })]));
+          }
+        } else if (r.agreement === "article_level") {
+          off.appendChild(el("span", { className: "muted small", text: "listed for the whole article (above)" }));
+        } else {
+          off.appendChild(el("span", { className: "muted small", text: "not listed" }));
         }
-      } else if (r.agreement === "article_level") {
-        off.appendChild(el("span", { className: "muted small", text: "listed for the whole article (above)" }));
-      } else {
-        off.appendChild(el("span", { className: "muted small", text: "not listed" }));
       }
       var mach = el("td", { className: "mach-cell" });
       if (r.machine.length) {
         var m = r.machine[0];
-        mach.appendChild(el("div", {}, [natLink(nat, m.id)]));
+        mach.appendChild(el("div", {}, [natLink(nat, m.id, portal, natLang)]));
         var ag = AGREE[r.agreement] || AGREE.no_table_entry;
         mach.appendChild(el("div", { className: "small" }, [
           el("span", { className: "muted", text: "score " + m.score.toFixed(2) + (m.above_threshold ? "" : " · weak") }),
-          ag.text ? el("span", { className: "agree " + ag.cls, text: ag.text }) : null
+          official && ag.text ? el("span", { className: "agree " + ag.cls, text: ag.text }) : null
         ]));
       } else {
         mach.appendChild(el("span", { className: "muted small", text: "no candidate" }));
       }
-      var btn = el("button", { type: "button", className: "btn small-btn", "aria-expanded": "false", text: "Texts" });
-      var label = el("td", { className: "prov" }, [
+      if ((r.gaps || []).length) {
+        mach.appendChild(el("div", { className: "small" }, [
+          el("span", { className: "pill gap", text: "gap candidate" }), " ",
+          el("span", { lang: euLang, text: r.gaps.map(function (x) { return x.indexOf(r.label + " ") === 0 ? x.slice(r.label.length + 1) : x; }).join(", ") })
+        ]));
+      } else if ((r.out_of_scope || []).length && !r.linked_units) {
+        mach.appendChild(el("div", { className: "small muted", text: r.out_of_scope.indexOf("final_provisions") >= 0
+          ? "final provision: no national transposition expected" : "addressed to the Commission or ENISA only" }));
+      }
+      var detailId = "tx-" + String(r.id).replace(/[^A-Za-z0-9_-]/g, "_");
+      var btn = el("button", { type: "button", className: "btn small-btn", "aria-expanded": "false", "aria-controls": detailId, text: "Texts" });
+      var label = el("td", { className: "prov", lang: euLang }, [
         r.url ? el("a", { href: r.url, title: "Open in EUR-Lex", text: r.label }) : el("span", { text: r.label })
       ]);
-      tr.appendChild(label); tr.appendChild(off); tr.appendChild(mach); tr.appendChild(el("td", { className: "act" }, [btn]));
-      var detail = el("tr", { className: "texts", hidden: true });
-      var cell = el("td", { colspan: "4" });
+      tr.appendChild(label); if (off) tr.appendChild(off); tr.appendChild(mach); tr.appendChild(el("td", { className: "act" }, [btn]));
+      var detail = el("tr", { className: "texts", id: detailId, hidden: true });
+      var cell = el("td", { colspan: official ? "4" : "3" });
       detail.appendChild(cell);
       btn.setAttribute("aria-label", "Show texts for " + r.label);
       btn.addEventListener("click", function () {
         var open = btn.getAttribute("aria-expanded") === "true";
         if (!open && !cell.firstChild) {
-          cell.appendChild(el("div", { className: "tgrid" }, [
-            textPanel(d.short + " " + r.label, "eu", [{ label: "EUR-Lex", url: r.url, text: r.text }]),
-            textPanel("Official correlation table", "official", r.official.map(function (o) {
-              return { label: nationalRef(nat, o), url: (nat[o] || {}).url, text: (nat[o] || {}).text };
-            })),
-            textPanel("Machine suggestions", "machine", r.machine.map(function (x, i) {
-              return { label: (i + 1) + ". " + nationalRef(nat, x.id), url: (nat[x.id] || {}).url, text: (nat[x.id] || {}).text,
-                extra: "score " + x.score.toFixed(2) + (x.above_threshold ? "" : " (weak)") };
-            }))
-          ]));
+          var panels = [textPanel(d.short + " " + r.label, "eu", [{ label: "EUR-Lex", url: r.url, text: r.text }], euLang)];
+          if (official) {
+            panels.push(textPanel("Official correlation table", "official", r.official.map(function (o) {
+              return { label: nationalRef(nat, o, acts), url: (nat[o] || {}).url, text: (nat[o] || {}).text };
+            }), natLang));
+          }
+          panels.push(textPanel("Machine suggestions", "machine", r.machine.map(function (x, i) {
+            return { label: (i + 1) + ". " + nationalRef(nat, x.id, acts), url: (nat[x.id] || {}).url, text: (nat[x.id] || {}).text,
+              extra: "score " + x.score.toFixed(2) + (x.above_threshold ? "" : " (weak)") };
+          }), natLang));
+          cell.appendChild(el("div", { className: "tgrid" + (official ? "" : " two") }, panels));
         }
         detail.hidden = open;
         btn.setAttribute("aria-expanded", String(!open));
+        // the accessible name keeps the visible word (WCAG 2.5.3)
         btn.textContent = open ? "Texts" : "Hide";
+        btn.setAttribute("aria-label", (open ? "Show texts for " : "Hide texts for ") + r.label);
       });
       return [tr, detail];
     }
@@ -605,25 +770,25 @@
         var rows = a.rows.filter(keep);
         if (!rows.length) return;
         shown += rows.length;
-        var sec = el("section", { className: "art", "aria-label": a.label });
-        sec.appendChild(el("h2", {}, [
+        var hid = "art-" + String(a.id).replace(/[^A-Za-z0-9_-]/g, "_");
+        var sec = el("section", { className: "art", "aria-labelledby": hid });
+        sec.appendChild(el("h2", { id: hid, lang: euLang }, [
           a.url ? el("a", { href: a.url, title: "Open in EUR-Lex", text: a.label }) : el("span", { text: a.label }),
           a.heading ? el("span", { className: "art-h", text: " · " + a.heading }) : null
         ]));
-        if (a.official && a.official.length) {
+        if (official && a.official && a.official.length) {
           var p = el("p", { className: "small" }, [el("span", { className: "pill official", text: "Official correlation table" }), " whole article: "]);
-          a.official.forEach(function (o, i) { if (i) p.appendChild(document.createTextNode(", ")); p.appendChild(natLink(nat, o)); });
+          a.official.forEach(function (o, i) { if (i) p.appendChild(document.createTextNode(", ")); p.appendChild(natLink(nat, o, portal, natLang)); });
           sec.appendChild(p);
         }
         var tbody = el("tbody");
         rows.forEach(function (r) { rowFor(a, r).forEach(function (x) { tbody.appendChild(x); }); });
-        sec.appendChild(el("div", { className: "table-wrap" }, [el("table", { className: "align-table" }, [
-          el("thead", {}, [el("tr", {}, [
-            el("th", { scope: "col", text: d.short + " (EUR-Lex)" }),
-            el("th", { scope: "col" }, [el("span", { className: "pill official", text: "Official correlation table" })]),
-            el("th", { scope: "col" }, [el("span", { className: "pill machine", text: "Machine suggestion" })]),
-            el("th", { scope: "col" }, [el("span", { className: "sr-only", text: "Texts" })])
-          ])]),
+        var heads = [el("th", { scope: "col", text: d.short + " (EUR-Lex)" })];
+        if (official) heads.push(el("th", { scope: "col" }, [el("span", { className: "pill official", text: "Official correlation table" })]));
+        heads.push(el("th", { scope: "col" }, [el("span", { className: "pill machine", text: "Machine suggestion" })]));
+        heads.push(el("th", { scope: "col" }, [el("span", { className: "sr-only", text: "Texts" })]));
+        sec.appendChild(el("div", { className: "table-wrap" }, [el("table", { className: "align-table" + (official ? "" : " no-official") }, [
+          el("thead", {}, [el("tr", {}, heads)]),
           tbody
         ])]));
         frag.appendChild(sec);
@@ -634,9 +799,425 @@
       syncURL();
     }
 
+    drawLeftovers(d, nat, acts, portal, euLang, natLang);
     $("a-body").hidden = false;
     update();
   }
 
-  window.OpenAcquis = { renderIndex: renderIndex, renderDirective: renderDirective, renderAlignment: renderAlignment, _binOf: binOf };
+  // gap and extra-rule candidates below the table
+  function drawLeftovers(d, nat, acts, portal, euLang, natLang) {
+    var host = $("a-leftovers");
+    if (!host) return;
+    host.textContent = "";
+    var gaps = d.gap_articles || [], extras = d.extra_rule_sections || [];
+    host.appendChild(el("h2", { id: "gaps", text: "Gap candidates" }));
+    host.appendChild(el("p", { className: "small muted", text: "EU provisions for which nothing similar was found in the acts searched " +
+      "(best score below " + (d.gap_threshold != null ? d.gap_threshold : d.threshold) + "), after setting aside final provisions, " +
+      "provisions addressed only to the Commission or ENISA, and parts of lists that are linked. A candidate may be transposed in another act, " +
+      "in other words, or not at all: it is a reading list for reviewers, not a finding." }));
+    if (!gaps.length) host.appendChild(el("p", { className: "muted", text: d.gap_note ? d.gap_note : "None at the current thresholds." }));
+    gaps.forEach(function (g) {
+      var p = el("p", {}, [
+        el("a", { href: "alignment.html?id=" + encodeURIComponent(d.id) + "&art=" + encodeURIComponent(g.id), lang: euLang, text: g.label }),
+        g.whole_article ? el("span", { className: "pill gap", text: "whole article" }) : null,
+        ": ", el("span", { lang: euLang, text: g.units.map(function (u) { return u.label; }).join("; ") })
+      ]);
+      host.appendChild(p);
+    });
+    host.appendChild(el("h2", { id: "extras", text: "Extra-rule candidates" }));
+    host.appendChild(el("p", { className: "small muted", text: "Provisions of the main act (" + ((d.national || [])[0] || {}).label +
+      ") in §§ with no link to the directive whose wording matches nothing in it, after setting aside definitions, penalty lists, " +
+      "transitional, repeal and entry-into-force clauses and amendments of other acts. Often ordinary national procedure or " +
+      "organisation; possibly rules that go beyond the directive. Not a finding of gold-plating." }));
+    if (!extras.length) host.appendChild(el("p", { className: "muted", text: "None at the current thresholds." }));
+    extras.forEach(function (x) {
+      var det = el("details", { className: "extra" });
+      det.appendChild(el("summary", {}, [
+        el("strong", { lang: natLang, text: x.label }), x.heading ? el("span", { lang: natLang, text: " · " + x.heading }) : "",
+        el("span", { className: "small muted", text: " (" + x.units.length + (x.units.length === 1 ? " provision" : " provisions") +
+          (x.whole_section ? ", whole section" : "") + ")" })
+      ]));
+      x.units.forEach(function (u) {
+        var n = nat[u] || {};
+        det.appendChild(el("div", { className: "titem" }, [
+          el("div", { className: "thead" }, [natLink(nat, u, portal, natLang),
+            n.closest_eu ? el("span", { className: "small muted" }, [" closest in " + d.short + ": ", el("span", { lang: euLang, text: n.closest_eu }),
+              (n.closest_score != null ? " (score " + Number(n.closest_score).toFixed(2) + ")" : "")]) : null]),
+          el("p", { className: "ptext", lang: natLang, text: n.text || "" })
+        ]));
+      });
+      host.appendChild(det);
+    });
+  }
+
+  // ------------------------------------------------------------ matrix page
+
+  function renderMatrix() {
+    var params = new URLSearchParams(location.search);
+    var celex = (params.get("celex") || "32022L2555").toUpperCase();
+    if (!/^3\d{4}L\d{4}$/.test(celex)) {
+      $("m-title").textContent = "Matrix not found";
+      showError($("m-notes"), new Error("Missing or invalid ?celex= parameter (expected e.g. 32022L2555)"));
+      return;
+    }
+    checkLinks();
+    getJSON("data/matrix/" + celex + ".json").then(function (m) { drawMatrix(m, params); }).catch(function (err) {
+      if (notBuilt(err)) {
+        $("m-title").textContent = "Matrix not available";
+        showMissing($("m-notes"), "the article × country matrix of " + celex);
+        return;
+      }
+      $("m-title").textContent = celex;
+      showError($("m-notes"), err);
+    });
+  }
+
+  function drawMatrix(m, params) {
+    document.title = m.short + ": article × country · OpenAcquis";
+    $("m-title").textContent = m.short + ": article × country";
+    $("m-back").href = "directive.html?celex=" + encodeURIComponent(m.celex);
+    $("m-back").textContent = "← " + m.short + ": notified measures";
+    $("footer-built").textContent = "Matrix built " + fmtBuilt(m.built_at) + ".";
+    var cols = m.countries || [];
+    $("m-lede").textContent = "Each row is an article of " + m.short + "; each column a country. A cell shows the national section the " +
+      "machine most often suggests for the article's paragraphs, how many of the article's provisions have a suggestion, gap " +
+      "candidates, and, where a government published one, the sections its official correlation table lists. Click a cell to " +
+      "read the texts side by side.";
+    var cap = $("m-cols");
+    cols.forEach(function (c, i) {
+      if (i) cap.appendChild(document.createTextNode(" · "));
+      cap.appendChild(el("span", {}, [el("a", { href: "alignment.html?id=" + encodeURIComponent(c.id), text: c.name }),
+        el("span", { className: "muted", text: " (" + c.act + ", " + (c.mode === "live" ? "computed " : "precomputed ") +
+          fmtBuilt(c.built_at).replace(/,? \d\d:\d\d UTC$/, "") + ")" })]));
+    });
+    var state = { q: params.get("q") || "", gaps: params.get("gaps") === "1" };
+    var q = $("m-q"); q.value = state.q;
+    var g = $("m-gaps"); g.checked = state.gaps;
+    q.addEventListener("input", function () { state.q = q.value; update(); });
+    g.addEventListener("change", function () { state.gaps = g.checked; update(); });
+
+    function cell(c, country) {
+      var td = el("td", { className: "mcell" });
+      if (!c) { td.appendChild(el("span", { className: "muted", text: "—" })); return td; }
+      var lang = CC_LANG[country.code] || null;
+      var top = c.top ? el("a", { href: c.href, className: "mtop", lang: lang, text: c.top,
+        title: "Top machine suggestion; open " + country.name + " for this article" }) : el("a", { href: c.href, className: "muted", text: "no suggestion" });
+      // visible labels (no hover on touch screens): which value is the machine's, which is a score
+      td.appendChild(el("div", {}, [c.top ? el("span", { className: "pill machine", text: "machine" }) : null, c.top ? " " : null, top,
+        c.top_score != null ? el("span", { className: "small muted", text: " score " + c.top_score.toFixed(2) }) : null]));
+      if (c.others && c.others.length) td.appendChild(el("div", { className: "small muted" }, ["also ", el("span", { lang: lang, text: c.others.join(", ") })]));
+      if (c.official) {
+        td.appendChild(el("div", { className: "small" }, c.official.length
+          ? [el("span", { className: "pill official", text: "table" }), " ", el("span", { lang: lang, text: c.official.slice(0, 4).join(", ") + (c.official.length > 4 ? " …" : "") })]
+          : [el("span", { className: "muted", text: "table: not listed" })]));
+      }
+      td.appendChild(el("div", { className: "small muted", text: c.linked_units + "/" + c.units + " linked" }));
+      if (c.gaps) td.appendChild(el("div", { className: "small" }, [el("span", { className: "pill gap", text: c.gaps + " gap" + (c.gaps === 1 ? "" : "s") })]));
+      return td;
+    }
+
+    function update() {
+      var tbody = $("m-rows");
+      tbody.textContent = "";
+      var needle = state.q.trim().toLowerCase();
+      var shown = 0;
+      (m.articles || []).forEach(function (a) {
+        if (needle && (a.label + " " + a.heading).toLowerCase().indexOf(needle) < 0) return;
+        if (state.gaps && !cols.some(function (c) { return (a.cells[c.code] || {}).gaps; })) return;
+        shown++;
+        var tr = el("tr", {}, [el("th", { scope: "row", className: "mart" }, [
+          el("span", { className: "mlabel", text: a.label }), a.heading ? el("span", { className: "small muted mhead", text: a.heading }) : null
+        ])]);
+        cols.forEach(function (c) { tr.appendChild(cell(a.cells[c.code], c)); });
+        tbody.appendChild(tr);
+      });
+      $("m-count").textContent = "Showing " + shown + " of " + (m.articles || []).length + " articles and annexes.";
+      var p = new URLSearchParams();
+      p.set("celex", m.celex);
+      if (state.q) p.set("q", state.q);
+      if (state.gaps) p.set("gaps", "1");
+      try { history.replaceState(null, "", "?" + p.toString()); } catch (e) { /* ignore */ }
+    }
+    var head = $("m-head");
+    head.appendChild(el("th", { scope: "col", className: "mart", text: "Article" }));
+    cols.forEach(function (c) {
+      head.appendChild(el("th", { scope: "col" }, [el("a", { href: "alignment.html?id=" + encodeURIComponent(c.id), text: c.name }),
+        el("span", { className: "small muted", text: " " + c.act })]));
+    });
+    $("m-body").hidden = false;
+    update();
+  }
+
+  // ------------------------------------------------------------ review page
+
+  var REPO = "https://github.com/JerryWoof/OpenAcquis";
+  var HANDLE = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$/;
+  var KIND_TEXT = {
+    link: "Suggested link: does this national provision implement this EU provision?",
+    gap: "Gap candidate: is it right that no provision of the acts searched implements this EU provision?",
+    extra_rule: "Extra-rule candidate: is it right that this national provision implements nothing in the directive?"
+  };
+
+  function store(key, value) {
+    try {
+      if (value === undefined) return window.localStorage.getItem(key);
+      window.localStorage.setItem(key, value);
+    } catch (e) { /* private mode: no persistence */ }
+    return null;
+  }
+
+  function reviewRecord(d, sg, form) {
+    var corrected = form.verdict === "correct"
+      ? form.corrected.split(/[\s,;]+/).filter(Boolean) : [];
+    var machine = { label: sg.kind === "link" ? "candidate" : sg.kind + "_candidate", method: d.method, generator: d.generator };
+    if (sg.score != null) machine.score = sg.score;
+    if (sg.rank != null) machine.rank = sg.rank;
+    return {
+      schema: 1, suggestion_id: sg.id, directive: d.celex, country: d.country_code, kind: sg.kind,
+      eu_id: sg.eu_id, national_id: sg.national_id, machine: machine, verdict: form.verdict,
+      corrected_ids: corrected, reviewer: form.reviewer, date: new Date().toISOString().slice(0, 10), note: form.note
+    };
+  }
+
+  var MAX_CORRECTED = 20; // openacquis.review.MAX_CORRECTED
+  var MAX_NOTE = 2000; // openacquis.review.MAX_NOTE
+  // GitHub answers HTTP 414 somewhere between 6k and 12k characters; stay well below.
+  var ISSUE_URL_MAX = 7500;
+  var PATH = "[a-z0-9_]+(?:\\.[a-z0-9_]+)*"; // dotted path, as _EU_ID / _NAT_ID in openacquis.review
+
+  // mirrors openacquis.review.validate_record for the fields a reviewer types
+  function checkRecord(rec) {
+    var errs = [];
+    if (["confirm", "reject", "correct"].indexOf(rec.verdict) < 0) errs.push("Pick a verdict.");
+    if (!HANDLE.test(rec.reviewer || "")) errs.push("Enter your GitHub user name (letters, digits, hyphens).");
+    if (rec.verdict === "correct") {
+      if (!rec.corrected_ids.length) errs.push("A correction needs the right provision IDs.");
+      if (rec.corrected_ids.length > MAX_CORRECTED) errs.push("At most " + MAX_CORRECTED + " corrected provision IDs.");
+      // EU IDs must belong to this directive; national IDs to this country
+      var want = rec.kind === "extra_rule" ? new RegExp("^eu:" + rec.directive + ":[a-z]{2}:" + PATH + "$")
+        : new RegExp("^" + rec.country + ":[A-Za-z0-9_./-]{1,40}:" + PATH + "$");
+      rec.corrected_ids.forEach(function (x) { if (!want.test(x)) errs.push("Not a provision ID of the right kind: " + x); });
+    }
+    if ((rec.note || "").length > MAX_NOTE) errs.push("The note is longer than " + MAX_NOTE + " characters.");
+    return errs;
+  }
+
+  function issueURL(rec) {
+    var p = new URLSearchParams();
+    p.set("template", "review.yml");
+    p.set("title", "Review: " + rec.verdict + " " + rec.suggestion_id);
+    p.set("record", JSON.stringify(rec, null, 1));
+    return REPO + "/issues/new?" + p.toString();
+  }
+
+  // the prefilled issue URL, or null when it is too long for GitHub (long or heavily escaped note)
+  function issueLink(rec) {
+    var url = issueURL(rec);
+    return url.length > ISSUE_URL_MAX ? null : url;
+  }
+
+  function renderReview() {
+    var params = new URLSearchParams(location.search);
+    var id = params.get("id") || "32022L2555_cz";
+    if (!SLUG.test(id)) {
+      $("r-title").textContent = "Review queue not found";
+      showError($("r-notes"), new Error("Missing or invalid ?id= parameter (expected e.g. 32022L2555_cz)"));
+      return;
+    }
+    checkLinks();
+    getJSON("data/review/" + id + ".json").then(function (d) { drawReview(d, params); }).catch(function (err) {
+      if (notBuilt(err)) {
+        $("r-title").textContent = "Review queue not available";
+        showMissing($("r-notes"), "this review queue (" + id + ")");
+        return;
+      }
+      $("r-title").textContent = id;
+      showError($("r-notes"), err);
+    });
+  }
+
+  function drawReview(d, params) {
+    document.title = "Review: " + d.short + " × " + d.country_name + " · OpenAcquis";
+    $("r-title").textContent = "Review: " + d.short + " × " + d.country_name;
+    $("footer-built").textContent = "Suggestions computed " + fmtBuilt(d.built_at) + (d.mode === "live" ? "" : " (precomputed copy)") + ".";
+    siblingLinks($("r-notes"), d.celex, d.id, function (x) { return "review.html?id=" + x; }, "Review another country: ");
+    $("r-back").href = "alignment.html?id=" + encodeURIComponent(d.id);
+    $("r-back").textContent = "← " + d.short + " × " + d.country_name + ", provision by provision";
+    var eu = d.eu_texts || {}, nat = d.national_texts || {};
+    var natLang = d.national_language || CC_LANG[d.country_code] || null;
+    function euLangFor(sg) {
+      return d.eu_language || euLangOf(sg.eu_id) || euLangOf((sg.alternatives || [])[0]) || null;
+    }
+    var reviewed = d.reviewed || {};
+    var batchKey = "openacquis-review-batch-" + d.id;
+    var batch = [];
+    try { batch = JSON.parse(store(batchKey) || "[]") || []; } catch (e) { batch = []; }
+    var inBatch = function (sid) { return batch.some(function (r) { return r.suggestion_id === sid; }); };
+
+    var state = { kind: params.get("kind") || "", art: params.get("art") || "", all: params.get("all") === "1", i: 0 };
+    var kinds = $("r-kind"), art = $("r-art"), all = $("r-all");
+    kinds.value = state.kind; if (kinds.value !== state.kind) state.kind = "";
+    all.checked = state.all;
+    var arts = [];
+    d.suggestions.forEach(function (s) {
+      var key = s.eu_id ? s.eu_id.split(":")[3].split(".")[0] : "";
+      s._art = key;
+      if (key && arts.indexOf(key) < 0) arts.push(key);
+    });
+    arts.forEach(function (k) {
+      art.appendChild(el("option", { value: k, text: k.indexOf("art") === 0 ? "Art. " + k.slice(3) : k.replace("anx_", "Annex ").toUpperCase() }));
+    });
+    art.value = state.art; if (art.value !== state.art) state.art = "";
+
+    var queue = [];
+    function rebuild() {
+      queue = d.suggestions.filter(function (s) {
+        if (state.kind && s.kind !== state.kind) return false;
+        if (state.art && s._art !== state.art) return false;
+        if (!state.all && (reviewed[s.id] || inBatch(s.id))) return false;
+        return true;
+      });
+      if (state.i >= queue.length) state.i = Math.max(0, queue.length - 1);
+      var p = new URLSearchParams();
+      p.set("id", d.id);
+      if (state.kind) p.set("kind", state.kind);
+      if (state.art) p.set("art", state.art);
+      if (state.all) p.set("all", "1");
+      try { history.replaceState(null, "", "?" + p.toString()); } catch (e) { /* ignore */ }
+      var nrev = Object.keys(reviewed).length;
+      $("r-progress").textContent = d.suggestions.length + " suggestions; " + nrev + " reviewed in the dataset, " + batch.length +
+        " in your batch; " + queue.length + " in this queue.";
+      show();
+    }
+    kinds.addEventListener("change", function () { state.kind = kinds.value; state.i = 0; rebuild(); });
+    art.addEventListener("change", function () { state.art = art.value; state.i = 0; rebuild(); });
+    all.addEventListener("change", function () { state.all = all.checked; state.i = 0; rebuild(); });
+
+    var handle = $("r-handle");
+    handle.value = store("openacquis-reviewer") || "";
+    handle.addEventListener("change", function () { store("openacquis-reviewer", handle.value.trim()); });
+
+    function form() {
+      var v = document.querySelector("input[name=verdict]:checked");
+      return { verdict: v ? v.value : "", corrected: $("r-corrected").value, reviewer: handle.value.trim(), note: $("r-note").value };
+    }
+
+    function panelFor(title, cls, idmap, ids, lang) {
+      return textPanel(title, cls, ids.filter(Boolean).map(function (x) {
+        var t = idmap[x] || {};
+        return { label: (t.label || x), url: t.url, text: t.text };
+      }), lang);
+    }
+
+    function show() {
+      var host = $("r-card");
+      host.textContent = "";
+      $("r-issue").removeAttribute("href");
+      $("r-json").textContent = "";
+      $("r-errors").textContent = "";
+      Array.prototype.forEach.call(document.querySelectorAll("input[name=verdict]"), function (x) { x.checked = false; });
+      $("r-corrected").value = ""; $("r-note").value = "";
+      if (!queue.length) {
+        $("r-status").textContent = "Nothing left to review with these filters.";
+        host.appendChild(el("p", { className: "muted", text: "Nothing left to review with these filters. Thank you!" }));
+        $("r-form").hidden = true;
+        return;
+      }
+      $("r-form").hidden = false;
+      var sg = queue[state.i];
+      var st = reviewed[sg.id];
+      var euL = euLangFor(sg);
+      // short announcement for screen readers (the card itself is not a live region: it is long)
+      var what = [sg.eu_id ? (eu[sg.eu_id] || {}).label || sg.eu_id : null, sg.national_id ? (nat[sg.national_id] || {}).label || sg.national_id : null]
+        .filter(Boolean).join(" → ");
+      $("r-status").textContent = "Suggestion " + (state.i + 1) + " of " + queue.length + ": " +
+        { link: "link", gap: "gap candidate", extra_rule: "extra-rule candidate" }[sg.kind] + (what ? ", " + what : "") + ".";
+      host.appendChild(el("p", { className: "small muted" }, [
+        "Suggestion " + (state.i + 1) + " of " + queue.length + " · ",
+        el("code", { text: sg.id }),
+        st ? el("span", { className: "pill reviewed", text: "already " + st.status + " by " + st.reviewers.join(", ") }) : null
+      ]));
+      host.appendChild(el("h2", { className: "rq", tabindex: "-1", text: KIND_TEXT[sg.kind] }));
+      if (sg.score != null) host.appendChild(el("p", { className: "small muted" }, ["Machine score " + Number(sg.score).toFixed(3) + " (",
+        el("code", { className: "method", text: d.method }), "; threshold " + d.threshold + "). Scores are similarity, not probability."]));
+      var panels = [];
+      // all panels hold machine output except the EU text: alternatives are lower-ranked machine candidates
+      if (sg.kind === "extra_rule") {
+        panels.push(panelFor("National provision", "machine", nat, [sg.national_id], natLang));
+        panels.push(panelFor("Closest EU provision (below the threshold)", "eu", eu, sg.alternatives, euL));
+      } else {
+        panels.push(panelFor(d.short + " (EUR-Lex)", "eu", eu, [sg.eu_id], euL));
+        if (sg.kind === "link") panels.push(panelFor("Suggested national provision", "machine", nat, [sg.national_id], natLang));
+        panels.push(panelFor(sg.kind === "link" ? "Other candidates" : "Closest national provisions (below the threshold)",
+          "machine alt", nat, sg.alternatives, natLang));
+      }
+      host.appendChild(el("div", { className: "tgrid" }, panels));
+      var dl = $("r-ids");
+      dl.textContent = "";
+      (sg.kind === "extra_rule" ? sg.alternatives : sg.alternatives.concat(sg.national_id ? [sg.national_id] : [])).forEach(function (x) {
+        if (x) dl.appendChild(el("option", { value: x }));
+      });
+      $("r-corrected-hint").textContent = sg.kind === "extra_rule"
+        ? "EU provision IDs it implements, e.g. " + (sg.alternatives[0] || "eu:32022L2555:cs:art21.par2.pt_a")
+        : "National provision IDs that implement it, e.g. " + (sg.alternatives[0] || d.country_code + ":…:par12.odst1");
+    }
+
+    function current() {
+      if (!queue.length) return null;
+      var rec = reviewRecord(d, queue[state.i], form());
+      var errs = checkRecord(rec);
+      $("r-errors").textContent = errs.join(" ");
+      $("r-json").textContent = JSON.stringify(rec, null, 1);
+      if (errs.length) { $("r-issue").removeAttribute("href"); return null; }
+      var url = issueLink(rec);
+      if (url) $("r-issue").href = url;
+      else {
+        // the record is valid; only the prefilled link is too long for GitHub (HTTP 414)
+        $("r-issue").removeAttribute("href");
+        $("r-errors").textContent = "The note is too long for a prefilled GitHub issue. Shorten it, or add the record " +
+          "to your batch and send the downloaded file instead.";
+      }
+      return rec;
+    }
+    ["change", "input"].forEach(function (ev) {
+      $("r-form").addEventListener(ev, function () { current(); });
+    });
+
+    function refreshBatch() {
+      store(batchKey, JSON.stringify(batch));
+      $("r-batch-n").textContent = batch.length + (batch.length === 1 ? " record" : " records");
+      $("r-download").disabled = !batch.length;
+      $("r-clear").disabled = !batch.length;
+    }
+    $("r-add").addEventListener("click", function () {
+      var rec = current();
+      if (!rec) return;
+      batch = batch.filter(function (r) { return r.suggestion_id !== rec.suggestion_id; }).concat([rec]);
+      refreshBatch();
+      // with "Include reviewed" the item stays in the queue: move on to the next one
+      if (state.all && queue.length) state.i = (state.i + 1) % queue.length;
+      rebuild();
+    });
+    $("r-skip").addEventListener("click", function () { if (queue.length) { state.i = (state.i + 1) % queue.length; show(); } });
+    $("r-prev").addEventListener("click", function () { if (queue.length) { state.i = (state.i - 1 + queue.length) % queue.length; show(); } });
+    $("r-download").addEventListener("click", function () {
+      var text = batch.map(function (r) { return JSON.stringify(r); }).join("\n") + "\n";
+      var url = URL.createObjectURL(new Blob([text], { type: "application/jsonl" }));
+      var a = document.createElement("a"); // a blob: URL we just made (el() only allows http(s) links)
+      a.href = url;
+      a.download = d.id + "_reviews.jsonl";
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    });
+    $("r-clear").addEventListener("click", function () { batch = []; refreshBatch(); rebuild(); });
+    $("r-body").hidden = false;
+    refreshBatch();
+    rebuild();
+  }
+
+  window.OpenAcquis = {
+    renderIndex: renderIndex, renderDirective: renderDirective, renderAlignment: renderAlignment,
+    renderMatrix: renderMatrix, renderReview: renderReview, _binOf: binOf, _checkRecord: checkRecord,
+    _issueURL: issueURL, _issueLink: issueLink
+  };
 })();

@@ -7,8 +7,14 @@ metadata and the national measures each member state has notified, and writes:
     site/data/index.json          one entry per directive, with counts per country
     site/data/<CELEX>.json        the same plus the full list of measures
     site/data/align/<CELEX>_<cc>.json
-                                  provision-level alignment pages (NIS2 x Czechia): the official
-                                  correlation table next to the top machine suggestion
+                                  provision-level alignment pages (NIS2 x CZ, SK, AT, DE): the top
+                                  machine suggestion per paragraph (next to the official correlation
+                                  table where one exists), gap and extra-rule candidates
+    site/data/review/<CELEX>_<cc>.json
+                                  the review queue: every machine suggestion with its texts and
+                                  whether it has been reviewed (data/reviews/)
+    site/data/matrix/<CELEX>.json article x country matrix (from the alignment pages)
+    site/data/dataset/            the open dataset (links.csv, links.jsonl, datapackage.json ...)
 
 The site itself is static HTML/JS that reads these files; nothing else is needed.
 
@@ -21,10 +27,11 @@ Usage::
                                   # alignment the builder falls back to when texts
                                   # cannot be fetched
 
-Alignment pages are computed with the stdlib lexical embedder (no heavy dependencies).
-They need the directive text (CELLAR) and the national act (e-Sbírka); if either
-cannot be fetched, or with ``--offline``, the committed ``site/static-data/`` copy is
-used instead and the page says when it was computed.
+Alignment pages are computed with the stdlib ``hybrid-lex`` embedder (no heavy dependencies).
+They need the directive text (CELLAR) and the national act (e-Sbírka, Slov-Lex, RIS,
+gesetze-im-internet.de); if either cannot be fetched, or with ``--offline``, the
+committed ``site/static-data/`` copy is used instead and the page says when it was
+computed.
 
 A failing directive never stops the build: its error is recorded in the data and
 shown on the site. The exit code is non-zero only if *every* directive failed,
@@ -59,7 +66,7 @@ DEFAULT_OUT = ROOT / "site" / "data"
 SAMPLE_DIR = Path(__file__).resolve().parent / "sample_data"
 STATIC_DIR = ROOT / "site" / "static-data"
 SCHEMA_VERSION = 1
-ALIGNMENT_SCHEMA = 1
+ALIGNMENT_SCHEMA = 2
 
 
 @dataclass(frozen=True)
@@ -95,10 +102,11 @@ class AlignmentEntry:
     country: str  # ISO alpha-3, as in the measures data
     country_code: str  # adapter code: "cz"
     country_name: str
-    gold: str  # evaluation set (relative to the repository root)
-    gold_label: str
-    gold_url: str
-    gold_history_url: str
+    act_label: str  # how the main act is cited on the page: "264/2025 Sb.", "NISG 2026"
+    gold: str = ""  # evaluation set (relative to the repository root); "" = no official table
+    gold_label: str = ""
+    gold_url: str = ""
+    gold_history_url: str = ""
 
     @property
     def slug(self) -> str:
@@ -111,12 +119,22 @@ class AlignmentEntry:
 
 ALIGNMENTS: list[AlignmentEntry] = [
     AlignmentEntry(
-        "32022L2555", "NIS2", "CZE", "cz", "Czechia", "data/eval/nis2_cz.jsonl",
+        "32022L2555", "NIS2", "CZE", "cz", "Czechia", "264/2025 Sb.", "data/eval/nis2_cz.jsonl",
         "Rozdílová tabulka, government bill of the Cybersecurity Act (sněmovní tisk 759/0, 2024)",
         "https://www.psp.cz/sqw/text/orig2.sqw?idd=244067",
         "https://www.psp.cz/sqw/historie.sqw?o=9&t=759",
     ),
+    AlignmentEntry("32022L2555", "NIS2", "SVK", "sk", "Slovakia", "69/2018 Z. z."),
+    AlignmentEntry("32022L2555", "NIS2", "AUT", "at", "Austria", "NISG 2026"),
+    AlignmentEntry("32022L2555", "NIS2", "DEU", "de", "Germany", "BSIG"),
 ]
+
+#: Directives with an article x country matrix page.
+MATRICES = sorted({a.celex for a in ALIGNMENTS})
+#: Embedder of the published pages: stdlib only, so the Pages workflow needs no extra.
+SITE_EMBEDDER = "hybrid-lex"
+REVIEW_SCHEMA = 1
+MATRIX_SCHEMA = 1
 
 
 # --- fetchers -----------------------------------------------------------------
@@ -217,9 +235,11 @@ def build_directive(client: CellarClient, entry: Entry) -> dict:
         "counts": {code: 0 for code in MEMBER_STATES},
         "measures": [],
         "alignments": [
-            {"country": a.country, "country_name": a.country_name, "href": a.href}
+            {"country": a.country, "country_name": a.country_name, "href": a.href,
+             "official": bool(a.gold), "review_href": f"review.html?id={a.slug}"}
             for a in ALIGNMENTS if a.celex == entry.celex
         ],
+        "matrix_href": f"matrix.html?celex={entry.celex}" if entry.celex in MATRICES else None,
         "error": None,
     }
     try:
@@ -307,6 +327,8 @@ def write_site_data(out_dir: Path, index: dict, records: list[dict]) -> None:
 
 # --- alignment pages (provision level) -------------------------------------------
 
+LANGUAGE_NAMES = {"cs": "Czech", "sk": "Slovak", "de": "German", "en": "English"}
+
 
 def _clip(text: str, limit: int) -> str:
     text = text.strip()
@@ -315,6 +337,11 @@ def _clip(text: str, limit: int) -> str:
 
 def _on_path(a: str, b: str) -> bool:
     return a == b or a.startswith(b + ".") or b.startswith(a + ".")
+
+
+def _local(eu_id: str) -> str:
+    """``eu:32022L2555:cs:art23.par4`` -> ``art23.par4`` (the same in every language)."""
+    return eu_id.split(":", 3)[3] if eu_id.count(":") >= 3 else eu_id
 
 
 def alignment_page_data(
@@ -327,13 +354,15 @@ def alignment_page_data(
     text_limit: int = 2500,
     top: int = 3,
 ) -> dict:
-    """Shape an :class:`openacquis.align.AlignmentResult` and gold links into the page's JSON.
+    """Shape an :class:`openacquis.align.AlignmentResult` (and gold links, if any) into the page's JSON.
 
     One row per EU paragraph (or per article without paragraphs, or annex). Each row
-    has the national provisions the official correlation table lists for it and the
-    top machine suggestions (best score of any EU unit inside the row, per national
-    unit). Texts are plain strings; the page inserts them with textContent.
+    has the national provisions the official correlation table lists for it (empty
+    without a table), the top machine suggestions (best score of any EU unit inside the
+    row, per national unit), and the row's gap candidates. Texts are plain strings; the
+    page inserts them with textContent.
     """
+    from openacquis.adapters import get_adapter
     from openacquis.align import path_label
     from openacquis.evaluate import retrieval
     from openacquis.match import level_id
@@ -341,6 +370,11 @@ def alignment_page_data(
     eu = result.eu_doc
     mr = result.match
     nat_doc = {p.id: d for d in result.national_docs for p in d}
+    lo = result.leftovers
+    gap_ids = set(result.gap_candidates)
+    out_of_scope = dict(lo.eu_out_of_scope) if lo else {}
+    linked_units = {a.eu_id for a in result.provisions if a.links}
+    unit_ids = [u.id for u in mr.eu_units]
     # rows: EU paragraphs, or the article / annex itself when it has no paragraphs
     articles: list[dict] = []
     row_ids: list[str] = []
@@ -349,14 +383,20 @@ def alignment_page_data(
         if p.kind not in ("article", "annex"):
             continue
         paras = [c for c in eu.children(p.id) if c.kind == "paragraph"]
-        art = {"id": p.id, "label": p.label, "heading": p.heading or "", "url": p.url,
+        art = {"id": p.id, "key": _local(p.id), "label": p.label, "heading": p.heading or "", "url": p.url,
                "official": [], "rows": []}
         for r in paras or [p]:
             row_ids.append(r.id)
             art_of_row[r.id] = art
-            art["rows"].append({"id": r.id, "label": path_label(eu, r.id), "url": r.url,
-                                "text": _clip(eu.full_text(r.id), text_limit),
-                                "official": [], "official_eu": [], "machine": [], "agreement": None})
+            units = [u for u in unit_ids if u == r.id or u.startswith(r.id + ".")]
+            art["rows"].append({
+                "id": r.id, "label": path_label(eu, r.id), "url": r.url,
+                "text": _clip(eu.full_text(r.id), text_limit),
+                "official": [], "official_eu": [], "machine": [], "agreement": None,
+                "units": len(units), "linked_units": sum(1 for u in units if u in linked_units),
+                "gaps": [path_label(eu, u) for u in units if u in gap_ids],
+                "out_of_scope": sorted({out_of_scope[u] for u in units if u in out_of_scope}),
+            })
         articles.append(art)
     rows = {r["id"]: r for a in articles for r in a["rows"]}
 
@@ -408,8 +448,33 @@ def alignment_page_data(
                 r["agreement"] = "differs"
         counts[r["agreement"]] += 1
 
+    # extra-rule candidates, grouped by national §
+    extra_sections = []
+    if lo is not None:
+        for sec in lo.extra_rule_sections():
+            sid = sec["section_id"]
+            d = nat_doc.get(sid)
+            sp = d.get(sid) if d is not None else None
+            extra_sections.append({
+                "id": sid, "label": path_label(d, sid) if sp else sid,
+                "heading": (sp.heading or "") if sp else "", "units": sec["units"],
+                "whole_section": d is not None and all(
+                    u.id in set(sec["units"]) for u in mr.national_units
+                    if nat_doc.get(u.id) is d and level_id(d, u.id, "article") == sid),
+            })
+    extras_best = {x["national_id"]: x for x in result.extra_rule_candidates}
+    gap_articles = []
+    if lo is not None:
+        for ga in lo.gap_articles():
+            a = eu.get(ga["article_id"])
+            gap_articles.append({"id": ga["article_id"], "key": _local(ga["article_id"]),
+                                 "label": a.label if a else ga["article_id"],
+                                 "units": [{"id": u, "label": path_label(eu, u)} for u in ga["units"]],
+                                 "whole_article": ga["whole_article"]})
+
     used = {x for r in rows.values() for x in r["official"]} | {m["id"] for r in rows.values() for m in r["machine"]}
     used |= {x for a in articles for x in a["official"]}
+    used |= {u for sec in extra_sections for u in sec["units"]}
     national = {}
     for nid in sorted(used):
         d = nat_doc.get(nid)
@@ -417,8 +482,32 @@ def alignment_page_data(
             national[nid] = {"label": nid.split(":", 2)[-1], "act": nid.split(":")[1], "text": "", "url": None}
             continue
         national[nid] = {"label": path_label(d, nid), "act": d.act_id, "url": d.by_id(nid).url,
-                         "text": _clip(d.full_text(nid), text_limit)}
-    ret = retrieval(mr, gold, (1, 5), levels=("provision", "section"))
+                         "text": _clip(d.full_text(nid), text_limit),
+                         "section": path_label(d, level_id(d, nid, "article"))}
+        if nid in extras_best:
+            x = extras_best[nid]
+            national[nid]["closest_eu"] = path_label(eu, x["best_eu_id"]) if x.get("best_eu_id") else None
+            national[nid]["closest_score"] = round(x["best_score"], 3) if x.get("best_score") is not None else None
+    summary = {
+        "rows": len(rows),
+        "rows_with_official": len(rows) - counts["no_table_entry"] if gold else 0,
+        **counts,
+        "rows_with_link": sum(1 for r in rows.values() if r["linked_units"]),
+        "eu_units": len(mr.eu_units),
+        "eu_units_with_link": len(linked_units),
+        "gap_candidates": len(gap_ids),
+        "gap_articles": len(gap_articles),
+        "eu_units_out_of_scope": len(out_of_scope),  # unlinked units set aside (not gap candidates)
+        "eu_units_linked_out_of_scope": len(lo.eu_linked_out_of_scope) if lo else 0,
+        "extra_rule_candidates": len(result.extra_rule_candidates),
+        "extra_rule_sections": len(extra_sections),
+        "main_act_units": sum(1 for u in mr.national_units if u.id.split(":")[1] in result.transposing_acts),
+    }
+    if gold:
+        ret = retrieval(mr, gold, (1, 5), levels=("provision", "section"))
+        summary.update(recall_at_1=ret["provision"]["recall@1"], recall_at_5=ret["provision"]["recall@5"],
+                       section_recall_at_5=ret["section"]["recall@5"])
+    adapter = get_adapter(entry.country_code)
     built = (now or datetime.now(timezone.utc)).replace(microsecond=0)
     return {
         "schema": ALIGNMENT_SCHEMA,
@@ -429,23 +518,180 @@ def alignment_page_data(
         "celex": entry.celex,
         "short": entry.short,
         "country": entry.country,
+        "country_code": entry.country_code,
         "country_name": entry.country_name,
-        "eu": {"title": eu.title, "url": eu.url, "language": eu.language},
-        "national": [{"act_id": d.act_id, "title": d.title, "url": d.url} for d in result.national_docs],
+        "eu": {"title": eu.title, "url": eu.url, "language": eu.language,
+               "language_name": LANGUAGE_NAMES.get(eu.language, eu.language)},
+        "national_language": adapter.language,
+        "national": [{"act_id": d.act_id, "title": d.title, "url": d.url, "date": d.date,
+                      "label": entry.act_label if i == 0 else f"{d.act_id}{adapter.act_suffix}"}
+                     for i, d in enumerate(result.national_docs)],
+        "portal": adapter.portal,
         "method": result.method,
         "threshold": result.threshold,
-        "official_source": {"label": entry.gold_label, "url": entry.gold_url, "history_url": entry.gold_history_url,
-                            "links": len(gold)},
-        "summary": {
-            "rows": len(rows),
-            "rows_with_official": len(rows) - counts["no_table_entry"],
-            **counts,
-            "recall_at_1": ret["provision"]["recall@1"],
-            "recall_at_5": ret["provision"]["recall@5"],
-            "section_recall_at_5": ret["section"]["recall@5"],
-        },
+        "gap_threshold": lo.gap_threshold if lo else None,
+        "gap_note": lo.gap_note if lo else None,  # set when the method gives no gap list (hybrid-rrf)
+        "has_official": bool(gold),
+        "official_source": ({"label": entry.gold_label, "url": entry.gold_url, "history_url": entry.gold_history_url,
+                             "links": len(gold)} if gold else None),
+        "summary": summary,
         "articles": articles,
+        "gap_articles": gap_articles,
+        "extra_rule_sections": extra_sections,
         "national_texts": national,
+    }
+
+
+def review_page_data(entry: AlignmentEntry, result, *, reviews: list[dict] | None = None,
+                     now: datetime | None = None, mode: str = "live", text_limit: int = 1500) -> dict:
+    """Every machine suggestion of an alignment, with the texts a reviewer needs (review.html).
+
+    Suggestions: each predicted link (``link``), each gap candidate (``gap``) and each
+    extra-rule candidate (``extra_rule``), with :func:`openacquis.review.suggestion_id`.
+    ``reviews`` (records for this directive and country) mark suggestions already reviewed.
+    """
+    from openacquis.align import path_label
+    from openacquis.review import merge, suggestion_id
+
+    eu = result.eu_doc
+    nat_doc = {p.id: d for d in result.national_docs for p in d}
+    by_eu = {a.eu_id: a for a in result.provisions}
+    sugg = []
+    for a in result.provisions:
+        cands = {c.national_id: c for c in a.candidates}
+        for nid in a.links:
+            c = cands.get(nid)
+            sugg.append({"id": suggestion_id("link", a.eu_id, nid), "kind": "link", "eu_id": a.eu_id,
+                         "national_id": nid, "score": round(c.score, 4) if c else None, "rank": c.rank if c else None,
+                         "alternatives": [x.national_id for x in a.candidates if x.national_id != nid][:3]})
+    if result.leftovers is not None:
+        for g in result.leftovers.gap_candidates:
+            sugg.append({"id": suggestion_id("gap", g.eu_id, None), "kind": "gap", "eu_id": g.eu_id,
+                         "national_id": None, "score": g.best_score, "rank": None,
+                         "alternatives": [c.national_id for c in by_eu[g.eu_id].candidates[:3]] if g.eu_id in by_eu else []})
+        for x in result.leftovers.extra_rule_candidates:
+            sugg.append({"id": suggestion_id("extra_rule", None, x.national_id), "kind": "extra_rule", "eu_id": None,
+                         "national_id": x.national_id, "score": x.best_score, "rank": None,
+                         "alternatives": [x.best_eu_id] if x.best_eu_id else []})
+    eu_ids = {s["eu_id"] for s in sugg if s["eu_id"]} | {e for s in sugg if s["kind"] == "extra_rule" for e in s["alternatives"]}
+    nat_ids = {s["national_id"] for s in sugg if s["national_id"]} | {
+        n for s in sugg if s["kind"] != "extra_rule" for n in s["alternatives"]}
+    eu_texts = {e: {"label": path_label(eu, e), "url": eu.by_id(e).url, "text": _clip(eu.full_text(e), text_limit)}
+                for e in sorted(eu_ids) if eu.get(e)}
+    nat_texts = {}
+    for nid in sorted(nat_ids):
+        d = nat_doc.get(nid)
+        if d is not None:
+            nat_texts[nid] = {"label": path_label(d, nid), "url": d.by_id(nid).url,
+                              "text": _clip(d.full_text(nid), text_limit)}
+    from openacquis.adapters import get_adapter
+
+    reviewed = {d.suggestion_id: {"status": d.status, "reviewers": d.reviewers}
+                for d in merge(reviews or [])}
+    built = (now or datetime.now(timezone.utc)).replace(microsecond=0)
+    return {
+        "schema": REVIEW_SCHEMA,
+        "built_at": built.isoformat().replace("+00:00", "Z"),
+        "mode": mode,
+        "generator": f"openacquis {__version__}",
+        "id": entry.slug,
+        "celex": entry.celex,
+        "short": entry.short,
+        "country_code": entry.country_code,
+        "country_name": entry.country_name,
+        "eu_language": eu.language,
+        "national_language": get_adapter(entry.country_code).language,
+        "method": result.method,
+        "threshold": result.threshold,
+        "suggestions": sugg,
+        "eu_texts": eu_texts,
+        "national_texts": nat_texts,
+        "reviewed": reviewed,
+    }
+
+
+def _key_label(key: str) -> str:
+    """``art23`` -> ``Art. 23``, ``anx_iii`` -> ``Annex III``."""
+    if key.startswith("art"):
+        return "Art. " + key[3:]
+    if key.startswith("anx_"):
+        return "Annex " + key[4:].upper()
+    if key.startswith("anx"):
+        return "Annex " + key[3:]
+    return key
+
+
+def directive_headings(celex: str, eurlex=None, lang: str = "en") -> dict[str, str]:
+    """Article and annex headings of a directive (English by default), keyed ``art23`` / ``anx_i``."""
+    from openacquis.eurlex import EurLexClient
+
+    doc = (eurlex or EurLexClient()).document(celex, lang)
+    return {_local(p.id): p.heading or "" for p in doc.roots() if p.kind in ("article", "annex")}
+
+
+def matrix_data(celex: str, pages: list[dict], *, headings: dict[str, str] | None = None,
+                now: datetime | None = None) -> dict:
+    """Article x country matrix from the alignment pages of one directive (no recomputation).
+
+    A cell: the machine's most frequent top § for the article's paragraphs (with the best
+    score), the §§ the official table lists (where there is a table), how many EU units have
+    a link, and how many are gap candidates. Rows follow the directive; columns follow ``pages``.
+    """
+    rows: dict[str, dict] = {}
+    countries = []
+    for d in pages:
+        nat = d.get("national_texts", {})
+        countries.append({"code": d["country_code"], "name": d["country_name"], "id": d["id"],
+                          "method": d["method"], "built_at": d["built_at"], "mode": d["mode"],
+                          "has_official": d.get("has_official", False),
+                          "act": (d.get("national") or [{}])[0].get("label", "")})
+
+        def sec_label(nid: str) -> str:
+            n = nat.get(nid) or {}
+            return n.get("section") or n.get("label") or nid.split(":", 2)[-1]
+
+        for a in d["articles"]:
+            key = a.get("key") or _local(a["id"])
+            row = rows.setdefault(key, {"key": key, "label": _key_label(key),
+                                        "heading": (headings or {}).get(key) or a["heading"], "cells": {}})
+            tops: dict[str, list[float]] = {}
+            official: list[str] = []
+            units = linked = gaps = 0
+            oos = 0
+            for r in a["rows"]:
+                units += r.get("units", 0)
+                linked += r.get("linked_units", 0)
+                gaps += len(r.get("gaps", []))
+                oos += 1 if r.get("out_of_scope") and not r.get("linked_units") else 0
+                if r["machine"] and r["machine"][0]["above_threshold"]:
+                    m = r["machine"][0]
+                    tops.setdefault(sec_label(m["id"]), []).append(m["score"])
+                for o in r["official"]:
+                    lab = sec_label(o)
+                    if lab not in official:
+                        official.append(lab)
+            for o in a.get("official", []):
+                lab = sec_label(o)
+                if lab not in official:
+                    official.append(lab)
+            top = max(tops.items(), key=lambda kv: (len(kv[1]), max(kv[1])))[0] if tops else None
+            row["cells"][d["country_code"]] = {
+                "top": top, "top_score": round(max(tops[top]), 3) if top else None,
+                "others": sorted(k for k in tops if k != top)[:4],
+                "official": official if d.get("has_official") else None,
+                "units": units, "linked_units": linked, "gaps": gaps,
+                "href": f"alignment.html?id={d['id']}&art={a['id']}",
+            }
+    built = (now or datetime.now(timezone.utc)).replace(microsecond=0)
+    short = pages[0]["short"] if pages else celex
+    return {
+        "schema": MATRIX_SCHEMA,
+        "built_at": built.isoformat().replace("+00:00", "Z"),
+        "generator": f"openacquis {__version__}",
+        "celex": celex,
+        "short": short,
+        "countries": countries,
+        "articles": list(rows.values()),
     }
 
 
@@ -457,16 +703,42 @@ def build_alignment(
     eurlex=None,
     national_client=None,
 ) -> dict:
-    """Fetch the texts, align with the lexical embedder and shape the page data (raises on failure)."""
-    from openacquis.align import align, load_documents
-    from openacquis.evaluate import load_gold
-    from openacquis.match import LexicalEmbedder
+    """Fetch the texts, align with the stdlib hybrid embedder and shape the page data (raises on failure).
 
+    Returns ``{"alignment": page data, "review": review queue data}``.
+    """
+    from openacquis.adapters import get_adapter
+    from openacquis.align import align, choose_embedder, load_documents
+    from openacquis.evaluate import load_gold
+
+    lang = get_adapter(entry.country_code).language
     eu, docs = load_documents(entry.celex, entry.country_code, eurlex=eurlex, national_client=national_client,
                               log=log)
-    result = align(eu, docs, embedder=LexicalEmbedder(), log=log, now=now)
-    gold = load_gold(ROOT / entry.gold)
-    return alignment_page_data(entry, result, gold, now=now, mode="live")
+    result = align(eu, docs, embedder=choose_embedder(SITE_EMBEDDER, lang), log=log, now=now)
+    gold = load_gold(ROOT / entry.gold) if entry.gold else []
+    return {"alignment": alignment_page_data(entry, result, gold, now=now, mode="live"),
+            "review": review_page_data(entry, result, reviews=_reviews_for(entry), now=now, mode="live")}
+
+
+def _reviews_for(entry: AlignmentEntry, reviews_dir: Path | None = None) -> list[dict]:
+    """Review records for this directive x country (``data/reviews/``); [] if none or invalid."""
+    from openacquis.review import ReviewError, REVIEWS_DIR, load_reviews
+
+    try:
+        return [r for r in load_reviews(reviews_dir or REVIEWS_DIR)
+                if r["directive"] == entry.celex and r["country"] == entry.country_code]
+    except (ReviewError, OSError):
+        return []
+
+
+def _mark_reviewed(review: dict, entry: AlignmentEntry, reviews_dir: Path | None = None) -> dict:
+    """Refresh the ``reviewed`` map of review data (also for a static copy built before the reviews)."""
+    from openacquis.review import merge
+
+    review = dict(review)
+    review["reviewed"] = {d.suggestion_id: {"status": d.status, "reviewers": d.reviewers}
+                          for d in merge(_reviews_for(entry, reviews_dir))}
+    return review
 
 
 def write_alignments(
@@ -476,20 +748,27 @@ def write_alignments(
     offline: bool = False,
     write_static: bool = False,
     static_dir: Path = STATIC_DIR,
+    reviews_dir: Path | None = None,
     log: Callable[[str], None] = lambda msg: None,
     build: Callable[..., dict] = build_alignment,
 ) -> list[str]:
-    """Write ``out_dir/align/<slug>.json`` for each entry. Live first, then the committed
-    static copy. Returns the slugs that have no data at all (neither worked)."""
+    """Write ``out_dir/align/<slug>.json`` and ``out_dir/review/<slug>.json`` for each entry, then
+    ``out_dir/matrix/<CELEX>.json``. Live first, then the committed static copy. Returns the
+    slugs that have no data at all (neither worked)."""
     align_dir = out_dir / "align"
-    align_dir.mkdir(parents=True, exist_ok=True)
+    review_dir = out_dir / "review"
+    matrix_dir = out_dir / "matrix"
+    for d in (align_dir, review_dir, matrix_dir):
+        d.mkdir(parents=True, exist_ok=True)
     missing = []
+    pages: dict[str, list[dict]] = {}
     for e in entries:
-        data = None
+        data = review = None
         if not offline:
             log(f"  alignment {e.slug} ...")
             try:
-                data = build(e, log=lambda m: log("    " + m))
+                built = build(e, log=lambda m: log("    " + m))
+                data, review = built["alignment"], built.get("review")
             except Exception as exc:
                 log(f"    could not compute live ({type(exc).__name__}: {exc}); using the static copy")
         if data is not None and write_static:
@@ -497,6 +776,10 @@ def write_alignments(
             (static_dir / f"{e.slug}.json").write_text(
                 json.dumps({**data, "mode": "static"}, ensure_ascii=False, indent=None, separators=(",", ":")),
                 encoding="utf-8")
+            if review is not None:
+                (static_dir / f"{e.slug}.review.json").write_text(
+                    json.dumps({**review, "mode": "static", "reviewed": {}}, ensure_ascii=False,
+                               separators=(",", ":")), encoding="utf-8")
             log(f"    wrote {static_dir / (e.slug + '.json')}")
         if data is None:
             path = static_dir / f"{e.slug}.json"
@@ -506,11 +789,100 @@ def write_alignments(
                 continue
             data = json.loads(path.read_text(encoding="utf-8"))
             data["mode"] = "static"
+            rpath = static_dir / f"{e.slug}.review.json"
+            review = json.loads(rpath.read_text(encoding="utf-8")) if rpath.exists() else None
+            if review is not None:
+                review["mode"] = "static"
+        _add_languages(data, review, e)
         (align_dir / f"{e.slug}.json").write_text(
             json.dumps(data, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+        if review is not None:
+            review = _mark_reviewed(review, e, reviews_dir)
+            (review_dir / f"{e.slug}.json").write_text(
+                json.dumps(review, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+        pages.setdefault(e.celex, []).append(data)
         s = data["summary"]
-        log(f"    {e.slug}: {s['rows']} rows, {s['rows_with_official']} with an official correlation ({data['mode']})")
+        log(f"    {e.slug}: {s['rows']} rows, {s.get('rows_with_official', 0)} with an official correlation, "
+            f"{s.get('gap_candidates', 0)} gap and {s.get('extra_rule_candidates', 0)} extra-rule candidates "
+            f"({data['mode']})")
+    for celex, ps in pages.items():
+        headings = _headings(celex, offline=offline, write_static=write_static, static_dir=static_dir, log=log)
+        (matrix_dir / f"{celex}.json").write_text(
+            json.dumps(matrix_data(celex, ps, headings=headings), ensure_ascii=False, separators=(",", ":")),
+            encoding="utf-8")
+        log(f"  matrix {celex}: {len(ps)} countries")
     return missing
+
+
+def _add_languages(data: dict, review: dict | None, entry: AlignmentEntry) -> None:
+    """Language codes of the EU and national texts (for ``lang`` attributes), also on older static copies."""
+    from openacquis.adapters import get_adapter
+
+    nat_lang = get_adapter(entry.country_code).language
+    eu_lang = (data.get("eu") or {}).get("language") or nat_lang
+    data.setdefault("national_language", nat_lang)
+    if review is not None:
+        review.setdefault("eu_language", eu_lang)
+        review.setdefault("national_language", nat_lang)
+
+
+def _headings(celex: str, *, offline: bool, write_static: bool, static_dir: Path,
+              log: Callable[[str], None]) -> dict[str, str] | None:
+    """English article headings for the matrix: live, else the committed static copy, else None."""
+    path = static_dir / f"{celex}.headings.json"
+    if not offline:
+        try:
+            h = directive_headings(celex)
+            if write_static:
+                static_dir.mkdir(parents=True, exist_ok=True)
+                path.write_text(json.dumps(h, ensure_ascii=False, indent=0), encoding="utf-8")
+            return h
+        except Exception as exc:
+            log(f"    English headings unavailable ({type(exc).__name__}: {exc})")
+    if path.exists():
+        return json.loads(path.read_text(encoding="utf-8"))
+    return None
+
+
+def write_dataset(out_dir: Path, log: Callable[[str], None] = lambda msg: None) -> bool:
+    """The open dataset under ``out_dir/dataset/`` (official correlation tables + reviewed links)."""
+    from openacquis.dataset import build_dataset
+
+    try:
+        s = build_dataset(out_dir / "dataset")
+    except Exception as exc:  # an invalid review record must not stop the site
+        log(f"  dataset: not built ({type(exc).__name__}: {exc})")
+        return False
+    log(f"  dataset: {s.rows} links ({s.official} official, {s.reviewed} reviewed), {s.review_records} reviews")
+    return True
+
+
+DATASET_FILES = ("links.csv", "links.jsonl", "datapackage.json")
+
+
+def link_built_pages(out_dir: Path, index: dict, records: list[dict]) -> None:
+    """Keep only links to pages whose data is in ``out_dir`` (in place).
+
+    ``alignments``, their ``review_href`` and ``matrix_href`` are dropped when the file behind
+    them was not written (``--no-alignment``, a country with neither live data nor a static
+    copy), and ``index["dataset"]`` says whether the dataset downloads exist, so the site
+    shows no dead links.
+    """
+    dataset = all((out_dir / "dataset" / f).is_file() for f in DATASET_FILES)
+    index["dataset"] = dataset
+    for rec in [*records, *index["directives"]]:
+        kept = []
+        for a in rec.get("alignments") or []:
+            slug = a["href"].split("id=", 1)[-1]
+            if not (out_dir / "align" / f"{slug}.json").is_file():
+                continue
+            if not (out_dir / "review" / f"{slug}.json").is_file():
+                a = {**a, "review_href": None}
+            kept.append(a)
+        rec["alignments"] = kept
+        if rec.get("matrix_href") and not (out_dir / "matrix" / f"{rec['celex']}.json").is_file():
+            rec["matrix_href"] = None
+        rec["dataset"] = dataset
 
 
 # --- CLI ----------------------------------------------------------------------
@@ -525,8 +897,10 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--retries", type=int, default=3)
     p.add_argument("--pause", type=float, default=2.0, help="seconds between directives (live)")
     p.add_argument("--no-alignment", action="store_true", help="skip the provision-level alignment pages")
+    p.add_argument("--countries", nargs="+", metavar="CC", help="only these alignment pages (cz sk at de)")
     p.add_argument("--write-static", action="store_true",
                    help="after a live alignment build, refresh site/static-data/ (commit the result)")
+    p.add_argument("--no-dataset", action="store_true", help="skip the dataset downloads")
     args = p.parse_args(argv)
 
     def log(msg: str) -> None:
@@ -555,13 +929,18 @@ def main(argv: list[str] | None = None) -> int:
     index, records = build_site_data(
         CellarClient(fetch), entries, mode=mode, log=log, pause=pause
     )
-    write_site_data(args.out, index, records)
     if not args.no_alignment:
         wanted_align = [a for a in ALIGNMENTS if not args.only or a.celex in {c.upper() for c in args.only}]
+        if args.countries:
+            wanted_align = [a for a in wanted_align if a.country_code in {c.lower() for c in args.countries}]
         missing = write_alignments(args.out, wanted_align, offline=args.offline, write_static=args.write_static,
                                    log=log)
         if missing:
             log(f"Alignment pages without data: {missing}")
+    if not args.no_dataset:
+        write_dataset(args.out, log)
+    link_built_pages(args.out, index, records)
+    write_site_data(args.out, index, records)
     failed = [r["celex"] for r in records if r["error"]]
     log(f"Done: {len(records) - len(failed)} ok, {len(failed)} failed {failed or ''}")
     return 1 if len(failed) == len(records) else 0

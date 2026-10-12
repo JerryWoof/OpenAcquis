@@ -24,6 +24,8 @@
   --ok: #1f6b3a;
   --near: #8a5a00;
   --off: #a1302b;
+  --gap: #8a5a00;
+  --gap-bg: #fff6e0;
 
   /* Sequential (blue) ramp for measure counts; bin 0 = none notified. */
   --bin0: #f0efec; --bin0-ink: #6b6a65;
@@ -63,6 +65,8 @@
     --ok: #7fd09a;
     --near: #e7bf63;
     --off: #f08a84;
+    --gap: #e7bf63;
+    --gap-bg: #2e2714;
 
     --bin0: #2c2c2a; --bin0-ink: #9a9993;
     --bin1: #184f95; --bin1-ink: #ffffff;
@@ -281,6 +285,9 @@ section.art h2 a { color: var(--ink); }
 .tpanel.official { border-top: 3px solid var(--official); }
 .tpanel.machine { border-top: 3px dashed var(--machine); }
 .tpanel.eu { border-top: 3px solid var(--accent); }
+.tpanel.alt { border-top-style: dotted; }
+.pill.reviewed { color: var(--ink-2); background: var(--surface-2); border: 1px solid var(--border); margin-left: 6px; white-space: normal; }
+code.method { font-size: .8em; overflow-wrap: anywhere; word-break: break-all; }
 .tpanel h4 { margin: 0 0 6px; font-size: .85rem; color: var(--ink-2); }
 .titem + .titem { border-top: 1px solid var(--border); margin-top: 8px; padding-top: 8px; }
 .thead { font-size: .85rem; font-weight: 600; }
@@ -298,6 +305,41 @@ section.art h2 a { color: var(--ink); }
   .align-table td.mach-cell::before { content: "Machine suggestion"; display: block; font-size: .75rem; font-weight: 650; color: var(--machine); }
   .align-table tr.texts[hidden] { display: none; }
 }
+/* v0.4: gap / extra-rule candidates, matrix, review */
+.pill.gap { color: var(--gap); background: var(--gap-bg); border: 1px solid var(--gap); margin-left: 6px; }
+.tgrid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 900px) { .tgrid.two { grid-template-columns: 1fr; } }
+#a-leftovers h2 { margin-top: 40px; }
+details.extra { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 12px; margin: 8px 0; }
+details.extra summary { cursor: pointer; }
+details.extra .titem { margin-top: 8px; }
+.wrap.wide { max-width: 1280px; }
+.filters label.check { flex-direction: row; align-items: center; gap: 6px; font-weight: 500; color: var(--ink-2); min-height: 36px; }
+table.matrix { font-size: .85rem; }
+table.matrix th.mart { min-width: 150px; max-width: 220px; white-space: normal;
+  position: sticky; left: 0; z-index: 1; background: var(--surface); box-shadow: 1px 0 0 var(--border); }
+table.matrix thead th.mart { background: var(--surface-2); z-index: 2; }
+@media (max-width: 600px) { table.matrix th.mart { min-width: 96px; max-width: 120px; } }
+table.matrix .mlabel { display: block; font-weight: 650; }
+table.matrix .mhead { display: block; font-weight: 400; }
+table.matrix td.mcell { min-width: 150px; }
+table.matrix .mtop { font-weight: 650; }
+table.matrix thead th { white-space: normal; }
+.review-form { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; margin: 16px 0; display: grid; gap: 12px; }
+.review-form fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 6px; }
+.review-form legend { font-weight: 650; margin-bottom: 4px; }
+.review-form > label { display: grid; gap: 4px; font-size: .85rem; font-weight: 600; color: var(--ink-2); }
+.review-form input[type=text], .review-form textarea { font: inherit; font-weight: 400; color: var(--ink); background: var(--bg);
+  border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; width: 100%; max-width: 640px; }
+.review-form .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); text-decoration: none; display: inline-flex; align-items: center; }
+.btn.primary:not([href]) { opacity: .45; pointer-events: none; }
+.err { color: var(--off); min-height: 1em; margin: 0; }
+pre.json { background: var(--surface-2); padding: 8px 10px; border-radius: 6px; overflow-x: auto; font-size: .8rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+h2.rq { font-size: 1.05rem; margin: 8px 0; }
+.batch { border-top: 1px solid var(--border); padding-top: 12px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.batch p { flex-basis: 100%; margin: 0; }
+code { overflow-wrap: anywhere; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 @media (max-width: 600px) {

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Provision alignment · OpenAcquis</title>
-<meta name="description" content="A directive and one country's law, provision by provision: the official correlation table next to the top machine suggestion, with both texts side by side.">
+<meta name="description" content="A directive and one country's law, provision by provision: the top machine suggestion (next to the official correlation table where one exists), gap and extra-rule candidates, with both texts side by side.">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231c5cab'/%3E%3Cg fill='%23fff'%3E%3Crect x='6' y='6' width='9' height='9' rx='2'/%3E%3Crect x='17' y='6' width='9' height='9' rx='2' opacity='.6'/%3E%3Crect x='6' y='17' width='9' height='9' rx='2' opacity='.6'/%3E%3Crect x='17' y='17' width='9' height='9' rx='2' opacity='.3'/%3E%3C/g%3E%3C/svg%3E">
 <link rel="stylesheet" href="assets/style.css">
@@ -20,6 +20,7 @@
     <nav aria-label="Main">
       <a href="./#directives">Directives</a>
       <a href="./#how">How it works</a>
+      <a href="matrix.html?celex=32022L2555">NIS2 matrix</a>
       <a href="https://github.com/JerryWoof/OpenAcquis">GitHub</a>
     </nav>
   </div>
@@ -51,26 +52,27 @@
           <option value="official">With an official correlation</option>
           <option value="differs">Machine suggestion differs from the table</option>
           <option value="none">No official correlation</option>
+          <option value="gaps">With gap candidates</option>
         </select>
       </label>
       <label>Search texts
-        <input type="search" id="f-q" placeholder="e.g. 24 hodin, incident, § 16" autocomplete="off">
+        <input type="search" id="f-q" placeholder="e.g. incident, 24, § 16" autocomplete="off">
       </label>
       <button type="button" class="btn" id="f-reset">Reset</button>
     </form>
     <p class="count" id="a-count" aria-live="polite"></p>
     <div id="a-articles"></div>
+    <div id="a-leftovers"></div>
   </div>
 </main>
 
 <footer class="site-footer">
   <div class="wrap">
-    <p><strong>Not legal advice.</strong> Machine suggestions are unreviewed similarity matches, and the official correlation
-      table describes a government bill, not the act as finally adopted. Neither says whether a provision is correctly transposed.
-      Always check the official texts.</p>
+    <p><strong>Not legal advice.</strong> Machine suggestions, gap and extra-rule candidates are unreviewed similarity results, and an
+      official correlation table describes a government bill, not the act as finally adopted. None of them says whether a provision is
+      correctly transposed. Always check the official texts.</p>
     <p>Directive text: EUR-Lex / CELLAR, © European Union, <a href="https://eur-lex.europa.eu">https://eur-lex.europa.eu</a>
-      (reuse under Commission Decision 2011/833/EU). Czech law: e-Sbírka. Correlation table: Chamber of Deputies (psp.cz), an
-      official work. Code: MIT. <span id="footer-built"></span></p>
+      (reuse under Commission Decision 2011/833/EU). <span id="footer-sources"></span> Code: MIT. <span id="footer-built"></span></p>
   </div>
 </footer>
 <script src="assets/app.js"></script>

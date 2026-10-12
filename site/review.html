@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Review suggestions · OpenAcquis</title>
+<meta name="description" content="Confirm, reject or correct machine suggestions; reviewed links become an open CC-BY dataset.">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231c5cab'/%3E%3Cg fill='%23fff'%3E%3Crect x='6' y='6' width='9' height='9' rx='2'/%3E%3Crect x='17' y='6' width='9' height='9' rx='2' opacity='.6'/%3E%3Crect x='6' y='17' width='9' height='9' rx='2' opacity='.6'/%3E%3Crect x='17' y='17' width='9' height='9' rx='2' opacity='.3'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="./" aria-label="OpenAcquis home">
+      <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#1c5cab"/><g fill="#fff"><rect x="6" y="6" width="9" height="9" rx="2"/><rect x="17" y="6" width="9" height="9" rx="2" opacity=".6"/><rect x="6" y="17" width="9" height="9" rx="2" opacity=".6"/><rect x="17" y="17" width="9" height="9" rx="2" opacity=".3"/></g></svg>
+      OpenAcquis
+    </a>
+    <nav aria-label="Main">
+      <a href="./#directives">Directives</a>
+      <a href="./#how">How it works</a>
+      <a href="matrix.html?celex=32022L2555">NIS2 matrix</a>
+      <a href="https://github.com/JerryWoof/OpenAcquis">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main" class="wrap">
+  <p class="crumbs"><a id="r-back" href="./#directives">← All directives</a></p>
+  <h1 id="r-title">Loading…</h1>
+  <p class="lede">Check machine suggestions one by one. Your verdict becomes a review record: send it as a prefilled GitHub issue
+    (one record), or collect several and download them as a JSON-lines file for a pull request. Reviewed links become part of the
+    open CC-BY-4.0 dataset. See <a href="https://github.com/JerryWoof/OpenAcquis/blob/main/docs/review.md">how reviewing works</a>.</p>
+  <div id="r-notes"></div>
+  <div id="r-body" hidden>
+    <form class="filters" role="search" onsubmit="return false">
+      <label>Suggestions
+        <select id="r-kind">
+          <option value="">All kinds</option>
+          <option value="link">Links</option>
+          <option value="gap">Gap candidates</option>
+          <option value="extra_rule">Extra-rule candidates</option>
+        </select>
+      </label>
+      <label>Article
+        <select id="r-art"><option value="">All articles</option></select>
+      </label>
+      <label class="check"><input type="checkbox" id="r-all"> Include reviewed</label>
+    </form>
+    <p class="count" id="r-progress"></p>
+    <p class="sr-only" id="r-status" role="status" aria-live="polite"></p>
+    <div id="r-card"></div>
+    <form id="r-form" class="review-form" onsubmit="return false">
+      <fieldset>
+        <legend>Your verdict</legend>
+        <label><input type="radio" name="verdict" value="confirm"> Confirm: the suggestion is right</label>
+        <label><input type="radio" name="verdict" value="reject"> Reject: it is wrong</label>
+        <label><input type="radio" name="verdict" value="correct"> Correct: it is wrong, and here is the right answer</label>
+      </fieldset>
+      <label>Right provision IDs (for "Correct"; separated by commas)
+        <input type="text" id="r-corrected" list="r-ids" autocomplete="off" spellcheck="false">
+        <datalist id="r-ids"></datalist>
+        <span class="small muted" id="r-corrected-hint"></span>
+      </label>
+      <label>Your GitHub user name
+        <input type="text" id="r-handle" autocomplete="username" spellcheck="false" maxlength="39" aria-describedby="r-handle-hint">
+        <span class="small muted" id="r-handle-hint">Must be the account that opens the issue or pull request: the review bot rejects records filed in someone else's name.</span>
+      </label>
+      <label>Note (optional: reasons, sentence or subparagraph, other act)
+        <textarea id="r-note" rows="3" maxlength="2000"></textarea>
+      </label>
+      <p class="small err" id="r-errors" role="alert"></p>
+      <div class="actions">
+        <a class="btn primary" id="r-issue" target="_blank" rel="noopener">Open prefilled GitHub issue</a>
+        <button type="button" class="btn" id="r-add">Add to batch and next</button>
+        <button type="button" class="btn" id="r-prev">Previous</button>
+        <button type="button" class="btn" id="r-skip">Skip</button>
+      </div>
+      <details><summary class="small">Review record (JSON)</summary><pre class="json" id="r-json"></pre></details>
+    </form>
+    <div class="batch">
+      <strong>Batch:</strong> <span id="r-batch-n">0 records</span>
+      <button type="button" class="btn small-btn" id="r-download">Download JSONL</button>
+      <button type="button" class="btn small-btn" id="r-clear">Clear</button>
+      <p class="small muted">The batch stays in this browser only. Add the downloaded file to <code>data/reviews/</code> in a pull request,
+        or attach it to an issue; <code>openacquis review validate FILE</code> checks it.</p>
+    </div>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p><strong>Not legal advice.</strong> A review is one person's reading of two texts; a confirmed link says the pairing looks right, not that the transposition is correct. Always check the official texts.</p>
+    <p>Directive text: EUR-Lex / CELLAR, © European Union, <a href="https://eur-lex.europa.eu">https://eur-lex.europa.eu</a>
+      (reuse under Commission Decision 2011/833/EU). National law: e-Sbírka (CZ), Slov-Lex (SK), RIS (AT), gesetze-im-internet.de (DE).
+      Code: MIT; data: CC-BY-4.0. <span id="footer-built"></span></p>
+  </div>
+</footer>
+<script src="assets/app.js"></script>
+<script>OpenAcquis.renderReview();</script>
+</body>
+</html>
