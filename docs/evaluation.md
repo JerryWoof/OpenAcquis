@@ -712,3 +712,16 @@ On the website, every judged candidate on the
 [NIS2 × Czechia page](https://jerrywoof.github.io/OpenAcquis/alignment.html?id=32022L2555_cz) shows its label,
 confidence, rationale and checked quotes, marked "AI judge (Claude), unreviewed suggestion". A "AI judge says
 related" filter lists them, and the matrix counts `stricter` / `different value` labels per article.
+
+### Judge results per pair
+
+Numbers from `scripts/judge_session.py evaluate data/judgments/<pair>.jsonl` against the official correlation table.
+All labels are unreviewed machine suggestions.
+
+| Pair | Judged pairs | In scope | Top-1 P (§) | Judge related P (§) | Same/partial P (§) | Kept | Rejected | Verified evidence |
+|---|---|---|---|---|---|---|---|---|
+| NIS2 × CZ (`32022L2555_cz`) | 606 | 414 (138 EU units) | 0.449 (0.558) | 0.755 (0.883) | 0.831 (0.915) | 71 / 106 (67.0%) | 285 / 308 (92.5%) | 96 / 96 |
+| CER × CZ (`32022L2557_cz`) | 309 | 186 (62 EU units) | 0.435 (0.532) | 0.628 (0.744) | 0.635 (0.757) | 49 / 53 (92.5%) | 104 / 133 (78.2%) | 82 / 82 |
+
+- NIS2 × CZ: run on 2026-10-12, described above.
+- CER × CZ: run on 2026-10-13 with Claude Opus 5.5 in 16 Claude Code subagents; labels: unrelated 227, partial 73, same 5, different_value 2, option 2.

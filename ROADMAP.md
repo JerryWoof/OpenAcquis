@@ -97,7 +97,9 @@ static API, change alerts, batch judge.
     API key. The labels are on the website. Against the official table, precision is 0.755 for pairs called related and
     0.449 for the machine's top-1, and recall is bounded by the top 3 candidates
     ([evaluation](docs/evaluation.md#llm-judge-nis2--cz)). A single run, not reviewed.
-  - [ ] The other 45 pairs: through `judge_session.py` (subscription), or through the batch runner and its
+  - [x] CER × CZ: 309 pairs judged on 2026-10-13 (Opus 5.5 in Claude Code subagents), [evaluation](docs/evaluation.md#judge-results-per-pair). Not reviewed.
+  - Progress: judged 2 of 46 directive × country pairs.
+  - [ ] The other 44 pairs: through `judge_session.py` (subscription), or through the batch runner and its
     dispatch-only workflow (v0.5). With Sonnet 5.5 batches, the estimate is about $53 for all 12 directives × 4
     countries, and `--max-cost` caps the worst case ($13.90 for NIS2 × CZ). The batch path needs an API key in the
     repository's `llm` environment.
