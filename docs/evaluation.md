@@ -722,6 +722,8 @@ All labels are unreviewed machine suggestions.
 |---|---|---|---|---|---|---|---|---|
 | NIS2 × CZ (`32022L2555_cz`) | 606 | 414 (138 EU units) | 0.449 (0.558) | 0.755 (0.883) | 0.831 (0.915) | 71 / 106 (67.0%) | 285 / 308 (92.5%) | 96 / 96 |
 | CER × CZ (`32022L2557_cz`) | 309 | 186 (62 EU units) | 0.435 (0.532) | 0.628 (0.744) | 0.635 (0.757) | 49 / 53 (92.5%) | 104 / 133 (78.2%) | 82 / 82 |
+| EAA × CZ (`32019L0882_cz`) | 396 | 246 (82 EU units) | 0.756 (0.805) | 0.853 (0.879) | 0.878 (0.898) | 99 / 109 (90.8%) | 120 / 137 (87.6%) | 129 / 129 |
 
 - NIS2 × CZ: run on 2026-10-12, described above.
 - CER × CZ: run on 2026-10-13 with Claude Opus 5.5 in 16 Claude Code subagents; labels: unrelated 227, partial 73, same 5, different_value 2, option 2.
+- EAA × CZ: run on 2026-10-14 with Claude Opus 5.5 in 20 Claude Code subagents; labels: unrelated 267, partial 80, same 31, different_value 13, stricter 3, option 2.
