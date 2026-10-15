@@ -6,6 +6,7 @@ version is 0.x, the command-line options and data formats can still change.
 ## Unreleased
 
 ### Added
+- **LLM judge runs: NIS2 × Slovakia and CER × Slovakia.** `data/judgments/32022L2555_sk.jsonl` (606) and `32022L2557_sk.jsonl` (309) judgments (Opus 5.5 in Claude Code subagents); scores in [docs/evaluation.md](docs/evaluation.md#judge-results-per-pair).
 - **LLM judge run: Whistleblower × Czechia.** `data/judgments/32019L1937_cz.jsonl` holds 255 judgments (Opus 5.5 in Claude Code subagents); scores in [docs/evaluation.md](docs/evaluation.md#judge-results-per-pair).
 - **LLM judge run: EAA × Czechia.** `data/judgments/32019L0882_cz.jsonl` holds 396 judgments (Opus 5.5 in Claude Code subagents); scores in [docs/evaluation.md](docs/evaluation.md#judge-results-per-pair).
 - **LLM judge run: CER × Czechia.** `data/judgments/32022L2557_cz.jsonl` holds 309 judgments (Opus 5.5 in Claude Code subagents); scores in [docs/evaluation.md](docs/evaluation.md#judge-results-per-pair).

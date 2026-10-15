@@ -724,8 +724,12 @@ All labels are unreviewed machine suggestions.
 | CER × CZ (`32022L2557_cz`) | 309 | 186 (62 EU units) | 0.435 (0.532) | 0.628 (0.744) | 0.635 (0.757) | 49 / 53 (92.5%) | 104 / 133 (78.2%) | 82 / 82 |
 | EAA × CZ (`32019L0882_cz`) | 396 | 246 (82 EU units) | 0.756 (0.805) | 0.853 (0.879) | 0.878 (0.898) | 99 / 109 (90.8%) | 120 / 137 (87.6%) | 129 / 129 |
 | Whistleblower × CZ (`32019L1937_cz`) | 255 | 162 (54 EU units) | 0.333 (0.389) | 0.720 (0.840) | 0.682 (0.818) | 36 / 41 (87.8%) | 107 / 121 (88.4%) | 56 / 56 |
+| NIS2 × SK (`32022L2555_sk`) | 606 | 396 (132 EU units) | 0.379 (0.530) | 0.726 (0.806) | 0.722 (0.791) | 90 / 116 (77.6%) | 246 / 280 (87.9%) | 131 / 133 |
+| CER × SK (`32022L2557_sk`) | 309 | 195 (65 EU units) | 0.585 (0.708) | 0.887 (0.975) | 0.897 (0.971) | 71 / 91 (78.0%) | 95 / 104 (91.3%) | 89 / 89 |
 
 - NIS2 × CZ: run on 2026-10-12, described above.
 - CER × CZ: run on 2026-10-13 with Claude Opus 5.5 in 16 Claude Code subagents; labels: unrelated 227, partial 73, same 5, different_value 2, option 2.
 - EAA × CZ: run on 2026-10-14 with Claude Opus 5.5 in 20 Claude Code subagents; labels: unrelated 267, partial 80, same 31, different_value 13, stricter 3, option 2.
 - Whistleblower × CZ: run on 2026-10-15 with Claude Opus 5.5 in 13 Claude Code subagents; labels: unrelated 199, partial 46, option 4, same 3, stricter 3.
+- NIS2 × SK: run on 2026-10-15 with Claude Opus 5.5 in 31 Claude Code subagents; labels: unrelated 473, partial 112, same 12, different_value 6, stricter 2, option 1.
+- CER × SK: run on 2026-10-15 with Claude Opus 5.5 in 16 Claude Code subagents; labels: unrelated 220, partial 64, same 13, different_value 5, option 4, stricter 3.
