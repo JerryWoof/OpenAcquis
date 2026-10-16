@@ -726,6 +726,7 @@ All labels are unreviewed machine suggestions.
 | Whistleblower × CZ (`32019L1937_cz`) | 255 | 162 (54 EU units) | 0.333 (0.389) | 0.720 (0.840) | 0.682 (0.818) | 36 / 41 (87.8%) | 107 / 121 (88.4%) | 56 / 56 |
 | NIS2 × SK (`32022L2555_sk`) | 606 | 396 (132 EU units) | 0.379 (0.530) | 0.726 (0.806) | 0.722 (0.791) | 90 / 116 (77.6%) | 246 / 280 (87.9%) | 131 / 133 |
 | CER × SK (`32022L2557_sk`) | 309 | 195 (65 EU units) | 0.585 (0.708) | 0.887 (0.975) | 0.897 (0.971) | 71 / 91 (78.0%) | 95 / 104 (91.3%) | 89 / 89 |
+| Pay Transparency × SK (`32023L0970_sk`) | 282 | 231 (77 EU units) | 0.584 (0.675) | 0.906 (0.988) | 0.892 (0.986) | 77 / 82 (93.9%) | 141 / 149 (94.6%) | 88 / 88 |
 
 - NIS2 × CZ: run on 2026-10-12, described above.
 - CER × CZ: run on 2026-10-13 with Claude Opus 5.5 in 16 Claude Code subagents; labels: unrelated 227, partial 73, same 5, different_value 2, option 2.
@@ -733,3 +734,12 @@ All labels are unreviewed machine suggestions.
 - Whistleblower × CZ: run on 2026-10-15 with Claude Opus 5.5 in 13 Claude Code subagents; labels: unrelated 199, partial 46, option 4, same 3, stricter 3.
 - NIS2 × SK: run on 2026-10-15 with Claude Opus 5.5 in 31 Claude Code subagents; labels: unrelated 473, partial 112, same 12, different_value 6, stricter 2, option 1.
 - CER × SK: run on 2026-10-15 with Claude Opus 5.5 in 16 Claude Code subagents; labels: unrelated 220, partial 64, same 13, different_value 5, option 4, stricter 3.
+- Pay Transparency × SK: run on 2026-10-16 with Claude Opus 5.5 in 15 Claude Code subagents; labels: unrelated 194, partial 63, same 13, option 5, stricter 5, different_value 2.
+
+### Unmeasured pairs
+
+Pairs without an official correlation table, so there is no score; label counts only. All labels are unreviewed machine suggestions.
+
+| Pair | Judged pairs | Run | Subagents | unrelated | partial | same | different_value | stricter | option | Verified evidence |
+|---|---|---|---|---|---|---|---|---|---|---|
+| NIS2 × AT (`32022L2555_at`) | 606 | 2026-10-16 | 31 | 425 | 129 | 23 | 12 | 9 | 8 | 181 / 181 |

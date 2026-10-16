@@ -100,8 +100,9 @@ static API, change alerts, batch judge.
   - [x] CER × CZ: 309 pairs judged on 2026-10-13 (Opus 5.5 in Claude Code subagents), [evaluation](docs/evaluation.md#judge-results-per-pair). Not reviewed.
   - [x] Whistleblower × CZ: 255 pairs judged on 2026-10-15 (Opus 5.5 in Claude Code subagents), [evaluation](docs/evaluation.md#judge-results-per-pair). Not reviewed.
   - [x] NIS2 × SK and CER × SK: 606 and 309 pairs judged on 2026-10-15 (Opus 5.5 in Claude Code subagents), [evaluation](docs/evaluation.md#judge-results-per-pair). Not reviewed.
-  - Progress: judged 6 of 46 directive × country pairs.
-  - [ ] The other 40 pairs: through `judge_session.py` (subscription), or through the batch runner and its
+  - [x] Pay Transparency × SK and NIS2 × AT: 282 and 606 pairs judged on 2026-10-16 (Opus 5.5 in Claude Code subagents), [evaluation](docs/evaluation.md#judge-results-per-pair). Not reviewed.
+  - Progress: judged 8 of 46 directive × country pairs.
+  - [ ] The other 38 pairs: through `judge_session.py` (subscription), or through the batch runner and its
     dispatch-only workflow (v0.5). With Sonnet 5.5 batches, the estimate is about $53 for all 12 directives × 4
     countries, and `--max-cost` caps the worst case ($13.90 for NIS2 × CZ). The batch path needs an API key in the
     repository's `llm` environment.
