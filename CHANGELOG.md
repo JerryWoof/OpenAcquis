@@ -6,6 +6,7 @@ version is 0.x, the command-line options and data formats can still change.
 ## Unreleased
 
 ### Added
+- **LLM judge runs: NIS2 × Germany, CER × Austria and CER × Germany.** `data/judgments/32022L2555_de.jsonl` (606), `32022L2557_at.jsonl` (309) and `32022L2557_de.jsonl` (309) judgments (Opus 5.5 in Claude Code subagents); label counts in [docs/evaluation.md](docs/evaluation.md#unmeasured-pairs).
 - **LLM judge runs: Pay Transparency × Slovakia and NIS2 × Austria.** `data/judgments/32023L0970_sk.jsonl` (282) and `32022L2555_at.jsonl` (606) judgments (Opus 5.5 in Claude Code subagents); scores in [docs/evaluation.md](docs/evaluation.md#judge-results-per-pair).
 - **LLM judge runs: NIS2 × Slovakia and CER × Slovakia.** `data/judgments/32022L2555_sk.jsonl` (606) and `32022L2557_sk.jsonl` (309) judgments (Opus 5.5 in Claude Code subagents); scores in [docs/evaluation.md](docs/evaluation.md#judge-results-per-pair).
 - **LLM judge run: Whistleblower × Czechia.** `data/judgments/32019L1937_cz.jsonl` holds 255 judgments (Opus 5.5 in Claude Code subagents); scores in [docs/evaluation.md](docs/evaluation.md#judge-results-per-pair).

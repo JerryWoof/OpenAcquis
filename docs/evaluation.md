@@ -743,3 +743,6 @@ Pairs without an official correlation table, so there is no score; label counts 
 | Pair | Judged pairs | Run | Subagents | unrelated | partial | same | different_value | stricter | option | Verified evidence |
 |---|---|---|---|---|---|---|---|---|---|---|
 | NIS2 × AT (`32022L2555_at`) | 606 | 2026-10-16 | 31 | 425 | 129 | 23 | 12 | 9 | 8 | 181 / 181 |
+| NIS2 × DE (`32022L2555_de`) | 606 | 2026-10-16 | 31 | 484 | 82 | 13 | 10 | 6 | 11 | 122 / 122 |
+| CER × AT (`32022L2557_at`) | 309 | 2026-10-16 | 16 | 238 | 57 | 8 | 1 | 4 | 1 | 71 / 71 |
+| CER × DE (`32022L2557_de`) | 309 | 2026-10-16 | 16 | 237 | 58 | 8 | 3 | 1 | 2 | 72 / 72 |
