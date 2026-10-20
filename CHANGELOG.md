@@ -6,6 +6,7 @@ version is 0.x, the command-line options and data formats can still change.
 ## Unreleased
 
 ### Added
+- **LLM judge run: Pillar Two × Slovakia.** `data/judgments/32022L2523_sk.jsonl` holds 744 judgments (Opus 5.5 in Claude Code subagents); label counts in [docs/evaluation.md](docs/evaluation.md#unmeasured-pairs).
 - **LLM judge run: Pillar Two × Czechia.** `data/judgments/32022L2523_cz.jsonl` holds 744 judgments (Opus 5.5 in Claude Code subagents); label counts in [docs/evaluation.md](docs/evaluation.md#unmeasured-pairs).
 - **LLM judge runs: Whistleblower × Slovakia, Whistleblower × Austria and Whistleblower × Germany.** `data/judgments/32019L1937_sk.jsonl`, `32019L1937_at.jsonl` and `32019L1937_de.jsonl` (255 each) judgments (Opus 5.5 in Claude Code subagents); label counts in [docs/evaluation.md](docs/evaluation.md#unmeasured-pairs).
 - **LLM judge runs: EAA × Slovakia, EAA × Austria and EAA × Germany.** `data/judgments/32019L0882_sk.jsonl`, `32019L0882_at.jsonl` and `32019L0882_de.jsonl` (396 each) judgments (Opus 5.5 in Claude Code subagents); label counts in [docs/evaluation.md](docs/evaluation.md#unmeasured-pairs).

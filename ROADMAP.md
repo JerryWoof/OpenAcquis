@@ -105,7 +105,8 @@ static API, change alerts, batch judge.
   - [x] EAA × SK, EAA × AT and EAA × DE: 396 pairs each judged on 2026-10-17 (Opus 5.5 in Claude Code subagents), label counts in [evaluation](docs/evaluation.md#unmeasured-pairs). No official table; not reviewed.
   - [x] Whistleblower × SK, Whistleblower × AT and Whistleblower × DE: 255 pairs each judged on 2026-10-18 (Opus 5.5 in Claude Code subagents), label counts in [evaluation](docs/evaluation.md#unmeasured-pairs). No official table; not reviewed.
   - [x] Pillar Two × CZ: 744 pairs judged on 2026-10-19 (Opus 5.5 in Claude Code subagents), label counts in [evaluation](docs/evaluation.md#unmeasured-pairs). No official table; not reviewed.
-  - Progress: judged 18 of 46 directive × country pairs.
+  - [x] Pillar Two × SK: 744 pairs judged on 2026-10-20 (Opus 5.5 in Claude Code subagents), label counts in [evaluation](docs/evaluation.md#unmeasured-pairs). No official table; not reviewed.
+  - Progress: judged 19 of 46 directive × country pairs.
   - [ ] The other 38 pairs: through `judge_session.py` (subscription), or through the batch runner and its
     dispatch-only workflow (v0.5). With Sonnet 5.5 batches, the estimate is about $53 for all 12 directives × 4
     countries, and `--max-cost` caps the worst case ($13.90 for NIS2 × CZ). The batch path needs an API key in the
