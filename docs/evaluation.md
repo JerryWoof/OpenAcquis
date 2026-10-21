@@ -754,3 +754,4 @@ Pairs without an official correlation table, so there is no score; label counts 
 | Whistleblower × DE (`32019L1937_de`) | 255 | 2026-10-18 | 13 | 158 | 68 | 15 | 7 | 3 | 4 | 97 / 97 |
 | Pillar Two × CZ (`32022L2523_cz`) | 744 | 2026-10-19 | 38 | 345 | 284 | 97 | 12 | 2 | 4 | 396 / 399 |
 | Pillar Two × SK (`32022L2523_sk`) | 744 | 2026-10-20 | 38 | 433 | 208 | 87 | 14 | 1 | 1 | 311 / 311 |
+| Pillar Two × AT (`32022L2523_at`) | 744 | 2026-10-21 | 38 | 379 | 228 | 117 | 13 | 4 | 3 | 363 / 365 |
