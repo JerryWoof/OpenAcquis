@@ -766,3 +766,4 @@ Pairs without an official correlation table, so there is no score; label counts 
 | Women on Boards Directive × AT (`32022L2381_at`) | 102 | 2026-11-09 | 4 | 95 | 3 | 3 | 0 | 0 | 1 | 7 / 7 |
 | Women on Boards Directive × DE (`32022L2381_de`) | 102 | 2026-11-09 | 4 | 99 | 2 | 0 | 1 | 0 | 0 | 3 / 3 |
 | Women on Boards Directive × SK (`32022L2381_sk`) | 102 | 2026-11-09 | 4 | 65 | 24 | 7 | 0 | 5 | 1 | 37 / 37 |
+| Single-Use Plastics Directive × DE (`32019L0904_de`) | 141 | 2026-11-09 | 5 | 112 | 24 | 3 | 1 | 1 | 0 | 29 / 29 |

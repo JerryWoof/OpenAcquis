@@ -6,6 +6,7 @@ version is 0.x, the command-line options and data formats can still change.
 ## Unreleased
 
 ### Added
+- **LLM judge runs: Single-Use Plastics Directive × Germany.** `32019L0904_de.jsonl` (141) judgments (Sonnet 5.5 in Claude Code subagents); label counts in [docs/evaluation.md](docs/evaluation.md#unmeasured-pairs).
 - **LLM judge runs: Single-Use Plastics Directive × Austria, Single-Use Plastics Directive × Czechia, Women on Boards Directive × Austria, Women on Boards Directive × Germany, Women on Boards Directive × Slovakia.** `32019L0904_at.jsonl` (141), `32019L0904_cz.jsonl` (141), `32022L2381_at.jsonl` (102), `32022L2381_de.jsonl` (102), `32022L2381_sk.jsonl` (102) judgments (Sonnet 5.5 in Claude Code subagents); label counts in [docs/evaluation.md](docs/evaluation.md#unmeasured-pairs).
 - **LLM judge runs: Adequate Minimum Wages Directive × Czechia, Adequate Minimum Wages Directive × Germany, Adequate Minimum Wages Directive × Slovakia.** `32022L2041_cz.jsonl` (114), `32022L2041_de.jsonl` (114), `32022L2041_sk.jsonl` (114) judgments (Sonnet 5.5 in Claude Code subagents); label counts in [docs/evaluation.md](docs/evaluation.md#unmeasured-pairs).
 - **LLM judge runs: Pillar Two × Germany, Copyright DSM × Czechia and Copyright DSM × Slovakia.** `data/judgments/32022L2523_de.jsonl` (744), `32019L0790_cz.jsonl` (255) and `32019L0790_sk.jsonl` (255) judgments (Opus 5.5 in Claude Code subagents); label counts in [docs/evaluation.md](docs/evaluation.md#unmeasured-pairs).
