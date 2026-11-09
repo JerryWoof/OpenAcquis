@@ -779,3 +779,4 @@ Pairs without an official correlation table, so there is no score; label counts 
 | Pay Transparency Directive × DE (`32023L0970_de`) | 282 | 2026-11-09 | 10 | 255 | 20 | 1 | 4 | 0 | 2 | 27 / 27 |
 | European Electronic Communications Code × AT (`32018L1972_at`) | 1413 | 2026-11-09 | 48 | 961 | 315 | 82 | 13 | 13 | 29 | 441 / 452 |
 | European Electronic Communications Code × CZ (`32018L1972_cz`) | 1413 | 2026-11-09 | 48 | 892 | 347 | 106 | 10 | 8 | 50 | 513 / 521 |
+| European Electronic Communications Code × DE (`32018L1972_de`) | 1413 | 2026-11-09 | 48 | 952 | 339 | 82 | 11 | 4 | 25 | 453 / 461 |

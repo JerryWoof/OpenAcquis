@@ -6,6 +6,7 @@ version is 0.x, the command-line options and data formats can still change.
 ## Unreleased
 
 ### Added
+- **LLM judge runs: European Electronic Communications Code × Germany.** `32018L1972_de.jsonl` (1413) judgments (Sonnet 5.5 in Claude Code subagents); label counts in [docs/evaluation.md](docs/evaluation.md#unmeasured-pairs).
 - **LLM judge runs: European Electronic Communications Code × Czechia.** `32018L1972_cz.jsonl` (1413) judgments (Sonnet 5.5 in Claude Code subagents); label counts in [docs/evaluation.md](docs/evaluation.md#unmeasured-pairs).
 - **LLM judge runs: European Electronic Communications Code × Austria.** `32018L1972_at.jsonl` (1413) judgments (Sonnet 5.5 in Claude Code subagents); label counts in [docs/evaluation.md](docs/evaluation.md#unmeasured-pairs).
 - **LLM judge runs: Pay Transparency Directive × Germany.** `32023L0970_de.jsonl` (282) judgments (Sonnet 5.5 in Claude Code subagents); label counts in [docs/evaluation.md](docs/evaluation.md#unmeasured-pairs).
