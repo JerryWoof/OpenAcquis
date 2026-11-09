@@ -761,3 +761,8 @@ Pairs without an official correlation table, so there is no score; label counts 
 | Adequate Minimum Wages Directive × CZ (`32022L2041_cz`) | 114 | 2026-11-09 | 4 | 103 | 6 | 1 | 0 | 0 | 4 | 11 / 11 |
 | Adequate Minimum Wages Directive × DE (`32022L2041_de`) | 114 | 2026-11-09 | 4 | 108 | 5 | 0 | 0 | 0 | 1 | 5 / 6 |
 | Adequate Minimum Wages Directive × SK (`32022L2041_sk`) | 114 | 2026-11-09 | 4 | 100 | 11 | 1 | 0 | 0 | 2 | 14 / 14 |
+| Single-Use Plastics Directive × AT (`32019L0904_at`) | 141 | 2026-11-09 | 5 | 111 | 23 | 5 | 0 | 1 | 1 | 30 / 30 |
+| Single-Use Plastics Directive × CZ (`32019L0904_cz`) | 141 | 2026-11-09 | 5 | 108 | 22 | 7 | 2 | 2 | 0 | 33 / 33 |
+| Women on Boards Directive × AT (`32022L2381_at`) | 102 | 2026-11-09 | 4 | 95 | 3 | 3 | 0 | 0 | 1 | 7 / 7 |
+| Women on Boards Directive × DE (`32022L2381_de`) | 102 | 2026-11-09 | 4 | 99 | 2 | 0 | 1 | 0 | 0 | 3 / 3 |
+| Women on Boards Directive × SK (`32022L2381_sk`) | 102 | 2026-11-09 | 4 | 65 | 24 | 7 | 0 | 5 | 1 | 37 / 37 |
