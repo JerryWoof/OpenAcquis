@@ -780,3 +780,4 @@ Pairs without an official correlation table, so there is no score; label counts 
 | European Electronic Communications Code × AT (`32018L1972_at`) | 1413 | 2026-11-09 | 48 | 961 | 315 | 82 | 13 | 13 | 29 | 441 / 452 |
 | European Electronic Communications Code × CZ (`32018L1972_cz`) | 1413 | 2026-11-09 | 48 | 892 | 347 | 106 | 10 | 8 | 50 | 513 / 521 |
 | European Electronic Communications Code × DE (`32018L1972_de`) | 1413 | 2026-11-09 | 48 | 952 | 339 | 82 | 11 | 4 | 25 | 453 / 461 |
+| European Electronic Communications Code × SK (`32018L1972_sk`) | 1413 | 2026-11-09 | 48 | 804 | 381 | 162 | 14 | 8 | 44 | 599 / 609 |
