@@ -6,6 +6,7 @@ version is 0.x, the command-line options and data formats can still change.
 ## Unreleased
 
 ### Added
+- **LLM judge runs: Representative Actions Directive × Czechia, Representative Actions Directive × Germany.** `32020L1828_cz.jsonl` (264), `32020L1828_de.jsonl` (264) judgments (Sonnet 5.5 in Claude Code subagents); label counts in [docs/evaluation.md](docs/evaluation.md#unmeasured-pairs).
 - **LLM judge runs: Copyright in the Digital Single Market × Germany, Representative Actions Directive × Austria.** `32019L0790_de.jsonl` (255), `32020L1828_at.jsonl` (264) judgments (Sonnet 5.5 in Claude Code subagents); label counts in [docs/evaluation.md](docs/evaluation.md#unmeasured-pairs).
 - **LLM judge runs: Copyright in the Digital Single Market × Austria, Single-Use Plastics Directive × Slovakia.** `32019L0790_at.jsonl` (255), `32019L0904_sk.jsonl` (141) judgments (Sonnet 5.5 in Claude Code subagents); label counts in [docs/evaluation.md](docs/evaluation.md#unmeasured-pairs).
 - **LLM judge runs: Single-Use Plastics Directive × Germany.** `32019L0904_de.jsonl` (141) judgments (Sonnet 5.5 in Claude Code subagents); label counts in [docs/evaluation.md](docs/evaluation.md#unmeasured-pairs).

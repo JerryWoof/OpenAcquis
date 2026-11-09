@@ -771,3 +771,5 @@ Pairs without an official correlation table, so there is no score; label counts 
 | Single-Use Plastics Directive × SK (`32019L0904_sk`) | 141 | 2026-11-09 | 5 | 104 | 27 | 10 | 0 | 0 | 0 | 37 / 37 |
 | Copyright in the Digital Single Market × DE (`32019L0790_de`) | 255 | 2026-11-09 | 9 | 187 | 46 | 14 | 3 | 1 | 4 | 68 / 68 |
 | Representative Actions Directive × AT (`32020L1828_at`) | 264 | 2026-11-09 | 9 | 220 | 34 | 5 | 1 | 0 | 4 | 44 / 44 |
+| Representative Actions Directive × CZ (`32020L1828_cz`) | 264 | 2026-11-09 | 9 | 220 | 31 | 8 | 2 | 0 | 3 | 42 / 44 |
+| Representative Actions Directive × DE (`32020L1828_de`) | 264 | 2026-11-09 | 9 | 220 | 40 | 1 | 0 | 1 | 2 | 43 / 44 |
