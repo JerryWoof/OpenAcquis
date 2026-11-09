@@ -758,3 +758,6 @@ Pairs without an official correlation table, so there is no score; label counts 
 | Pillar Two × DE (`32022L2523_de`) | 744 | 2026-10-22 | 38 | 436 | 171 | 118 | 11 | 6 | 2 | 305 / 308 |
 | Copyright DSM × CZ (`32019L0790_cz`) | 255 | 2026-10-22 | 13 | 196 | 41 | 10 | 4 | 1 | 3 | 59 / 59 |
 | Copyright DSM × SK (`32019L0790_sk`) | 255 | 2026-10-22 | 13 | 190 | 46 | 9 | 5 | 0 | 5 | 65 / 65 |
+| Adequate Minimum Wages Directive × CZ (`32022L2041_cz`) | 114 | 2026-11-09 | 4 | 103 | 6 | 1 | 0 | 0 | 4 | 11 / 11 |
+| Adequate Minimum Wages Directive × DE (`32022L2041_de`) | 114 | 2026-11-09 | 4 | 108 | 5 | 0 | 0 | 0 | 1 | 5 / 6 |
+| Adequate Minimum Wages Directive × SK (`32022L2041_sk`) | 114 | 2026-11-09 | 4 | 100 | 11 | 1 | 0 | 0 | 2 | 14 / 14 |
