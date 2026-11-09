@@ -6,6 +6,7 @@ version is 0.x, the command-line options and data formats can still change.
 ## Unreleased
 
 ### Added
+- **LLM judge runs: Pay Transparency Directive × Germany.** `32023L0970_de.jsonl` (282) judgments (Sonnet 5.5 in Claude Code subagents); label counts in [docs/evaluation.md](docs/evaluation.md#unmeasured-pairs).
 - **LLM judge runs: Representative Actions Directive × Slovakia, Pay Transparency Directive × Austria, Pay Transparency Directive × Czechia.** `32020L1828_sk.jsonl` (264), `32023L0970_at.jsonl` (282), `32023L0970_cz.jsonl` (282) judgments (Sonnet 5.5 in Claude Code subagents); label counts in [docs/evaluation.md](docs/evaluation.md#unmeasured-pairs).
 - **LLM judge runs: Representative Actions Directive × Czechia, Representative Actions Directive × Germany.** `32020L1828_cz.jsonl` (264), `32020L1828_de.jsonl` (264) judgments (Sonnet 5.5 in Claude Code subagents); label counts in [docs/evaluation.md](docs/evaluation.md#unmeasured-pairs).
 - **LLM judge runs: Copyright in the Digital Single Market × Germany, Representative Actions Directive × Austria.** `32019L0790_de.jsonl` (255), `32020L1828_at.jsonl` (264) judgments (Sonnet 5.5 in Claude Code subagents); label counts in [docs/evaluation.md](docs/evaluation.md#unmeasured-pairs).
