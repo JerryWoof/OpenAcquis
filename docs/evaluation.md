@@ -773,3 +773,6 @@ Pairs without an official correlation table, so there is no score; label counts 
 | Representative Actions Directive × AT (`32020L1828_at`) | 264 | 2026-11-09 | 9 | 220 | 34 | 5 | 1 | 0 | 4 | 44 / 44 |
 | Representative Actions Directive × CZ (`32020L1828_cz`) | 264 | 2026-11-09 | 9 | 220 | 31 | 8 | 2 | 0 | 3 | 42 / 44 |
 | Representative Actions Directive × DE (`32020L1828_de`) | 264 | 2026-11-09 | 9 | 220 | 40 | 1 | 0 | 1 | 2 | 43 / 44 |
+| Representative Actions Directive × SK (`32020L1828_sk`) | 264 | 2026-11-09 | 9 | 187 | 49 | 19 | 4 | 2 | 3 | 75 / 77 |
+| Pay Transparency Directive × AT (`32023L0970_at`) | 282 | 2026-11-09 | 10 | 233 | 37 | 7 | 4 | 1 | 0 | 42 / 49 |
+| Pay Transparency Directive × CZ (`32023L0970_cz`) | 282 | 2026-11-09 | 10 | 270 | 12 | 0 | 0 | 0 | 0 | 12 / 12 |
