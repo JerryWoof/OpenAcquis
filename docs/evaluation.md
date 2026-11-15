@@ -736,6 +736,40 @@ All labels are unreviewed machine suggestions.
 - CER × SK: run on 2026-10-15 with Claude Opus 5.5 in 16 Claude Code subagents; labels: unrelated 220, partial 64, same 13, different_value 5, option 4, stricter 3.
 - Pay Transparency × SK: run on 2026-10-16 with Claude Opus 5.5 in 15 Claude Code subagents; labels: unrelated 194, partial 63, same 13, option 5, stricter 5, different_value 2.
 
+### Opus vs Sonnet (2026-11-15)
+
+The first 23 directive × country pairs were judged by Opus 5.5, the remaining 23 (2026-11-09) by Sonnet 5.5, both in
+Claude Code subagents with the same prompt and candidates. To see how far the Sonnet pairs can be trusted, the 7 pairs
+with an official correlation table were judged again by Sonnet (`data/judgments-sonnet/`; the site keeps showing the
+Opus judgments in `data/judgments/`). Same scoring as above; "related P" = precision of pairs the judge calls related.
+
+| Pair | Model | related P | related P(§) | same/partial P | kept (table) | rejected (other) | related |
+|---|---|---|---|---|---|---|---|
+| `32022L2555_cz` | Opus | 0.755 | 0.883 | 0.831 | 71/106 (67%) | 285/308 (93%) | 96 |
+| `32022L2555_cz` | Sonnet | 0.682 | 0.794 | 0.705 | 73/106 (69%) | 274/308 (89%) | 113 |
+| `32022L2557_cz` | Opus | 0.628 | 0.744 | 0.635 | 49/53 (92%) | 104/133 (78%) | 82 |
+| `32022L2557_cz` | Sonnet | 0.654 | 0.756 | 0.645 | 51/53 (96%) | 106/133 (80%) | 82 |
+| `32019L0882_cz` | Opus | 0.853 | 0.879 | 0.878 | 99/109 (91%) | 120/137 (88%) | 129 |
+| `32019L0882_cz` | Sonnet | 0.839 | 0.902 | 0.838 | 94/109 (86%) | 119/137 (87%) | 122 |
+| `32019L1937_cz` | Opus | 0.720 | 0.840 | 0.682 | 36/41 (88%) | 107/121 (88%) | 56 |
+| `32019L1937_cz` | Sonnet | 0.648 | 0.778 | 0.612 | 35/41 (85%) | 102/121 (84%) | 61 |
+| `32022L2555_sk` | Opus | 0.726 | 0.806 | 0.722 | 90/116 (78%) | 246/280 (88%) | 133 |
+| `32022L2555_sk` | Sonnet | 0.713 | 0.791 | 0.717 | 92/116 (79%) | 243/280 (87%) | 137 |
+| `32022L2557_sk` | Opus | 0.887 | 0.975 | 0.897 | 71/91 (78%) | 95/104 (91%) | 89 |
+| `32022L2557_sk` | Sonnet | 0.866 | 0.963 | 0.873 | 71/91 (78%) | 93/104 (89%) | 91 |
+| `32023L0970_sk` | Opus | 0.906 | 0.988 | 0.892 | 77/82 (94%) | 141/149 (95%) | 88 |
+| `32023L0970_sk` | Sonnet | 0.755 | 0.853 | 0.761 | 77/82 (94%) | 124/149 (83%) | 106 |
+| **all 7** | **Opus** | **0.786** | | | **493/598 (82%)** | **1098/1232 (89%)** | 627 |
+| **all 7** | **Sonnet** | **0.742** | | | **493/598 (82%)** | **1061/1232 (86%)** | 664 |
+
+Related/unrelated agreement Opus vs Sonnet: 2634/2763 (95.3%)
+
+- Sonnet keeps exactly as many table-confirmed candidates as Opus (493 of 598) but rejects fewer wrong ones
+  (86 % vs 89 %), so its related-pair precision is lower overall (0.742 vs 0.786).
+- The gap is small on five pairs (≤ 0.03, Sonnet better on CER × CZ) and large on Pay Transparency × SK (0.755 vs 0.906)
+  and NIS2 × CZ (0.682 vs 0.755), where Sonnet calls more candidates "partial".
+- Single run per model; differences of a few points on pairs with ~100 related judgments are within run-to-run noise.
+
 ### Unmeasured pairs
 
 Pairs without an official correlation table, so there is no score; label counts only. All labels are unreviewed machine suggestions.
