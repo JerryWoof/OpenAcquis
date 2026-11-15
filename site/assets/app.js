@@ -1513,10 +1513,204 @@
     });
   }
 
+  // ---- Country comparison (countries.html): data/countries.json from build_site.countries_data ----
+  var CMP_LABELS = [["same", "same"], ["partial", "partial"], ["stricter", "stricter"], ["different_value", "different value"], ["option", "option"]];
+
+  function renderCountries() {
+    var status = $("c-status");
+    getJSON("data/countries.json").then(function (d) {
+      status.textContent = "";
+      try { drawCountries(d); } catch (e) { showError($("c-notes"), e); status.textContent = ""; }
+    }).catch(function (err) {
+      status.textContent = "";
+      if (notBuilt(err)) {
+        $("c-notes").appendChild(el("div", { className: "note", role: "note" }, [
+          el("strong", { text: "Not part of this build. " }),
+          "The country comparison needs the AI judge's results (data/judgments/), which this copy of the site was built without. ",
+          el("a", { href: "./#directives", text: "All directives" }), "."
+        ]));
+      } else showError($("c-notes"), err);
+    });
+  }
+
+  function pctText(x) { return x === null || x === undefined ? "–" : Math.round(100 * x) + "%"; }
+
+  function meter(x) {
+    var m = el("div", { className: "meter", "aria-hidden": "true" }, [el("span")]);
+    m.firstChild.style.width = Math.max(0, Math.min(100, Math.round(100 * (x || 0)))) + "%";
+    return m;
+  }
+
+  function stat(v, l) { return el("div", {}, [el("b", { text: v }), el("div", { className: "small muted", text: l })]); }
+
+  function breakdownText(best) {
+    return CMP_LABELS.filter(function (l) { return best && best[l[0]]; })
+      .map(function (l) { return l[1] + " " + best[l[0]]; }).join(" · ");
+  }
+
+  function modelShort(models) {
+    var s = (models || []).map(function (m) { return /opus/i.test(m) ? "Opus 5.5" : /sonnet/i.test(m) ? "Sonnet 5.5" : String(m).split(" ")[0]; });
+    return s.filter(function (x, i) { return s.indexOf(x) === i; }).join(", ");
+  }
+
+  // "Opus 5.5 for N pairs, Sonnet 5.5 for M": counted from the matrix cells (pairs with judgments), not typed in.
+  function judgeCounts(d) {
+    var n = {}, total = 0;
+    (d.matrix || []).forEach(function (row) {
+      Object.keys(row.cells || {}).forEach(function (cc) {
+        var c = row.cells[cc];
+        if (c.state !== "judged" && c.state !== "baseline") return;
+        var m = modelShort(c.models) || "unknown model";
+        n[m] = (n[m] || 0) + 1;
+        total++;
+      });
+    });
+    var parts = Object.keys(n).sort().map(function (m) { return m + " for " + n[m] + " of the " + total; });
+    var t = $("c-judges");
+    if (t && parts.length) t.textContent = "Every label comes from Claude (" + parts.join(", ") + " directive × country pairs).";
+  }
+
+  function drawCountries(d) {
+    var cs = d.countries || [];
+    var name = {};
+    cs.forEach(function (c) { name[c.code] = c.name; });
+    $("footer-built").textContent = "Data built " + fmtBuilt(d.built_at) + ".";
+    judgeCounts(d);
+
+    // 1. summary cards
+    var cards = $("c-cards");
+    (d.summary || []).forEach(function (s) {
+      var extra = [];
+      if (s.baseline_pairs) extra.push(s.baseline_pairs + " not notified (left out)");
+      if (s.no_act) extra.push(s.no_act + " with no act aligned");
+      cards.appendChild(el("li", { className: "card" }, [
+        el("h3", { text: s.name }),
+        el("div", { className: "small muted", text: "Machine-estimated coverage" }),
+        el("div", {}, [el("span", { className: "bigpct", text: pctText(s.coverage) }),
+          el("span", { className: "small muted", text: "  " + fmtInt(s.covered) + " of " + fmtInt(s.rows) + " paragraphs" })]),
+        meter(s.coverage),
+        el("div", { className: "stats" }, [
+          stat(fmtInt(s.directives), "directives aligned"),
+          stat(fmtInt(s.rows), "EU paragraphs judged"),
+          stat(fmtInt(s.gaps), "gap candidates")
+        ]),
+        el("div", { className: "stats" }, [
+          stat(fmtInt(s.stricter), "stricter"),
+          stat(fmtInt(s.different_value), "different value"),
+          stat(fmtInt(s.option), "option")
+        ]),
+        extra.length ? el("div", { className: "small muted", text: extra.join("; ") }) : null
+      ]));
+    });
+    var unv = (d.summary || []).reduce(function (a, s) { return a + (s.unverified_excluded || 0); }, 0);
+    $("c-cards-note").textContent = "Coverage: paragraphs with at least one related candidate (any label except unrelated), of the paragraphs judged. " +
+      "Gap candidates: paragraphs where none of the three candidates was judged related, which may also mean the matcher missed it. " +
+      "Stricter, different value and option count judgments (a paragraph can have several), only where the quotes were verified in both texts" +
+      (unv ? " (" + unv + " judgment" + (unv === 1 ? "" : "s") + " with unverified quotes not counted)" : "") + ". " +
+      "Pooled over paragraphs, so large directives weigh more.";
+
+    // 2. matrix
+    var head = $("c-head");
+    head.appendChild(el("th", { className: "mart", scope: "col", text: "Directive" }));
+    cs.forEach(function (c) { head.appendChild(el("th", { scope: "col", text: c.name })); });
+    var tb = $("c-rows");
+    (d.matrix || []).forEach(function (row) {
+      var tr = el("tr", {}, [el("th", { className: "mart", scope: "row" }, [
+        el("a", { className: "mlabel", href: "directive.html?celex=" + encodeURIComponent(row.celex), text: row.short })
+      ])]);
+      cs.forEach(function (c) {
+        var cell = (row.cells || {})[c.code] || { state: "missing" };
+        var td = el("td", { className: "mcell" + (cell.state === "baseline" ? " baseline" : "") });
+        var label = row.short + " × " + c.name;
+        if (cell.state === "none") {
+          td.appendChild(el("span", { className: "muted", text: "no act aligned" }));
+          if (cell.note) td.appendChild(el("span", { className: "small muted cnote", text: cell.note }));
+        } else if (cell.state === "missing" || cell.state === "not_judged") {
+          td.appendChild(el("span", { className: "muted", text: cell.state === "missing" ? "no data" : "not judged" }));
+          if (cell.href) td.appendChild(el("a", { className: "small", href: cell.href, "aria-label": label + ": alignment page", text: " open" }));
+        } else {
+          var main = el("a", { className: "mtop", href: cell.href, "aria-label": label + ": " + pctText(cell.coverage) + " machine-estimated coverage, open alignment page",
+            text: pctText(cell.coverage) });
+          if (cell.state === "baseline") td.appendChild(el("span", { className: "pill baseline", text: "not notified" }));
+          td.appendChild(el("div", {}, [main, el("span", { className: "small muted", text: "  " + cell.covered + " of " + cell.rows })]));
+          td.appendChild(meter(cell.coverage));
+          var bt = breakdownText(cell.best);
+          if (bt) td.appendChild(el("span", { className: "small cnote", text: bt }));
+          var sub = [];
+          if (cell.state === "baseline") sub.push("compared as existing law");
+          var ms = modelShort(cell.models);
+          if (ms) sub.push("judge: " + ms);
+          td.appendChild(el("span", { className: "small muted cnote", text: sub.join("; ") }));
+        }
+        tr.appendChild(td);
+      });
+      tb.appendChild(tr);
+    });
+
+    // 3. specifics and relative coverage
+    var host = $("c-spec");
+    cs.forEach(function (c) {
+      var spec = (d.specific || {})[c.code] || { items: [], total: 0 };
+      var rel = (d.relative || {})[c.code] || { highest: [], lowest: [] };
+      var sec = el("section", { className: "cspec", "aria-labelledby": "c-spec-" + c.code }, [
+        el("h3", { id: "c-spec-" + c.code, text: c.name })
+      ]);
+      function relList(title, list) {
+        var ul = el("ul", { className: "small crel" });
+        list.forEach(function (x) {
+          ul.appendChild(el("li", {}, [el("a", { href: x.href, text: x.short }),
+            " " + pctText(x.coverage) + " here, " + pctText(x.others_mean) + " on average in the other " +
+            (x.others === 1 ? "country" : x.others + " countries")]));
+        });
+        if (!list.length) ul.appendChild(el("li", { className: "muted", text: "none" }));
+        return el("div", {}, [el("div", { className: "small", text: title }), ul]);
+      }
+      var minPts = Math.round(100 * (d.relative_min_diff || 0.05));
+      if (rel.highest.length || rel.lowest.length) {
+        sec.appendChild(el("div", { className: "relgrid" }, [
+          relList("Candidates found more often than elsewhere (at least " + minPts + " points above the others)", rel.highest),
+          relList("Candidates found less often than elsewhere (at least " + minPts + " points below the others)", rel.lowest)
+        ]));
+      } else {
+        sec.appendChild(el("p", { className: "small muted", text: "No clear differences relative to the other countries (≥ " + minPts +
+          " points, same judge model" + (rel.compared ? "; " + rel.compared + " directive" + (rel.compared === 1 ? "" : "s") + " compared" : "") + ")." }));
+      }
+      sec.appendChild(el("p", { className: "small muted", text: spec.items.length
+        ? "Showing " + spec.items.length + " of " + spec.total + " stricter or different-value judgments (verified quotes)."
+        : "No stricter or different-value judgment with verified quotes." }));
+      spec.items.forEach(function (it) {
+        var j = { label: it.label, confidence: it.confidence };
+        var natText = it.national_label + (it.national_act ? " (" + it.national_act + ")" : "");
+        var about = it.short + ", " + it.eu_label + " and " + c.name + ", " + it.national_label;
+        var box = el("div", { className: "judge-box cspec-item" }, [
+          el("div", {}, [
+            el("strong", { text: it.short + ": " }),
+            el("span", { lang: it.eu_lang || null, text: it.eu_label }), " → ",
+            el("span", { lang: it.national_lang || null, text: natText }), " ",
+            judgePill(j)
+          ]),
+          it.rationale ? el("p", { text: it.rationale }) : null
+        ]);
+        [["Quote from the directive", it.evidence_eu, it.eu_lang], ["Quote from the national provision", it.evidence_national, it.national_lang]].forEach(function (q) {
+          if (q[1]) box.appendChild(el("div", { className: "small" }, [q[0] + ":", el("blockquote", { lang: q[2] || null, text: String(q[1]) })]));
+        });
+        box.appendChild(el("p", { className: "small" }, [
+          el("a", { href: it.href, "aria-label": about + ": alignment page", text: "Alignment page" }),
+          it.eu_url ? " · " : null, it.eu_url ? el("a", { href: it.eu_url, "aria-label": about + ": directive text on EUR-Lex", text: "Directive text (EUR-Lex)" }) : null,
+          it.national_url ? " · " : null, it.national_url ? el("a", { href: it.national_url, "aria-label": about + ": national text", text: "National text" }) : null,
+          el("span", { className: "muted", text: " · AI judge, unreviewed" })
+        ]));
+        sec.appendChild(box);
+      });
+      host.appendChild(sec);
+    });
+    $("c-body").hidden = false;
+  }
+
   window.OpenAcquis = {
     renderData: renderData,
     renderIndex: renderIndex, renderDirective: renderDirective, renderAlignment: renderAlignment,
-    renderMatrix: renderMatrix, renderReview: renderReview, _binOf: binOf, _checkRecord: checkRecord,
+    renderMatrix: renderMatrix, renderReview: renderReview, renderCountries: renderCountries, _binOf: binOf, _checkRecord: checkRecord,
     _issueURL: issueURL, _issueLink: issueLink, _baselineText: baselineText, _sortArts: sortArts, _artLabel: artLabel
   };
 })();

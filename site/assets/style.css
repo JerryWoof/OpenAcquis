@@ -384,3 +384,23 @@ td.mcell.baseline { background-image: repeating-linear-gradient(135deg, transpar
   table.prov th, table.prov td { border-bottom: 0; padding: 3px 10px; }
   table.prov td[data-label]::before { content: attr(data-label) ": "; font-size: .78rem; font-weight: 650; color: var(--ink-3); }
 }
+
+/* Country comparison (countries.html) */
+.note.method ul { margin: 6px 0 0; padding-left: 20px; }
+.note.method li { margin: 4px 0; }
+.note.method { max-width: 85ch; border-width: 2px; }
+.bigpct { font-size: 1.9rem; font-weight: 700; line-height: 1.1; }
+.ccards .card .stats { gap: 18px; }
+.ccards { grid-template-columns: 1fr; }
+@media (min-width: 640px) { .ccards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1200px) { .ccards { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.ccards .card .stats > div { min-width: 0; }
+table.cmatrix td.mcell { min-width: 170px; }
+.cnote { display: block; margin-top: 2px; overflow-wrap: anywhere; }
+.cmatrix .meter { margin-top: 3px; max-width: 140px; }
+.cspec { margin: 24px 0 8px; }
+.cspec h3 { font-size: 1.15rem; }
+.relgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 8px 24px; margin-bottom: 8px; }
+.crel { margin: 2px 0 0; padding-left: 18px; }
+.cspec-item { margin: 10px 0; }
+.cspec-item .pill.judge { margin-left: 4px; }

@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Country comparison · OpenAcquis</title>
+<meta name="description" content="How far an AI judge found related national provisions for EU directive paragraphs in Austria, Czechia, Germany and Slovakia: machine-estimated, unreviewed, not a ranking.">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231c5cab'/%3E%3Cg fill='%23fff'%3E%3Crect x='6' y='6' width='9' height='9' rx='2'/%3E%3Crect x='17' y='6' width='9' height='9' rx='2' opacity='.6'/%3E%3Crect x='6' y='17' width='9' height='9' rx='2' opacity='.6'/%3E%3Crect x='17' y='17' width='9' height='9' rx='2' opacity='.3'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/style.css">
+<link rel="alternate" type="application/atom+xml" title="OpenAcquis change alerts" href="feed.xml">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="./" aria-label="OpenAcquis home">
+      <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#1c5cab"/><g fill="#fff"><rect x="6" y="6" width="9" height="9" rx="2"/><rect x="17" y="6" width="9" height="9" rx="2" opacity=".6"/><rect x="6" y="17" width="9" height="9" rx="2" opacity=".6"/><rect x="17" y="17" width="9" height="9" rx="2" opacity=".3"/></g></svg>
+      OpenAcquis
+    </a>
+    <nav aria-label="Main">
+      <a href="./#directives">Directives</a>
+      <a href="./#how">How it works</a>
+      <a href="countries.html">Countries</a>
+      <a href="data.html">Data &amp; API</a>
+      <a href="https://github.com/JerryWoof/OpenAcquis">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main" class="wrap wide">
+  <p class="crumbs"><a href="./#directives">← All directives</a></p>
+  <h1>Country comparison</h1>
+  <p class="lede">Austria, Czechia, Germany and Slovakia side by side: for how many EU provisions an AI judge found a related
+    national provision among the machine's candidates, and where it saw a national text that looks stricter or sets a
+    different value. Machine-estimated and unreviewed; countries are listed alphabetically, not ranked.</p>
+
+  <div class="note info method" role="note" id="c-method">
+    <strong>Read this first: how these numbers are made.</strong>
+    <ul>
+      <li><strong>An AI judge, not a lawyer.</strong> <span id="c-judges">Every label comes from Claude (Opus 5.5 or Sonnet 5.5, depending on the pair).</span>
+        Sonnet labels more candidates “partial” (see <a href="https://github.com/JerryWoof/OpenAcquis/blob/main/docs/evaluation.md#opus-vs-sonnet-2026-11-15">Opus vs Sonnet</a>),
+        so the lists of differences below only compare cells judged by the same model. Nobody has reviewed these labels.</li>
+      <li><strong>It only sees three candidates per paragraph.</strong> The judge reads the top three national provisions that the
+        text matcher proposes for each directive paragraph. “Machine-estimated coverage” is the share of paragraphs for which at least one
+        of those three was judged related. A low figure often means the matcher missed the right section, not that a country has no
+        provision; the same limit applies to every country.</li>
+      <li><strong>Measured precision.</strong> Precision was measured on 7 of the 46 pairs, measured on 2026-11-15: all Czech or Slovak, the ones with an
+        official correlation table, all shown here with Opus labels. On those, the judge's related labels match a link of the table
+        about 74–79 % of the time (0.79 for Opus; a Sonnet re-run of the same 7 pairs gave 0.74; the tables are not exhaustive). The other 39 pairs,
+        in all four countries, are unmeasured. Details: <a href="https://github.com/JerryWoof/OpenAcquis/blob/main/docs/evaluation.md">docs/evaluation.md</a>.
+        Texts are in Czech, Slovak or German, and the judge reads each in its own language.</li>
+      <li><strong>Not a ranking.</strong> The figures do not rank countries and say nothing about how any country implemented EU law. They depend
+        on the matcher, the language, how a national law is structured (one act or many) and the judge model.
+        Totals pool paragraphs, so large directives weigh more, and countries have different numbers of directives aligned.</li>
+      <li>Pairs whose national act was not notified for the directive (“not notified”) are compared as existing law: they are shown
+        in the matrix but left out of the totals and of the lists below.</li>
+    </ul>
+  </div>
+
+  <div id="c-notes"></div>
+  <p class="count" id="c-status" aria-live="polite">Loading…</p>
+  <div id="c-body" hidden>
+    <h2 id="c-cards-h">Summary per country</h2>
+    <ul class="cards ccards" id="c-cards" aria-labelledby="c-cards-h"></ul>
+    <p class="small muted" id="c-cards-note"></p>
+
+    <h2 id="c-matrix-h">Directive × country</h2>
+    <p class="small muted" style="max-width:75ch">Each cell: machine-estimated coverage (share of the directive's paragraphs with a related candidate), the number of
+      paragraphs judged, and how those paragraphs split by the label of their highest-ranked related candidate. A cell opens the alignment page.</p>
+    <div class="table-wrap matrix-wrap">
+      <table class="matrix cmatrix">
+        <caption class="sr-only">Directives by country: machine-estimated coverage and breakdown of the AI judge's labels</caption>
+        <thead><tr id="c-head"></tr></thead>
+        <tbody id="c-rows"></tbody>
+      </table>
+    </div>
+
+    <h2 id="c-spec-h">What looks specific to each country</h2>
+    <p class="small muted" style="max-width:75ch">Judgments of “stricter” or “different value”, highest AI confidence first, quotes verified in both texts, at most two per
+      directive. They are candidates for a closer look: the judge may have compared the wrong provisions, and a difference is not a finding.
+      Also shown: the directives where candidates were found more or less often than in the other countries (average of the other countries with a cell of at least 20 paragraphs judged by the same model, at least two of them), listed only when the difference is at least 5 percentage points.</p>
+    <div id="c-spec"></div>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p><strong>Not legal advice.</strong> Numbers on this page are unreviewed, machine-estimated differences between candidate provisions. They are not findings about how any country implemented a directive, and countries are listed alphabetically, not ranked. Always check the official texts.</p>
+    <p>Directive text: EUR-Lex / CELLAR, © European Union, <a href="https://eur-lex.europa.eu">https://eur-lex.europa.eu</a>
+      (reuse under Commission Decision 2011/833/EU). National law: e-Sbírka (CZ), Slov-Lex (SK), RIS (AT), gesetze-im-internet.de (DE).
+      Code: MIT; data: CC-BY-4.0. <span id="footer-built"></span></p>
+  </div>
+</footer>
+<script src="assets/app.js"></script>
+<script>OpenAcquis.renderCountries();</script>
+</body>
+</html>

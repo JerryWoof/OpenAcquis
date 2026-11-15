@@ -57,6 +57,30 @@ derived from it with `openacquis.directives.load_registry()`; official tables co
 - **Size.** About 35 MB of page data (46 alignment and review files with texts) plus 32 MB of API; the Pages
   workflow deploys `site/` without `site/static-data/` (29 MB; about 66 MB deployed in all).
 
+### Country comparison (`countries.html`)
+
+- **What it is.** One page for Austria, Czechia, Germany and Slovakia (alphabetical, never ranked), from
+  `site/data/countries.json`, which `countries_data()` in `scripts/build_site.py` writes in the same step as the
+  alignment pages, from the judge labels merged into them (`data/judgments/`; nothing extra is read, and no
+  file is written when no page has a judge). It shows summary cards per country, a directive × country matrix
+  (cells link to `alignment.html?id=<slug>`) and, per country, the highest-confidence "stricter" and
+  "different value" judgments with both quotes and the directives where candidates were found most and least
+  often relative to the other countries (only directives that differ by at least 5 points).
+- **Definitions.** Rows are the paragraphs with at least one judged candidate. *Machine-estimated coverage* =
+  rows with at least one candidate not labelled `unrelated`, over rows judged; *gap candidates* = the other
+  rows. A matrix cell's breakdown counts each covered row once, by its highest-ranked related candidate.
+  Card counts of stricter / different value / option are judgments (a row can have several) and only those with
+  verified quotes; the specific lists need verified quotes in both texts, at most two per directive per
+  country, ties broken by directive and provision. "Relative" compares a directive's coverage with the mean of the
+  other countries' (cells with at least 20 paragraphs, at least two others). Pairs with registry status
+  `baseline` (act not notified) appear in the matrix as "not notified" but are left out of totals and lists;
+  status `none` shows "no act aligned".
+- **Wording rule.** The page only says "machine-estimated", "candidates" and "differences", states the method box
+  (AI judge, top 3 candidates, unreviewed, precision measured on only 7 of the 46 pairs, all Czech or Slovak with an official table, 0.79 Opus / 0.74 Sonnet; the
+  other 39 pairs unmeasured; judge-model pair counts come from `countries.json`; language)
+  before any number, and never ranks or judges countries. Data is inserted with `textContent`; the page
+  has loading, error and "not part of this build" states and no page-level horizontal scroll at 375 px.
+
 ## How it is built
 
 ```

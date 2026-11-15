@@ -6,6 +6,7 @@ version is 0.x, the command-line options and data formats can still change.
 ## Unreleased
 
 ### Added
+- **Country comparison page** (`site/countries.html`, data `site/data/countries.json` from `build_site.py`): machine-estimated coverage per country and directive from the AI judge's labels, the stricter / different-value judgments of each country, with a method box (unreviewed, top-3 candidates, not a ranking). Higher/lower-than-others lists need a 5-point difference and the same judge model; the build warns when a live page matches fewer judgments than the file holds.
 - **Experiment: judge on 6 candidates per EU unit** for the 7 pairs with an official table (`data/judgments-k6/`, 9,098 Sonnet judgments): official links found 24 % → 35 %, EU provisions covered 46 % → 66 % ([docs/evaluation.md](docs/evaluation.md#more-candidates-per-eu-unit-experiment-2026-11-15)).
 - **Opus vs Sonnet judge comparison** on the 7 pairs with an official correlation table: `data/judgments-sonnet/` (3,263 Sonnet judgments) and a comparison table in [docs/evaluation.md](docs/evaluation.md#opus-vs-sonnet-2026-11-15).
 - **LLM judge runs: European Electronic Communications Code × Slovakia.** `32018L1972_sk.jsonl` (1413) judgments (Sonnet 5.5 in Claude Code subagents); label counts in [docs/evaluation.md](docs/evaluation.md#unmeasured-pairs).
