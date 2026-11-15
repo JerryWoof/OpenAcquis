@@ -341,3 +341,112 @@ def test_js_review_articles_in_numeric_order():
     assert run_app_js(f"O._sortArts({json.dumps(keys)})") == [
         "art2", "art8", "art10", "art10a", "art27", "art34", "anx_i", "anx_ii"]
     assert run_app_js('[O._artLabel("anx_iii"), O._artLabel("art5")]') == ["Annex III", "Art. 5"]
+
+
+# --- country comparison (countries.json) --------------------------------------------------------
+
+def _fake_page(celex, cc, name, labels, *, status="ok", verified=True):
+    """An alignment page with one article and one paragraph row per entry of ``labels`` (a list of label
+    lists, one per candidate in rank order)."""
+    rows, nat = [], {}
+    for i, labs in enumerate(labels):
+        machine = []
+        for k, lab in enumerate(labs):
+            nid = f"{cc}:act:par{i}.{k}"
+            nat[nid] = {"label": f"§ {i}.{k}", "act": "act", "url": f"https://example.org/{nid}", "text": "t"}
+            machine.append({"id": nid, "score": 0.5, "above_threshold": True, "judge": {
+                "label": lab, "confidence": 0.8 - 0.05 * k, "rationale": "why", "evidence_eu": "eu quote",
+                "evidence_national": "nat quote", "evidence_verified": verified}})
+        rows.append({"id": f"eu:{celex}:en:art1.par{i}", "label": f"Art. 1({i})", "url": "https://eur-lex.example",
+                     "machine": machine})
+    return {"celex": celex, "id": f"{celex}_{cc}", "country_code": cc, "country_name": name,
+            "national_language": "de", "eu": {"language": "de"}, "national": [{"act_id": "act", "label": "ACT"}],
+            "national_texts": nat, "articles": [{"id": f"eu:{celex}:en:art1", "key": "art1", "rows": rows}],
+            "registry": {"status": status, "note": ""}, "judge": {"models": ["claude-opus-5-5 (x)"]}}
+
+
+def test_countries_data_coverage_labels_and_states():
+    entries = [build_site.Entry("32000L0001", "Alpha", "T", 1), build_site.Entry("32000L0002", "Beta", "T", 2)]
+    pages = [
+        _fake_page("32000L0001", "de", "Germany", [["unrelated", "partial"], ["unrelated"], ["stricter", "same"], ["option"]]),
+        _fake_page("32000L0001", "at", "Austria", [["same"], ["different_value"]]),
+        _fake_page("32000L0002", "de", "Germany", [["partial"], ["unrelated"]], status="baseline"),
+    ]
+    states = [build_site.CountryState("32000L0002", "AUT", "at", "Austria", "no act")]
+    d = build_site.countries_data(pages, directives=entries, states=states, now=NOW)
+    assert [c["name"] for c in d["countries"]] == ["Austria", "Germany"]  # alphabetical, not by score
+    de = next(c for c in d["summary"] if c["code"] == "de")
+    # 4 paragraphs, 3 with a related candidate; the baseline pair is not in the totals
+    assert (de["rows"], de["covered"], de["gaps"], de["directives"], de["baseline_pairs"]) == (4, 3, 1, 1, 1)
+    assert (de["stricter"], de["different_value"], de["option"]) == (1, 0, 1)
+    cell = d["matrix"][0]["cells"]["de"]
+    assert cell["coverage"] == 0.75 and sum(cell["best"].values()) == cell["covered"]
+    assert cell["best"] == {"same": 0, "partial": 1, "stricter": 1, "different_value": 0, "option": 1}
+    assert cell["href"] == "alignment.html?id=32000L0001_de"
+    row2 = d["matrix"][1]["cells"]
+    assert row2["de"]["state"] == "baseline" and row2["at"] == {"state": "none", "note": "no act"}
+    assert d["specific"]["de"]["total"] == 1 and d["specific"]["de"]["items"][0]["label"] == "stricter"
+    assert d["specific"]["at"]["items"][0]["national_act"] == "ACT"
+
+
+def test_countries_data_unverified_quotes_are_not_shown_as_specific():
+    page = _fake_page("32000L0001", "de", "Germany", [["stricter"], ["option"]], verified=False)
+    d = build_site.countries_data([page], directives=[build_site.Entry("32000L0001", "Alpha", "T", 1)], now=NOW)
+    de = d["summary"][0]
+    assert de["covered"] == 2 and de["stricter"] == 0 and de["option"] == 0 and de["unverified_excluded"] == 2
+    assert d["specific"]["de"]["items"] == []
+
+
+def test_offline_build_writes_countries_json(tmp_path):
+    out = tmp_path / "data"
+    assert build_site.main(["--offline", "--out", str(out)]) == 0
+    d = json.loads((out / "countries.json").read_text(encoding="utf-8"))
+    assert [c["name"] for c in d["countries"]] == sorted(c["name"] for c in d["countries"])
+    assert len(d["matrix"]) == 12 and d["status"] == "unreviewed"
+    for s in d["summary"]:
+        assert 0 <= s["covered"] <= s["rows"] and s["gaps"] == s["rows"] - s["covered"]
+
+
+def _page_with(celex, cc, name, covered, total, model):
+    """A page with ``total`` paragraphs of which ``covered`` have a related candidate (>= 20 rows by default use)."""
+    labels = [["same"]] * covered + [["unrelated"]] * (total - covered)
+    p = _fake_page(celex, cc, name, labels)
+    p["judge"] = {"models": [model]}
+    return p
+
+
+def test_countries_relative_needs_5_points_and_same_judge_model():
+    entries = [build_site.Entry("32000L0001", "Alpha", "T", 1), build_site.Entry("32000L0002", "Beta", "T", 2),
+               build_site.Entry("32000L0003", "Gamma", "T", 3), build_site.Entry("32000L0004", "Delta", "T", 4)]
+    O, S = "claude-opus-5-5 (x)", "claude-sonnet-5-5 (x)"
+    pages = []
+    # Alpha (all Opus): de 20/20, at 18/20 and cz 10/20 -> de is 25 points above the mean of at and cz (70 %)
+    for cc, name, cov in [("de", "Germany", 20), ("at", "Austria", 18), ("cz", "Czechia", 10)]:
+        pages.append(_page_with("32000L0001", cc, name, cov, 20, O))
+    # Beta: de 20/20 vs at 19/20 and cz 20/20: 2.5 points, below the 5-point limit
+    for cc, name, cov in [("de", "Germany", 20), ("at", "Austria", 19), ("cz", "Czechia", 20)]:
+        pages.append(_page_with("32000L0002", cc, name, cov, 20, O))
+    # Gamma: de (Opus) 20/20 vs at 0/20 and cz 0/20 judged by Sonnet: not comparable, skipped
+    pages.append(_page_with("32000L0003", "de", "Germany", 20, 20, O))
+    for cc, name in [("at", "Austria"), ("cz", "Czechia")]:
+        pages.append(_page_with("32000L0003", cc, name, 0, 20, S))
+    # Delta: de and cz Opus 20/20 and 0/20, at Sonnet 20/20: only one comparable other -> skipped
+    pages.append(_page_with("32000L0004", "de", "Germany", 20, 20, O))
+    pages.append(_page_with("32000L0004", "cz", "Czechia", 0, 20, O))
+    pages.append(_page_with("32000L0004", "at", "Austria", 20, 20, S))
+    d = build_site.countries_data(pages, directives=entries, now=NOW)
+    rel = d["relative"]
+    assert [x["celex"] for x in rel["de"]["highest"]] == ["32000L0001"] and rel["de"]["lowest"] == []
+    assert rel["de"]["highest"][0]["others"] == 2 and rel["de"]["highest"][0]["diff"] == 0.3
+    assert rel["de"]["compared"] == 2  # Alpha and Beta only
+    assert [x["celex"] for x in rel["cz"]["lowest"]] == ["32000L0001"]
+    assert [x["celex"] for x in rel["at"]["highest"]] == ["32000L0001"]
+    assert [x["celex"] for x in rel["at"]["lowest"]] == ["32000L0002"]  # exactly 5 points below counts
+    assert d["relative_min_diff"] == 0.05
+
+
+def test_countries_data_lists_only_directives_with_pages():
+    entries = [build_site.Entry("32000L0001", "Alpha", "T", 1), build_site.Entry("32000L0002", "Beta", "T", 2)]
+    d = build_site.countries_data([_fake_page("32000L0001", "de", "Germany", [["same"]])], directives=entries,
+                                  states=[build_site.CountryState("32000L0002", "AUT", "at", "Austria", "n")], now=NOW)
+    assert [r["celex"] for r in d["matrix"]] == ["32000L0001"]  # Beta has only a "no act" state and no page

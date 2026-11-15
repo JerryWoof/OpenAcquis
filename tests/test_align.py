@@ -688,3 +688,32 @@ def test_registry_drives_site_lists():
     assert build_site.MATRICES == sorted(d.celex for d in reg)
     for c in build_site.MATRICES:
         assert (build_site.STATIC_DIR / f"{c}.headings.json").is_file()
+
+
+def test_write_alignments_warns_on_partial_judgments_and_removes_stale_countries_json(tmp_path):
+    res = align(eu_doc(), cz_doc(), threshold=0.25, now=NOW)
+    data = build_site.alignment_page_data(ENTRY, res, GOLD, now=NOW)
+    review = build_site.review_page_data(ENTRY, res, now=NOW)
+    row = next(r for a in data["articles"] for r in a["rows"] if r["machine"])
+    rec = {"eu_id": row["id"], "national_id": row["machine"][0]["id"], "label": "same", "confidence": 0.9,
+           "rationale": "r", "evidence_eu": "", "evidence_national": "", "evidence_verified": False,
+           "notes": [], "model": "claude-opus-5-5 (x)", "prompt_version": "p"}
+    stale = {**rec, "eu_id": "eu:gone", "national_id": "cz:gone"}  # a judgment of a pair no longer on the page
+    jd = tmp_path / "j"
+    jd.mkdir()
+    jd.joinpath(f"{EU}_cz.jsonl").write_text(json.dumps(rec) + "\n" + json.dumps(stale) + "\n", encoding="utf-8")
+    out, static, logs = tmp_path / "data", tmp_path / "static", []
+    build = lambda e, log: {"alignment": json.loads(json.dumps(data)), "review": review}
+    build_site.write_alignments(out, [ENTRY], static_dir=static, build=build, log=logs.append, reviews_dir=tmp_path,
+                                judgments_dir=jd)
+    warn = [m for m in logs if "WARNING" in m]
+    assert len(warn) == 1 and f"{EU}_cz" in warn[0] and "1 of the 2" in warn[0]
+    assert (out / "countries.json").is_file()
+    # a static page does not warn (nothing was recomputed)
+    logs.clear()
+    build_site.write_alignments(out, [ENTRY], offline=True, static_dir=static, log=logs.append, reviews_dir=tmp_path,
+                                judgments_dir=jd)
+    assert not [m for m in logs if "WARNING" in m]
+    # no judgments any more: the old countries.json must not stay behind
+    build_site.write_alignments(out, [ENTRY], offline=True, static_dir=static, reviews_dir=tmp_path, judgments_dir=None)
+    assert not (out / "countries.json").exists()

@@ -14,6 +14,8 @@ metadata and the national measures each member state has notified, and writes:
                                   the review queue: every machine suggestion with its texts and
                                   whether it has been reviewed (data/reviews/)
     site/data/matrix/<CELEX>.json article x country matrix (from the alignment pages)
+    site/data/countries.json      country comparison (countries.html): the AI judge's labels per country and
+                                  directive, machine-estimated coverage, stricter / different-value judgments
 
 When ``data/judgments/<CELEX>_<cc>.jsonl`` exists, each judged machine candidate on the alignment page
 gets the LLM judge's label, confidence, rationale and verified quotes (``judge``), and the matrix
@@ -396,7 +398,8 @@ def build_site_data(
 def write_site_data(out_dir: Path, index: dict, records: list[dict]) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     for old in out_dir.glob("*.json"):
-        old.unlink()  # drop directives removed from the curated list
+        if old.name != "countries.json":  # written by write_alignments
+            old.unlink()  # drop directives removed from the curated list
     meta = {k: index[k] for k in ("schema", "built_at", "mode", "source")}
     for rec in records:
         (out_dir / f"{rec['celex']}.json").write_text(
@@ -809,6 +812,219 @@ def matrix_data(celex: str, pages: list[dict], *, headings: dict[str, str] | Non
     }
 
 
+COUNTRIES_SCHEMA = 1
+#: Labels of a judged candidate that count as "related" (everything but ``unrelated``), best first.
+RELATED_LABELS = ("same", "partial", "stricter", "different_value", "option")
+#: Directive-level cells with fewer judged paragraphs than this are left out of "relative to the others".
+MIN_ROWS_RELATIVE = 20
+#: A directive is listed as higher/lower than the other countries only when coverage differs from their
+#: average by at least this much (fraction, i.e. 5 percentage points).
+MIN_DIFF_RELATIVE = 0.05
+SPECIFIC_PER_COUNTRY = 8
+SPECIFIC_PER_DIRECTIVE = 2
+
+
+def _judged_rows(page: dict) -> list[dict]:
+    """Paragraph rows of an alignment page with the judge's labels of their candidates (rank order)."""
+    out = []
+    for a in page.get("articles") or []:
+        for r in a.get("rows") or []:
+            judged = [(i, m) for i, m in enumerate(r.get("machine") or [])
+                      if isinstance(m.get("judge"), dict) and m["judge"].get("label")]
+            if judged:
+                out.append({"row": r, "article": a, "judged": judged})
+    return out
+
+
+def _pair_stats(page: dict) -> dict:
+    """Counts of one directive x country page from the judge's labels on its candidates.
+
+    ``rows``: paragraphs with at least one judged candidate; ``covered``: of those, with at least one
+    related one (any label but ``unrelated``); ``best``: label of the highest-ranked related candidate of each
+    covered paragraph (sums to ``covered``); ``labels``: related judgments by label, ``stricter`` /
+    ``different_value`` / ``option`` only where the quotes were verified (``unverified`` counts the rest)."""
+    rows = covered = 0
+    best = dict.fromkeys(RELATED_LABELS, 0)
+    labels = dict.fromkeys(RELATED_LABELS, 0)
+    unverified = 0
+    for jr in _judged_rows(page):
+        rows += 1
+        first = None
+        for _i, m in jr["judged"]:
+            lab = m["judge"]["label"]
+            if lab not in labels:  # "unrelated" or an unknown label
+                continue
+            if first is None:
+                first = lab
+            if lab in ("same", "partial") or m["judge"].get("evidence_verified") is True:
+                labels[lab] += 1
+            else:
+                unverified += 1
+        if first is not None:
+            covered += 1
+            best[first] += 1
+    return {"rows": rows, "covered": covered, "coverage": round(covered / rows, 4) if rows else None,
+            "gaps": rows - covered, "best": best, "labels": labels, "unverified": unverified}
+
+
+def _specific_items(page: dict, entry_short: str) -> list[dict]:
+    """Verified ``stricter`` / ``different_value`` judgments of a page, with both quotes, as display items."""
+    nat = page.get("national_texts") or {}
+    acts = {n.get("act_id"): n.get("label") or n.get("act_id") for n in page.get("national") or []}
+    nat_lang = page.get("national_language") or ""
+    eu_lang = (page.get("eu") or {}).get("language") or nat_lang
+    items = []
+    for jr in _judged_rows(page):
+        r = jr["row"]
+        for rank, m in jr["judged"]:
+            j = m["judge"]
+            if j["label"] not in ("stricter", "different_value") or j.get("evidence_verified") is not True:
+                continue
+            if not (j.get("evidence_eu") and j.get("evidence_national")):
+                continue
+            n = nat.get(m["id"]) or {}
+            act = acts.get(n.get("act")) or n.get("act") or ""
+            items.append({
+                "celex": page["celex"], "short": entry_short, "slug": page["id"],
+                "label": j["label"], "confidence": j.get("confidence"), "rank": rank + 1,
+                "eu_label": r.get("label") or r["id"], "eu_url": r.get("url") or None,
+                "national_label": n.get("label") or m["id"], "national_act": act, "national_url": n.get("url") or None,
+                "rationale": j.get("rationale") or "",
+                "evidence_eu": j["evidence_eu"], "evidence_national": j["evidence_national"],
+                "eu_lang": eu_lang, "national_lang": nat_lang,
+                "href": f"alignment.html?id={page['id']}&art={jr['article']['id']}",
+                "_key": (page["celex"], r["id"], m["id"]),
+            })
+    return items
+
+
+def _pick_specific(items: list[dict]) -> list[dict]:
+    """The ``SPECIFIC_PER_COUNTRY`` highest-confidence items, at most ``SPECIFIC_PER_DIRECTIVE`` per directive
+    (the rest only if that leaves too few); ties broken by directive and provision, so the list is stable."""
+    ranked = sorted(items, key=lambda x: (-(x["confidence"] or 0), x["_key"]))
+    chosen: list[dict] = []
+    per: dict[str, int] = {}
+    for it in ranked:
+        if len(chosen) < SPECIFIC_PER_COUNTRY and per.get(it["celex"], 0) < SPECIFIC_PER_DIRECTIVE:
+            chosen.append(it)
+            per[it["celex"]] = per.get(it["celex"], 0) + 1
+    for it in ranked:
+        if len(chosen) >= SPECIFIC_PER_COUNTRY:
+            break
+        if it not in chosen:
+            chosen.append(it)
+    chosen.sort(key=lambda x: (-(x["confidence"] or 0), x["_key"]))
+    return [{k: v for k, v in it.items() if k != "_key"} for it in chosen]
+
+
+def _judge_family(models: list[str]) -> tuple[str, ...]:
+    """The judge model families of a page (``("opus",)``, ``("sonnet",)``, ...), to compare like with like."""
+    return tuple(sorted({"opus" if "opus" in m.lower() else "sonnet" if "sonnet" in m.lower() else m for m in models}))
+
+
+def countries_data(pages: list[dict], *, directives: list[Entry] | None = None,
+                   states: list[CountryState] | None = None, now: datetime | None = None) -> dict:
+    """Country comparison from the alignment pages (judge labels already merged by ``_add_judgments``).
+
+    Everything is machine-estimated and unreviewed: the judge only saw the top candidates the matcher
+    proposed, so low coverage may mean a missed candidate, not a missing provision. Pairs whose act was not
+    notified for the directive (registry status ``baseline``) are shown in the matrix but left out of the
+    country totals, the relative comparison and the specific differences. Countries are ordered by name."""
+    directives = DIRECTIVES if directives is None else directives
+    by_pair = {(p["celex"], p["country_code"]): p for p in pages}
+    states_by = {(s.celex, s.country_code): s for s in states or []}
+    names: dict[str, str] = {}
+    for p in pages:
+        names[p["country_code"]] = p["country_name"]
+    for s in states or []:
+        names.setdefault(s.country_code, s.country_name)
+    codes = sorted(names, key=lambda c: names[c])
+    shorts = {e.celex: e for e in directives}
+    # only directives that have at least one page: a partial (--only) build adds no empty rows
+    celexes = [e.celex for e in directives if any((e.celex, c) in by_pair for c in codes)]
+
+    matrix, stats = [], {}
+    models: set[str] = set()
+    for celex in celexes:
+        cells = {}
+        for cc in codes:
+            p = by_pair.get((celex, cc))
+            if p is None:
+                s = states_by.get((celex, cc))
+                cells[cc] = {"state": "none", "note": s.note} if s else {"state": "missing", "note": ""}
+                continue
+            st = _pair_stats(p)
+            reg = p.get("registry") or {}
+            baseline = reg.get("status") == "baseline"
+            judge = p.get("judge") or {}
+            models.update(judge.get("models") or [])
+            cells[cc] = {"state": "baseline" if baseline else ("judged" if st["rows"] else "not_judged"),
+                         "note": reg.get("note") or "", "act": (p.get("national") or [{}])[0].get("label", ""),
+                         "href": f"alignment.html?id={p['id']}", "models": judge.get("models") or [], **st}
+            if not baseline and st["rows"]:
+                stats[(celex, cc)] = (p, st, _judge_family(judge.get("models") or []))
+        e = shorts.get(celex)
+        matrix.append({"celex": celex, "short": e.short if e else celex, "topic": e.topic if e else "", "cells": cells})
+
+    cards, specifics, relative = {}, {}, {}
+    for cc in codes:
+        mine = [(c, p, st) for (c, k), (p, st, _f) in stats.items() if k == cc]
+        rows = sum(st["rows"] for _, _, st in mine)
+        covered = sum(st["covered"] for _, _, st in mine)
+        labels = {lab: sum(st["labels"][lab] for _, _, st in mine) for lab in RELATED_LABELS}
+        cards[cc] = {
+            "code": cc, "name": names[cc],
+            "directives": len(mine),
+            "baseline_pairs": sum(1 for row in matrix if row["cells"][cc]["state"] == "baseline"),
+            "no_act": sum(1 for row in matrix if row["cells"][cc]["state"] == "none"),
+            "rows": rows, "covered": covered,
+            "coverage": round(covered / rows, 4) if rows else None,
+            "gaps": rows - covered,
+            "stricter": labels["stricter"], "different_value": labels["different_value"], "option": labels["option"],
+            "labels": labels,
+            "unverified_excluded": sum(st["unverified"] for _, _, st in mine),
+        }
+        items = []
+        for c, p, _st in mine:
+            items.extend(_specific_items(p, shorts[c].short if c in shorts else c))
+        specifics[cc] = {"total": len(items), "items": _pick_specific(items)}
+        diffs = []
+        for c, _p, st in mine:
+            if st["rows"] < MIN_ROWS_RELATIVE:
+                continue
+            fam = stats[(c, cc)][2]
+            others = []
+            for oc in codes:
+                o = stats.get((c, oc)) if oc != cc else None
+                # only cells judged by the same model(s): Opus and Sonnet label differently (Sonnet more "partial")
+                if o and o[1]["rows"] >= MIN_ROWS_RELATIVE and o[2] == fam:
+                    others.append(o[1]["coverage"])
+            if len(others) < 2:
+                continue
+            mean = sum(others) / len(others)
+            diffs.append({"celex": c, "short": shorts[c].short if c in shorts else c, "coverage": st["coverage"],
+                          "others_mean": round(mean, 4), "others": len(others), "diff": round(st["coverage"] - mean, 4),
+                          "href": f"alignment.html?id={c}_{cc}"})
+        diffs.sort(key=lambda d: (-d["diff"], d["celex"]))
+        relative[cc] = {"highest": [d for d in diffs if d["diff"] >= MIN_DIFF_RELATIVE - 1e-9][:3],
+                        "lowest": [d for d in reversed(diffs) if d["diff"] <= -MIN_DIFF_RELATIVE + 1e-9][:3],
+                        "compared": len(diffs)}
+    built = (now or datetime.now(timezone.utc)).replace(microsecond=0)
+    return {
+        "schema": COUNTRIES_SCHEMA,
+        "built_at": built.isoformat().replace("+00:00", "Z"),
+        "generator": f"openacquis {__version__}",
+        "status": "unreviewed",
+        "models": sorted(models),
+        "countries": [{"code": c, "name": names[c]} for c in codes],
+        "summary": [cards[c] for c in codes],
+        "matrix": matrix,
+        "specific": specifics,
+        "relative": relative,
+        "relative_min_diff": MIN_DIFF_RELATIVE,
+    }
+
+
 def build_alignment(
     entry: AlignmentEntry,
     *,
@@ -925,6 +1141,11 @@ def write_alignments(
         _add_registry(data, e)
         if judgments_dir is not None:
             _add_judgments(data, judgments_dir / f"{e.slug}.jsonl", log)
+            j = data.get("judge")
+            if j and data["mode"] == "live" and j["shown"] < j["pairs"]:
+                log(f"    WARNING: {e.slug}: the computed page matches only {j['shown']} of the {j['pairs']} judged "
+                    f"pairs; the alignment changed since the judge ran, so the country comparison uses fewer "
+                    f"judgments (re-run the judge)")
         (align_dir / f"{e.slug}.json").write_text(
             json.dumps(data, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
         if review is not None:
@@ -948,6 +1169,15 @@ def write_alignments(
                        separators=(",", ":")),
             encoding="utf-8")
         log(f"  matrix {celex}: {len(ps)} countries")
+    flat = [p for ps in pages.values() for p in ps]
+    countries_path = out_dir / "countries.json"
+    if any(p.get("judge") for p in flat):
+        cd = countries_data(flat, states=states)
+        countries_path.write_text(json.dumps(cd, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+        log(f"  countries: {len(cd['matrix'])} directives, {len(cd['countries'])} countries")
+    elif countries_path.exists():  # no judgments any more: a stale file would show old numbers
+        countries_path.unlink()
+        log("  countries: no page has judgments; removed the stale countries.json")
     return missing
 
 
