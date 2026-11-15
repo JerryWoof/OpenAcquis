@@ -770,6 +770,44 @@ Related/unrelated agreement Opus vs Sonnet: 2634/2763 (95.3%)
   and NIS2 × CZ (0.682 vs 0.755), where Sonnet calls more candidates "partial".
 - Single run per model; differences of a few points on pairs with ~100 related judgments are within run-to-run noise.
 
+### More candidates per EU unit (experiment, 2026-11-15)
+
+The judge normally sees the top 3 machine candidates of each directive paragraph (website rows), so it cannot find a
+link the matcher ranked lower. Experiment on the 7 pairs with an official table: alignments recomputed with
+`openacquis align -k 6` (6 candidates per EU unit, finer units: points and sub-points), and every pair not judged
+before was judged by Sonnet 5.5 in Claude Code subagents (9,098 new pairs, `data/judgments-k6/`). Below, "top 3" is the
+existing judgments (`data/judgments/`, Opus 5.5) and "+6/unit" the union of both.
+
+| Pair | Judged pairs (top 3 → +6/unit) | Related | Related P | Table pairs found by judge |
+|---|---|---|---|---|
+| `32022L2555_cz` | 606 → 2890 | 94 → 331 | 0.755 → 0.680 | 71 → 225 (+154) |
+| `32022L2557_cz` | 309 → 1136 | 78 → 231 | 0.628 → 0.641 | 49 → 148 (+99) |
+| `32019L0882_cz` | 396 → 1465 | 116 → 301 | 0.853 → 0.791 | 99 → 238 (+139) |
+| `32019L1937_cz` | 255 → 1148 | 50 → 193 | 0.720 → 0.637 | 36 → 123 (+87) |
+| `32022L2555_sk` | 606 → 3054 | 124 → 444 | 0.726 → 0.673 | 90 → 299 (+209) |
+| `32022L2557_sk` | 309 → 1195 | 80 → 236 | 0.887 → 0.818 | 71 → 193 (+122) |
+| `32023L0970_sk` | 282 → 973 | 85 → 190 | 0.906 → 0.863 | 77 → 164 (+87) |
+| **all 7** | 2763 → 11861 | 627 → 1926 | 0.786 → 0.722 | **493 → 1390 (+897, 182 %)** |
+
+| Pair | Official links | found by judge, top 3 | + 6 per unit | EU units in table covered: top 3 → +6 |
+|---|---|---|---|---|
+| `32022L2555_cz` | 568 | 67 (12%) | 139 (24%) | 61/197 (31%) → 112/197 (57%) |
+| `32022L2557_cz` | 229 | 52 (23%) | 80 (35%) | 40/94 (43%) → 61/94 (65%) |
+| `32019L0882_cz` | 146 | 83 (57%) | 115 (79%) | 74/114 (65%) → 101/114 (89%) |
+| `32019L1937_cz` | 683 | 139 (20%) | 183 (27%) | 44/97 (45%) → 55/97 (57%) |
+| `32022L2555_sk` | 442 | 71 (16%) | 117 (26%) | 67/195 (34%) → 99/195 (51%) |
+| `32022L2557_sk` | 321 | 121 (38%) | 148 (46%) | 75/122 (61%) → 97/122 (80%) |
+| `32023L0970_sk` | 109 | 67 (61%) | 90 (83%) | 60/92 (65%) → 79/92 (86%) |
+| **all 7** | 2498 | **600 (24%)** | **872 (35%)** | **421/911 (46%) → 604/911 (66%)** |
+
+- Distinct official links the judge marks as related: **600 → 872 of 2,498 (24 % → 35 %)**.
+- EU provisions in the table with at least one correct related link: **421 → 604 of 911 (46 % → 66 %)**.
+- Precision of related pairs drops from 0.786 to 0.722 (more candidates, finer units, and Sonnet instead of Opus for the
+  new pairs; see "Opus vs Sonnet" above for the model part).
+- "Table pairs found" in the first table counts judged pairs, so finer units count one official link several times;
+  the second table counts each official link once.
+- Not on the website yet: the site still shows 3 candidates per paragraph.
+
 ### Unmeasured pairs
 
 Pairs without an official correlation table, so there is no score; label counts only. All labels are unreviewed machine suggestions.
